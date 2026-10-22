@@ -41,14 +41,12 @@
     };
 
     const INITIAL_PANTRY = [
-      // Kühlschrank / Frisch
       { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDays: 5, amount: 500, unitType: 'g', lowThreshold: 200 },
       { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDays: 9, amount: 3, unitType: 'Stück', lowThreshold: 1 },
       { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDays: 20, amount: 200, unitType: 'g', lowThreshold: 50 },
       { id: 'p4', name: 'Butter', category: 'fridge', status: 'in_stock', expiryDays: 14, amount: 250, unitType: 'g', lowThreshold: 50 },
       { id: 'p5', name: 'Frischer Rosmarin & Thymian (Terrasse)', category: 'fridge', status: 'low', expiryDays: 3, amount: 1, unitType: 'Topf', lowThreshold: 1 },
       
-      // Vorratsschrank (Pasta, Tomaten, Reis, Fonds)
       { id: 'p6a', name: 'Tagliatelle', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
       { id: 'p6b', name: 'Rigatoni', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
       { id: 'p6c', name: 'Spaghetti', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 800, unitType: 'g', lowThreshold: 300 },
@@ -61,23 +59,20 @@
       { id: 'p11a', name: 'Rinderfond', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
       { id: 'p11b', name: 'Gemüsebrühe', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 1, unitType: 'Gläser', lowThreshold: 1 },
       { id: 'p12', name: 'Olivenöl Extra Vergine', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-      { id: 'p13', name: 'Tomatenmark', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Tubem', lowThreshold: 1 },
+      { id: 'p13', name: 'Tomatenmark', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Tube', lowThreshold: 1 },
 
-      // Saucen & Essige (Mit Mengen)
       { id: 's_soja1', name: 'Sojasauce (helle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
       { id: 's_soja2', name: 'Sojasauce (dunkle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
       { id: 's_essig1', name: 'Weißweinessig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
       { id: 's_essig2', name: 'Balsamico-Essig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
 
-      // Gewürze & Kräuter (Ohne Einheiten, reiner Da-Status)
       { id: 'sp_1', name: 'Piment', category: 'spices', status: 'in_stock' },
       { id: 'sp_2', name: 'Wacholderbeeren', category: 'spices', status: 'in_stock' },
       { id: 'sp_3', name: 'Nelken', category: 'spices', status: 'in_stock' },
       { id: 'sp_4', name: 'Muskatnuss', category: 'spices', status: 'in_stock' },
       { id: 'sp_5', name: 'Tonkabohne', category: 'spices', status: 'in_stock' },
-      { id: 'sp_6', name: 'Getrocknete Kräuter (Thymian, Oregano, Rosmarin)', category: 'spices', status: 'in_stock' },
+      { id: 'sp_6', name: 'Getrocknete Kräuter', category: 'spices', status: 'in_stock' },
 
-      // TK-Vorräte
       { id: 'p14', name: 'Hähnchenbrustfilet (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 800, unitType: 'g', lowThreshold: 300 },
       { id: 'p15', name: 'Hackfleisch-Reserve (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 1000, unitType: 'g', lowThreshold: 250 },
       { id: 'p16', name: 'Merguez-Würstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 6, unitType: 'Stück', lowThreshold: 2 },
@@ -293,28 +288,28 @@
       const [activeTab, setActiveTab] = useState('home');
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v11');
+        const saved = localStorage.getItem('kueche_pantry_v13');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v11');
+        const saved = localStorage.getItem('kueche_mealprep_v13');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v11');
+        const saved = localStorage.getItem('kueche_recipes_v13');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v11');
+        const saved = localStorage.getItem('kueche_shopping_v13');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry_v11', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep_v11', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes_v11', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping_v11', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_pantry_v13', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v13', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v13', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v13', JSON.stringify(shoppingList)); }, [shoppingList]);
 
       const [filterEffort, setFilterEffort] = useState('all');
       const [filterCalories, setFilterCalories] = useState('all');
@@ -673,8 +668,27 @@
 
       const exportToBring = () => {
         const text = shoppingList.map(s => s.name).join('\n');
-        window.location.href = `bring://share?text=${encodeURIComponent(text)}`;
-        showToast('Bring! App wird geöffnet...');
+        window.location.href = `bring://share?list=Zuhause&text=${encodeURIComponent(text)}`;
+        showToast('Bring! App wird geöffnet (Liste: Zuhause)...');
+      };
+
+      // Foto-Scan Simulation für Vorräte
+      const handlePhotoScan = () => {
+        showToast('Kamera-Scan aktiv: Lese Etiketten aus...');
+        setTimeout(() => {
+          const scannedItem = {
+            id: 'p_' + Date.now(),
+            name: 'Bio-Tomatenmark (Scan)',
+            category: pantrySubTab,
+            status: 'in_stock',
+            amount: 2,
+            unitType: 'Tube',
+            lowThreshold: 1
+          };
+          setPantry(prev => [scannedItem, ...prev]);
+          setShowNewPantryItemModal(false);
+          showToast('Foto erfolgreich gescannt & hinzugefügt!');
+        }, 1500);
       };
 
       const startListening = () => {
@@ -729,7 +743,19 @@
           }, ...prev]);
           showToast(`Im TK angelegt: ${dishName}`);
         } else {
-          showToast(`Verarbeitet: "${cmdText}"`);
+          // Neuer Vorrat per Spracheingabe aus dem Modal heraus
+          const newItem = {
+            id: 'p_' + Date.now(),
+            name: cmdText,
+            category: pantrySubTab,
+            status: 'in_stock',
+            amount: pantrySubTab === 'spices' ? undefined : 1,
+            unitType: pantrySubTab === 'spices' ? undefined : 'Stück',
+            lowThreshold: 1
+          };
+          setPantry(prev => [newItem, ...prev]);
+          setShowNewPantryItemModal(false);
+          showToast(`Per Sprache hinzugefügt: ${cmdText}`);
         }
         setVoiceText('');
         setVoiceOverlay(false);
@@ -741,7 +767,7 @@
           <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Dashboard & Vorratsschrank</p>
+              <p className="text-xs text-stone-500">Foto- & Sprach-Scanner aktiv</p>
             </div>
             <button
               onClick={() => setVoiceOverlay(true)}
@@ -797,7 +823,7 @@
 
           {/* MAIN CONTENT */}
           <main className="flex-1 px-4 pt-4">
-            {/* TAB HOME: DASHBOARD MIT VORRATSSCHRANK */}
+            {/* TAB HOME: DASHBOARD */}
             {activeTab === 'home' && (
               <div className="space-y-4">
                 <div className="bg-stone-900 text-white rounded-2xl p-5 space-y-3 shadow-sm">
@@ -848,18 +874,6 @@
                     </button>
 
                     <button
-                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('pantry'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <Icon name="box" size={18} className="text-stone-700" />
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Schrank</span>
-                      </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Vorratsschrank</span>
-                      <span className="text-[11px] text-stone-500 block">Pasta, Tomaten, Reis</span>
-                    </button>
-
-                    <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('fridge'); }}
                       className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
                     >
@@ -869,6 +883,18 @@
                       </div>
                       <span className="text-sm font-semibold text-stone-900 block">Kühlschrank</span>
                       <span className="text-[11px] text-stone-500 block">Frisch & Verfallsdatum</span>
+                    </button>
+
+                    <button
+                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('pantry'); }}
+                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Icon name="box" size={18} className="text-stone-700" />
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Schrank</span>
+                      </div>
+                      <span className="text-sm font-semibold text-stone-900 block">Vorratsschrank</span>
+                      <span className="text-[11px] text-stone-500 block">Pasta, Tomaten, Reis</span>
                     </button>
 
                     <button
@@ -1083,7 +1109,7 @@
               </div>
             )}
 
-            {/* TAB: VORRÄTE & TK (MIT 6 SYMMETRISCHEN REITERN) */}
+            {/* TAB: VORRÄTE & TK */}
             {activeTab === 'pantry' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-6 gap-0.5 bg-stone-200/70 p-1 rounded-xl text-[10px] font-medium">
@@ -1272,7 +1298,6 @@
                             </div>
                           </div>
 
-                          {/* Für Gewürze ohne Mengeneinheit wird hier nichts angezeigt, für den Rest die Menge */}
                           {item.amount !== undefined && (
                             <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
                               <span className="text-xs text-stone-500">Restbestand:</span>
@@ -1715,7 +1740,7 @@
             </div>
           )}
 
-          {/* MODAL: NEUER VORRAT */}
+          {/* MODAL: NEUER VORRAT (MIT FOTO-SCAN & SPRACH-BUTTONS) */}
           {showNewPantryItemModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
@@ -1725,6 +1750,34 @@
                     <Icon name="x" size={18} />
                   </button>
                 </div>
+
+                {/* SCHNELL-AKTIONEN: FOTO & SPRACHE */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={handlePhotoScan}
+                    className="py-2.5 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-semibold flex items-center justify-center gap-1.5 border border-stone-200 transition"
+                  >
+                    <Icon name="camera" size={15} />
+                    <span>Foto / Scan</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowNewPantryItemModal(false);
+                      setVoiceOverlay(true);
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-semibold flex items-center justify-center gap-1.5 border border-stone-200 transition"
+                  >
+                    <Icon name="mic" size={15} />
+                    <span>Diktieren</span>
+                  </button>
+                </div>
+
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-stone-200"></div>
+                  <span className="flex-shrink mx-2 text-[10px] uppercase tracking-wider text-stone-400">Oder manuell</span>
+                  <div className="flex-grow border-t border-stone-200"></div>
+                </div>
+
                 <div className="space-y-3">
                   <input
                     type="text"
