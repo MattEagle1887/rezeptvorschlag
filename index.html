@@ -288,33 +288,33 @@
       const [activeTab, setActiveTab] = useState('home');
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v19');
+        const saved = localStorage.getItem('kueche_pantry_v20');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v19');
+        const saved = localStorage.getItem('kueche_mealprep_v20');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v19');
+        const saved = localStorage.getItem('kueche_recipes_v20');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v19');
+        const saved = localStorage.getItem('kueche_shopping_v20');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
       const [mealPlan, setMealPlan] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealplan_v19');
+        const saved = localStorage.getItem('kueche_mealplan_v20');
         return saved ? JSON.parse(saved) : [];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry_v19', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep_v19', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes_v19', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping_v19', JSON.stringify(shoppingList)); }, [shoppingList]);
-      useEffect(() => { localStorage.setItem('kueche_mealplan_v19', JSON.stringify(mealPlan)); }, [mealPlan]);
+      useEffect(() => { localStorage.setItem('kueche_pantry_v20', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v20', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v20', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v20', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_mealplan_v20', JSON.stringify(mealPlan)); }, [mealPlan]);
 
       const [filterEffort, setFilterEffort] = useState('all');
       const [filterCalories, setFilterCalories] = useState('all');
@@ -381,12 +381,16 @@
         }));
       };
 
-      const updateMealPrepKcal = (mpId, val) => {
-        setMealPrep(prev => prev.map(mp => {
-          if (mp.id !== mpId) return mp;
-          return { ...mp, kcalPer100g: Number(val) || 0 };
-        }));
-        showToast('Kalorien für Meal-Prep aktualisiert');
+      const deletePantryItem = (itemId) => {
+        const itemToDelete = pantry.find(p => p.id === itemId);
+        setPantry(prev => prev.filter(p => p.id !== itemId));
+        if (itemToDelete) showToast(`"${itemToDelete.name}" gelöscht`);
+      };
+
+      const deleteMealPrepItem = (mpId) => {
+        const mpToDelete = mealPrep.find(m => m.id === mpId);
+        setMealPrep(prev => prev.filter(m => m.id !== mpId));
+        if (mpToDelete) showToast(`"${mpToDelete.name}" aus TK gelöscht`);
       };
 
       const checkRecipeAvailability = (recipe) => {
@@ -729,7 +733,7 @@
         showToast('Foto wird analysiert...');
         setTimeout(() => {
           const scannedItems = [
-            { name: 'Dosentomaten', target: 'pantry' },
+            { name: 'Mutti Passata', target: 'pantry' },
             { name: 'Bio-Zitronen', target: 'fridge' },
             { name: 'Hähnchenbrust', target: 'freezer_items' }
           ];
@@ -737,15 +741,15 @@
 
           const newItem = {
             id: 'p_' + Date.now(),
-            name: `${chosen.name} (Foto-Scan)`,
+            name: `${chosen.name}`,
             category: chosen.target,
             status: 'in_stock',
-            amount: 2,
-            unitType: chosen.target === 'freezer_items' ? 'g' : 'Stück',
+            amount: 1,
+            unitType: chosen.target === 'freezer_items' ? 'g' : 'Flasche',
             lowThreshold: 1
           };
           setPantry(prev => [newItem, ...prev]);
-          showToast(`Erkannt & sortiert: ${newItem.name} → ${chosen.target === 'pantry' ? 'Schrank' : chosen.target === 'fridge' ? 'Kühlschrank' : 'TK'}`);
+          showToast(`Erkannt: ${newItem.name} → Schrank`);
         }, 1200);
       };
 
@@ -793,8 +797,8 @@
           setMealPrep(prev => [{
             id: newId,
             name: dishName,
-            blocks500: text.includes('zweimal 500') || text.includes('2x 500') ? 2 : 1,
-            blocks250: text.includes('250') ? 1 : 0,
+            blocks500: 1,
+            blocks250: 0,
             kcalPer100g: 170,
             needsFresh: [],
             prepTime: 20,
@@ -802,9 +806,12 @@
           }, ...prev]);
           showToast(`Im TK angelegt: ${dishName}`);
         } else {
+          // Saubere Extraktion des Artikelnamens (z.B. bei "füge 400 ml Mutti Passata hinzu")
+          let cleanName = cmdText.replace(/füge|hinzu|bitte|zum schrank|in den vorrat|packe/gi, '').trim();
+          // Zahlen und Maßeinheiten am Anfang entfernen wenn möglich, aber Rest behalten
           const newItem = {
             id: 'p_' + Date.now(),
-            name: cmdText,
+            name: cleanName || cmdText,
             category: 'pantry',
             status: 'in_stock',
             amount: 1,
@@ -812,7 +819,7 @@
             lowThreshold: 1
           };
           setPantry(prev => [newItem, ...prev]);
-          showToast(`Per Sprache in Schrank einsortiert: ${cmdText}`);
+          showToast(`Hinzugefügt: ${newItem.name}`);
         }
         setVoiceText('');
         setVoiceOverlay(false);
@@ -833,7 +840,7 @@
           <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Meal-Prep kcal & Auto-Sortierung</p>
+              <p className="text-xs text-stone-500">Dashboard & Lösch-Funktion</p>
             </div>
             <div className="flex items-center gap-1.5">
               <button
@@ -1053,7 +1060,7 @@
               <div className="space-y-4">
                 <div className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Wochenplan-Filter</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Filter</span>
                     <span className="text-xs text-stone-500">{filteredSuggestions.length} Gerichte</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -1228,7 +1235,7 @@
               </div>
             )}
 
-            {/* TAB: VORRÄTE & TK (MIT MEAL-PREP KCAL-ANZEIGE) */}
+            {/* TAB: VORRÄTE & TK (MIT LÖSCH-MÜLLEIMER) */}
             {activeTab === 'pantry' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-6 gap-0.5 bg-stone-200/70 p-1 rounded-xl text-[10px] font-medium">
@@ -1274,7 +1281,16 @@
                         <div key={mp.id} className="bg-white border border-stone-200 rounded-xl p-4 space-y-3">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h4 className="font-semibold text-sm text-stone-900">{mp.name}</h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-sm text-stone-900">{mp.name}</h4>
+                                <button
+                                  onClick={() => deleteMealPrepItem(mp.id)}
+                                  className="text-stone-400 hover:text-red-600 p-1"
+                                  title="Meal-Prep löschen"
+                                >
+                                  <Icon name="trash-2" size={14} />
+                                </button>
+                              </div>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <span className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">
                                   ~{mp.kcalPer100g || 170} kcal / 100g
@@ -1293,7 +1309,6 @@
                             </span>
                           </div>
 
-                          {/* KLEINES INPUT ZUM DIREKTEN ANPASSEN DER KALORIEN */}
                           <div className="flex items-center justify-between bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 text-xs">
                             <span className="text-stone-500">kcal / 100g anpassen:</span>
                             <input
@@ -1408,7 +1423,7 @@
                               )}
                             </div>
 
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               {['in_stock', 'low', 'empty'].map(st => (
                                 <button
                                   key={st}
@@ -1430,6 +1445,13 @@
                                   {st === 'in_stock' ? 'Da' : st === 'low' ? 'Knapp' : 'Leer'}
                                 </button>
                               ))}
+                              <button
+                                onClick={() => deletePantryItem(item.id)}
+                                className="text-stone-400 hover:text-red-600 p-1 ml-1"
+                                title="Vorrat löschen"
+                              >
+                                <Icon name="trash-2" size={15} />
+                              </button>
                             </div>
                           </div>
 
@@ -1798,7 +1820,7 @@
             </div>
           )}
 
-          {/* MODAL: NEUES MEAL-PREP (INKL. KCAL-EINGABE) */}
+          {/* MODAL: NEUES MEAL-PREP */}
           {showAddMealPrepModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
@@ -2021,7 +2043,7 @@
                 </div>
 
                 <p className="text-xs text-stone-500">
-                  Beispiele: <em>„Haben wir noch Piment?“</em>, <em>„Haben wir noch Sojasauce?“</em> oder <em>„Chili eingefroren 2x 500g“</em>.
+                  Beispiele: <em>„Haben wir noch Piment?“</em>, <em>„Mutti Passata“</em> oder <em>„Chili eingefroren 2x 500g“</em>.
                 </p>
 
                 <button
