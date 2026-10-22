@@ -43,13 +43,49 @@
       return <span ref={spanRef} className="inline-flex items-center justify-center shrink-0" />;
     };
 
-    // Start-Daten (werden nur genutzt, falls die Firebase-Datenbank noch komplett unbeschrieben ist)
+    // Hilfsfunktionen für echte Haltbarkeitsdaten (MHD)
+    const getFutureDateStr = (daysToAdd) => {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() + Number(daysToAdd));
+      return d.toISOString().split('T')[0];
+    };
+
+    const getDaysUntilExpiry = (item) => {
+      if (!item) return undefined;
+      if (item.expiryDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(item.expiryDate + 'T00:00:00');
+        return Math.round((target - today) / (1000 * 60 * 60 * 24));
+      }
+      if (item.expiryDays !== undefined && item.expiryDays !== null && item.expiryDays !== '') {
+        return Number(item.expiryDays);
+      }
+      return undefined;
+    };
+
+    const formatExpiryBadge = (days, expiryDateStr) => {
+      if (days === undefined) return null;
+      let dateHint = '';
+      if (expiryDateStr) {
+        const parts = expiryDateStr.split('-');
+        if (parts.length === 3) dateHint = ` (${parts[2]}.${parts[1]}.)`;
+      }
+      if (days < 0) return { text: `Abgelaufen seit ${Math.abs(days)} T.${dateHint}`, urgent: true, expired: true };
+      if (days === 0) return { text: `Läuft HEUTE ab!${dateHint}`, urgent: true, expired: false };
+      if (days === 1) return { text: `Nur noch 1 Tag (Morgen)${dateHint}`, urgent: true, expired: false };
+      if (days === 2) return { text: `Noch 2 Tage${dateHint}`, urgent: true, expired: false };
+      return { text: `Noch ${days} Tage${dateHint}`, urgent: false, expired: false };
+    };
+
+    // Start-Daten (falls Datenbank noch leer)
     const SEED_DATA = {
       pantry: [
-        { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDays: 5, amount: 500, unitType: 'g', lowThreshold: 200 },
-        { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDays: 9, amount: 3, unitType: 'Stück', lowThreshold: 1 },
-        { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDays: 20, amount: 200, unitType: 'g', lowThreshold: 50 },
-        { id: 'p4', name: 'Butter', category: 'fridge', status: 'in_stock', expiryDays: 14, amount: 250, unitType: 'g', lowThreshold: 50 },
+        { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(1), amount: 500, unitType: 'g', lowThreshold: 200 },
+        { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(9), amount: 3, unitType: 'Stück', lowThreshold: 1 },
+        { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(20), amount: 200, unitType: 'g', lowThreshold: 50 },
+        { id: 'p4', name: 'Butter', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(14), amount: 250, unitType: 'g', lowThreshold: 50 },
         { id: 'p6a', name: 'Tagliatelle', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
         { id: 'p6c', name: 'Spaghetti', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 800, unitType: 'g', lowThreshold: 300 },
         { id: 'p7', name: 'Dosentomaten (San Marzano)', category: 'pantry', status: 'in_stock', amount: 4, unitType: 'Dosen', lowThreshold: 2 },
@@ -71,6 +107,17 @@
         { id: 'mp3', name: 'Schmorkohl (Familienrezept)', blocks500: 2, blocks250: 0, kcalPer100g: 130, needsFresh: ['Kartoffeln'], prepTime: 20, season: 'winter' }
       ],
       recipes: [
+        {
+          id: 'r0', title: 'Schnelle Hackfleisch-Pasta (Frische-Retter)', effort: 'quick', season: 'all', kcalPer100g: 215,
+          isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, lastCookedDaysAgo: 14, prepTime: 25,
+          ingredients: [
+            { name: 'Rinderhackfleisch (Frisch)', amount: '500 g', essential: true },
+            { name: 'Mutti Passata', amount: '1 Flasche', essential: true },
+            { name: 'Spaghetti', amount: '400 g', essential: true, isPasta: true },
+            { name: 'Parmesan (am Stück)', amount: '60 g', essential: true }
+          ],
+          steps: ['Frisches Rinderhackfleisch krümelig und kräftig anbraten.', 'Mit Mutti Passata ablöschen und 15 Min. sämig einkochen.', 'Mit al dente gekochter Pasta und frisch geriebenem Parmesan servieren.']
+        },
         {
           id: 'r1', title: 'Pasta al Limone', effort: 'quick', season: 'summer', kcalPer100g: 140,
           isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, lastCookedDaysAgo: 18, prepTime: 20,
@@ -105,16 +152,6 @@
       ]
     };
 
-    const replaceGermanNumberWords = (str) => {
-      const map = {
-        'einhalb': '0.5', 'eineinhalb': '1.5', 'anderthalb': '1.5',
-        'einen': '1', 'eine': '1', 'eins': '1', 'ein': '1',
-        'zwei': '2', 'zwo': '2', 'zweimal': '2', 'drei': '3', 'dreimal': '3',
-        'vier': '4', 'fünf': '5', 'sechs': '6', 'sieben': '7', 'acht': '8', 'neun': '9', 'zehn': '10', 'elf': '11', 'zwölf': '12'
-      };
-      return str.replace(/\b(einhalb|eineinhalb|anderthalb|einen|eine|eins|ein|zwei|zwo|zweimal|drei|dreimal|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf)\b/gi, (m) => map[m.toLowerCase()] || m);
-    };
-
     const compressImageToBase64 = (file, maxWidth = 1024, quality = 0.75) => new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -140,12 +177,17 @@
       reader.readAsDataURL(file);
     });
 
-    // DYNAMISCHER MODELL-FINDER: Fragt bei Google alle aktiven Modelle ab, sortiert die neueste Version nach ganz oben und testet sie durch!
+    // DYNAMISCHER GEMINI AUFRUF (für Foto-Scan UND natürliche Spracheingabe!)
+    let cachedWorkingModel = null;
+
     async function callGeminiWithAutoModel(apiKey, promptText, base64Image = null) {
       const cleanKey = apiKey.trim();
       let candidateModels = [];
 
-      // 1. Live bei Google anfragen, welche Modelle dieser Key aktuell unterstützt
+      if (cachedWorkingModel) {
+        candidateModels.push(cachedWorkingModel);
+      }
+
       try {
         const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
         const listData = await listRes.json();
@@ -163,7 +205,6 @@
             )
             .map(m => m.name.replace(/^models\//, ''));
 
-          // Sortiere so, dass "flash"-Modelle mit der höchsten Versionsnummer (z.B. 3.x / 2.5 / latest) ganz oben stehen
           validModels.sort((a, b) => {
             const aFlash = a.includes('flash') ? 1 : 0;
             const bFlash = b.includes('flash') ? 1 : 0;
@@ -171,16 +212,13 @@
             return b.localeCompare(a, undefined, { numeric: true });
           });
 
-          candidateModels = validModels;
-        } else if (listData && listData.error) {
-          throw new Error(`API-Key Fehler: ${listData.error.message}`);
+          for (const vm of validModels) {
+            if (!candidateModels.includes(vm)) candidateModels.push(vm);
+          }
         }
-      } catch (err) {
-        if (err.message.includes('API-Key Fehler')) throw err;
-      }
+      } catch (err) {}
 
-      // 2. Sicherheits-Liste anhängen, falls die Listen-Abfrage blockiert war
-      const fallbacks = ['gemini-flash-latest', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-pro-latest'];
+      const fallbacks = ['gemini-flash-latest', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.0-flash'];
       for (const fb of fallbacks) {
         if (!candidateModels.includes(fb)) candidateModels.push(fb);
       }
@@ -192,7 +230,6 @@
 
       let lastErrorMsg = 'Kein passendes Gemini-Modell gefunden.';
 
-      // 3. Probiere die Modelle von neu nach alt durch, bis eines erfolgreich antwortet (überspringt abgekündigte Modelle automatisch!)
       for (const modelName of candidateModels) {
         try {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(cleanKey)}`, {
@@ -203,12 +240,13 @@
           const data = await res.json();
 
           if (res.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+            cachedWorkingModel = modelName;
             return {
               text: data.candidates[0].content.parts[0].text,
               usedModel: modelName
             };
           } else {
-            lastErrorMsg = data?.error?.message || `HTTP ${res.status} bei ${modelName}`;
+            lastErrorMsg = data?.error?.message || `HTTP ${res.status}`;
           }
         } catch (netErr) {
           lastErrorMsg = netErr.message;
@@ -305,7 +343,6 @@
         }
       };
 
-      // Initiales Laden aus der Firebase-Datenbank
       useEffect(() => {
         if (!firebaseUrl) {
           setPantry(SEED_DATA.pantry);
@@ -320,7 +357,6 @@
           .then(res => res.json())
           .then(data => {
             if (data && (data.isInitialized || data.pantry || data.updatedAt)) {
-              // Daten existieren bereits in Firebase (auch wenn sie nach einem Reset leer sind!)
               setPantry(data.pantry || []);
               setMealPrep(data.mealPrep || []);
               setRecipes(data.recipes || []);
@@ -328,7 +364,6 @@
               setMealPlan(data.mealPlan || []);
               if (data.updatedAt) lastSyncTimestamp.current = data.updatedAt;
             } else {
-              // Allererster Start: Seed-Daten einmalig in Firebase anlegen
               setPantry(SEED_DATA.pantry);
               setMealPrep(SEED_DATA.mealPrep);
               setRecipes(SEED_DATA.recipes);
@@ -346,7 +381,6 @@
           });
       }, [firebaseUrl]);
 
-      // Live-Abgleich alle 4 Sekunden
       useEffect(() => {
         if (!firebaseUrl || !isLoadedFromCloud) return;
         const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
@@ -373,7 +407,6 @@
         return () => clearInterval(interval);
       }, [firebaseUrl, isLoadedFromCloud]);
 
-      // Jede Änderung direkt in Firebase speichern
       useEffect(() => {
         if (!isLoadedFromCloud || isApplyingRemote.current) return;
         if (firebaseUrl) {
@@ -381,7 +414,6 @@
         }
       }, [pantry, mealPrep, recipes, shoppingList, mealPlan]);
 
-      // KOMPLETTER DATENBANK-RESET
       const handleDatabaseReset = async () => {
         isApplyingRemote.current = true;
         setPantry([]);
@@ -437,7 +469,11 @@
       const [newPantryAmount, setNewPantryAmount] = useState(1);
       const [newPantryUnitType, setNewPantryUnitType] = useState('Flasche');
       const [newPantryCategory, setNewPantryCategory] = useState('pantry');
-      const [newPantryExpiry, setNewPantryExpiry] = useState(5);
+      const [newPantryExpiryDate, setNewPantryExpiryDate] = useState(() => getFutureDateStr(5));
+
+      // Modal zum nachträglichen Ändern des Haltbarkeitsdatums (MHD)
+      const [editingExpiryItem, setEditingExpiryItem] = useState(null);
+      const [editingExpiryDateVal, setEditingExpiryDateVal] = useState('');
 
       const [showNewRecipeModal, setShowNewRecipeModal] = useState(false);
       const [newRecipeTitle, setNewRecipeTitle] = useState('');
@@ -454,8 +490,19 @@
       const [voiceOverlay, setVoiceOverlay] = useState(false);
       const [voiceText, setVoiceText] = useState('');
       const [isListening, setIsListening] = useState(false);
+      const [isProcessingVoice, setIsProcessingVoice] = useState(false);
       const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
       const [newShopItemName, setNewShopItemName] = useState('');
+      const recognitionRef = useRef(null);
+
+      // Alle bald ablaufenden Produkte (<= 2 Tage) für Warn-Banner & Priorisierung ermitteln
+      const urgentExpiringItems = useMemo(() => {
+        return pantry
+          .filter(p => p.status !== 'empty' && (p.amount === undefined || p.amount > 0))
+          .map(p => ({ ...p, daysLeft: getDaysUntilExpiry(p) }))
+          .filter(p => p.daysLeft !== undefined && p.daysLeft <= 2)
+          .sort((a, b) => a.daysLeft - b.daysLeft);
+      }, [pantry]);
 
       const updatePantryAmount = (itemId, newAmountVal) => {
         const cleanAmount = Math.max(0, Number(newAmountVal));
@@ -489,10 +536,21 @@
         if (mpToDelete) showToast(`"${mpToDelete.name}" gelöscht`);
       };
 
-      const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryDays = undefined) => {
+      const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined) => {
         const cleanName = name.trim();
         if (!cleanName) return;
         const lowerClean = cleanName.toLowerCase();
+        const targetCat = category || (pantrySubTab === 'mealprep' ? 'pantry' : pantrySubTab);
+
+        // Berechne sauberes YYYY-MM-DD Ablaufdatum (falls angegeben oder falls Kühlschrank)
+        let resolvedExpiryDate = undefined;
+        if (typeof expiryInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expiryInput)) {
+          resolvedExpiryDate = expiryInput;
+        } else if (typeof expiryInput === 'number' && !isNaN(expiryInput)) {
+          resolvedExpiryDate = getFutureDateStr(expiryInput);
+        } else if (targetCat === 'fridge') {
+          resolvedExpiryDate = getFutureDateStr(5);
+        }
 
         const existingIndex = pantry.findIndex(p => {
           const pLower = p.name.toLowerCase();
@@ -505,11 +563,15 @@
             if (idx !== existingIndex) return item;
             if (item.category === 'spices') return { ...item, status: 'in_stock' };
             const currentAmt = item.amount !== undefined ? Number(item.amount) : 0;
-            return { ...item, amount: currentAmt + Number(amountToAdd), status: 'in_stock' };
+            return {
+              ...item,
+              amount: currentAmt + Number(amountToAdd),
+              status: 'in_stock',
+              ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
+            };
           }));
           showToast(`"${matchedItem.name}" aufgestockt (+${amountToAdd} ${matchedItem.unitType || unit})!`);
         } else {
-          const targetCat = category || (pantrySubTab === 'mealprep' ? 'pantry' : pantrySubTab);
           const newItem = {
             id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
             name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
@@ -518,7 +580,7 @@
             amount: targetCat === 'spices' ? undefined : Number(amountToAdd),
             unitType: targetCat === 'spices' ? undefined : unit,
             lowThreshold: unit === 'g' || unit === 'ml' ? 150 : 1,
-            ...(targetCat === 'fridge' ? { expiryDays: Number(expiryDays) || 5 } : {}),
+            ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate } : {}),
             ...(lowerClean.includes('tagliatelle') || lowerClean.includes('rigatoni') || lowerClean.includes('spaghetti') || lowerClean.includes('penne') || lowerClean.includes('pasta') ? { group: 'Pasta' } : {})
           };
           setPantry(prev => [newItem, ...prev]);
@@ -531,6 +593,7 @@
         const fromFreezerMeat = [];
         const urgentFridgeItems = [];
         const notes = [];
+        let minExpiryDays = 999;
 
         (recipe.ingredients || []).forEach((ing) => {
           if (ing.isFromMealPrep) {
@@ -557,13 +620,15 @@
             if (found.category === 'freezer_items' && found.subType === 'meat') {
               fromFreezerMeat.push(`${found.name} (${found.amount} ${found.unitType})`);
             }
-            if (found.category === 'fridge' && found.expiryDays <= 2) {
-              urgentFridgeItems.push(found.name);
+            const dLeft = getDaysUntilExpiry(found);
+            if (dLeft !== undefined && dLeft <= 2) {
+              urgentFridgeItems.push({ name: found.name, daysLeft: dLeft });
+              if (dLeft < minExpiryDays) minExpiryDays = dLeft;
             }
           }
         });
 
-        return { missing, fromFreezerMeat, urgentFridgeItems, noteText: notes.join(' · ') };
+        return { missing, fromFreezerMeat, urgentFridgeItems, minExpiryDays, noteText: notes.join(' · ') };
       };
 
       const filteredSuggestions = useMemo(() => {
@@ -581,7 +646,14 @@
             return true;
           })
           .sort((a, b) => {
-            if (a.urgentFridgeItems.length !== b.urgentFridgeItems.length) return b.urgentFridgeItems.length - a.urgentFridgeItems.length;
+            // 1. Höchste Priorität: Rezepte, die bald ablaufende Kühlschrank-Zutaten (z.B. Hackfleisch) retten!
+            if (a.urgentFridgeItems.length !== b.urgentFridgeItems.length) {
+              return b.urgentFridgeItems.length - a.urgentFridgeItems.length;
+            }
+            if (a.minExpiryDays !== b.minExpiryDays) {
+              return a.minExpiryDays - b.minExpiryDays;
+            }
+            // 2. Danach: Was am längsten nicht gekocht wurde
             return (b.lastCookedDaysAgo || 0) - (a.lastCookedDaysAgo || 0);
           });
       }, [recipes, pantry, mealPrep, filterEffort, filterCalories, filterShopping, filterMode]);
@@ -629,7 +701,8 @@
 
       const handleAddPantryItem = () => {
         if (!newPantryName.trim()) return;
-        addOrUpdatePantryItem(newPantryName, Number(newPantryAmount) || 1, newPantryUnitType, newPantryCategory, newPantryExpiry);
+        const expToSave = newPantryCategory === 'fridge' ? newPantryExpiryDate : undefined;
+        addOrUpdatePantryItem(newPantryName, Number(newPantryAmount) || 1, newPantryUnitType, newPantryCategory, expToSave);
         setNewPantryName('');
         setShowNewPantryItemModal(false);
       };
@@ -680,7 +753,6 @@
         }
       };
 
-      // OFFIZIELLER BRING! MULTI-ARTIKEL-IMPORT (via Firebase JSON Rezept-Schnittstelle)
       const triggerOfficialBringImport = async () => {
         if (!firebaseUrl) {
           showToast('Bitte Firebase-URL in den Einstellungen prüfen.');
@@ -693,22 +765,23 @@
         window.open(officialDeepLink, '_blank');
       };
 
-      // FOTO-SCAN MIT AUTOMATISCHER MODELL-ERMITTLUNG (sortiert nach neuester Version!)
+      // FOTO-SCAN MIT AUTOMATISCHER MHD-ERKENNUNG (falls auf Packung sichtbar)
       const handleFileSelected = async (e, scanType = 'pantry') => {
         const file = e.target.files[0];
         if (!file) return;
         e.target.value = '';
 
         const activeKey = (geminiKey || DEFAULT_GEMINI_KEY).trim();
+        const todayStr = new Date().toISOString().split('T')[0];
 
         try {
           setIsAnalyzingPhoto(true);
-          showToast('Foto wird verkleinert & aktuelles Gemini-Modell wird gesucht...');
+          showToast('Foto wird von Gemini analysiert...');
           const base64Data = await compressImageToBase64(file, 1024, 0.75);
 
           const prompt = scanType === 'recipe'
             ? `Analysiere diese abfotografierte Kochbuchseite und antworte NUR mit reinem JSON: {"title": "Name des Gerichts", "prepTime": 30, "kcalPer100g": 180, "ingredients": [{"name": "Zutat", "amount": "Menge"}], "steps": ["Schritt 1", "Schritt 2"]}`
-            : `Erkenne das fotografierte Lebensmittel oder den Kassenbon auf dem Bild. Antworte NUR mit reinem JSON: {"items": [{"name": "Genauer Produktname (z.B. Mutti Passata)", "amount": 1, "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDays": 5}]}`;
+            : `Heute ist ${todayStr}. Erkenne das fotografierte Lebensmittel oder den Kassenbon. Falls ein Haltbarkeitsdatum (MHD / zu verbrauchen bis) auf der Packung lesbar ist, gib es als YYYY-MM-DD in "expiryDate" an (sonst bei frischen Kühlschrank-Produkten wie Hackfleisch/Milch geschätztes Datum in 2-5 Tagen). Antworte NUR mit reinem JSON: {"items": [{"name": "Genauer Produktname (z.B. Mutti Passata)", "amount": 1, "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDate": "YYYY-MM-DD"}]}`;
 
           const { text: rawText, usedModel } = await callGeminiWithAutoModel(activeKey, prompt, base64Data);
           setDetectedModelInfo(usedModel);
@@ -730,10 +803,10 @@
             setRecipes(prev => [newRec, ...prev]);
             setSelectedRecipeId(newRec.id);
             setActiveTab('recipes');
-            showToast(`Rezept "${newRec.title}" über ${usedModel} gescannt!`);
+            showToast(`Rezept "${newRec.title}" eingescannt!`);
           } else if (parsed.items && parsed.items.length > 0) {
             parsed.items.forEach(it => {
-              addOrUpdatePantryItem(it.name, it.amount || 1, it.unitType || 'Stück', it.category || 'pantry', it.expiryDays);
+              addOrUpdatePantryItem(it.name, it.amount || 1, it.unitType || 'Stück', it.category || 'pantry', it.expiryDate);
             });
           }
         } catch (err) {
@@ -744,7 +817,6 @@
         }
       };
 
-      // Test-Button in den Einstellungen für die Modell-Erkennung
       const testAvailableModels = async () => {
         try {
           showToast('Frage verfügbare Modelle bei Google ab...');
@@ -757,7 +829,7 @@
         }
       };
 
-      // SPRACHERKENNUNG (wird direkt im Klick-Handler gestartet, damit Android/Chrome sie nicht blockiert!)
+      // VERBESSERTE SPRACHERKENNUNG (Continuous + Gemini KI Auswertung im Hintergrund!)
       const startListening = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -765,8 +837,13 @@
           return;
         }
         try {
+          if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch (e) {}
+          }
           const recognition = new SpeechRecognition();
+          recognitionRef.current = recognition;
           recognition.lang = 'de-DE';
+          recognition.continuous = true; // Bricht bei kurzen Sprechpausen nicht mehr ab!
           recognition.interimResults = true;
           recognition.maxAlternatives = 1;
 
@@ -774,9 +851,9 @@
           recognition.onresult = (event) => {
             let transcript = '';
             for (let i = 0; i < event.results.length; i++) {
-              transcript += event.results[i][0].transcript;
+              transcript += event.results[i][0].transcript + ' ';
             }
-            setVoiceText(transcript);
+            setVoiceText(transcript.trim());
           };
           recognition.onend = () => setIsListening(false);
           recognition.onerror = () => setIsListening(false);
@@ -786,72 +863,102 @@
         }
       };
 
+      const stopListening = () => {
+        if (recognitionRef.current) {
+          try { recognitionRef.current.stop(); } catch (e) {}
+        }
+        setIsListening(false);
+      };
+
       const openVoiceAssistantAndStart = () => {
         setVoiceText('');
         setVoiceOverlay(true);
         startListening();
       };
 
-      const executeVoiceCommand = (rawCmdText) => {
+      // GEMINI KI SPRACH-INTERPRETER: Versteht natürliche Sätze, Mengen, Lagerorte und Haltbarkeitsdaten!
+      const executeVoiceCommand = async (rawCmdText) => {
         if (!rawCmdText || !rawCmdText.trim()) return;
-        const normalizedText = replaceGermanNumberWords(rawCmdText.trim());
-        const text = normalizedText.toLowerCase();
+        stopListening();
 
-        if (text.includes('haben wir') || text.includes('ist noch') || text.includes('gibt es')) {
-          const queryItem = pantry.find(p => {
-            const pWords = p.name.toLowerCase().split(/[\s()-]+/).filter(w => w.length > 2);
-            return pWords.some(w => text.includes(w));
-          });
-          if (queryItem) {
-            showToast(`${queryItem.name}: ${queryItem.amount !== undefined ? queryItem.amount + ' ' + queryItem.unitType : 'Auf Lager'}`);
-          } else {
-            showToast('Nicht im Bestand gefunden.');
+        const activeKey = (geminiKey || DEFAULT_GEMINI_KEY).trim();
+        const todayStr = new Date().toISOString().split('T')[0];
+        const existingNames = pantry.map(p => `${p.name} (${p.amount !== undefined ? p.amount + ' ' + p.unitType : 'Gewürz'}, ${p.category})`).join(', ');
+
+        try {
+          setIsProcessingVoice(true);
+          const voicePrompt = `Du bist der smarte Küchen-Assistent einer Vorrats-App.
+Heute ist ${todayStr}.
+Aktuell im Bestand vorhandene Artikel: [${existingNames}].
+Der Nutzer hat folgenden Sprachbefehl eingesprochen: "${rawCmdText.trim()}"
+
+Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSON in genau diesem Format:
+{
+  "actions": [
+    {
+      "type": "add_or_increment" | "set_exact" | "delete" | "mealprep_add" | "query",
+      "name": "Sauberer Produktname (WICHTIG: Wenn ein ähnlicher Artikel schon im Bestand existiert, nutze EXAKT dessen Namen aus der Bestandsliste!)",
+      "amount": 1,
+      "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube|Gläser",
+      "category": "pantry|fridge|freezer_items|sauces|spices",
+      "expiryDate": "YYYY-MM-DD (nur falls Kühlschrank/Frischware oder falls ein Haltbarkeitsdatum/Tage genannt wurde, z.B. 'läuft morgen ab' -> Datum von morgen berechnen, sonst null)",
+      "blocks500": 1,
+      "blocks250": 0,
+      "answerText": "Antwort-Text falls der Nutzer eine Frage gestellt hat (z.B. 'Haben wir noch Piment?')"
+    }
+  ]
+}
+Wichtige Regeln:
+- Entferne alle Befehlswörter ("füge hinzu", "packe in den Schrank", "bitte") aus dem Produktnamen!
+- "füge 2 Flaschen Mutti Passata hinzu" -> type: "add_or_increment", name: "Mutti Passata", amount: 2, unitType: "Flasche", category: "pantry"
+- "500g frisches Hackfleisch in den Kühlschrank, noch 2 Tage haltbar" -> type: "add_or_increment", name: "Rinderhackfleisch (Frisch)", amount: 500, unitType: "g", category: "fridge", expiryDate: "${getFutureDateStr(2)}"
+- "Wir haben nur noch 3 Fischstäbchen" -> type: "set_exact", name: "Fischstäbchen", amount: 3`;
+
+          const { text: aiResponse } = await callGeminiWithAutoModel(activeKey, voicePrompt);
+          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) throw new Error('Konnte Sprachbefehl nicht zuordnen');
+          const parsed = JSON.parse(jsonMatch[0]);
+
+          if (parsed.actions && Array.isArray(parsed.actions)) {
+            parsed.actions.forEach(act => {
+              if (act.type === 'query' && act.answerText) {
+                showToast(act.answerText);
+              } else if (act.type === 'delete') {
+                const found = pantry.find(p => p.name.toLowerCase().includes((act.name || '').toLowerCase()));
+                if (found) deletePantryItem(found.id);
+              } else if (act.type === 'set_exact') {
+                const found = pantry.find(p => p.name.toLowerCase().includes((act.name || '').toLowerCase()));
+                if (found) {
+                  updatePantryAmount(found.id, Number(act.amount) || 0);
+                  showToast(`${found.name} auf ${act.amount} ${found.unitType || ''} gesetzt!`);
+                } else {
+                  addOrUpdatePantryItem(act.name, Number(act.amount) || 1, act.unitType || 'Stück', act.category || 'pantry', act.expiryDate);
+                }
+              } else if (act.type === 'mealprep_add') {
+                setMealPrep(prev => [{
+                  id: 'mp_' + Date.now(), name: act.name || 'Neues Gericht',
+                  blocks500: Number(act.blocks500) || 1, blocks250: Number(act.blocks250) || 0,
+                  kcalPer100g: 170, needsFresh: [], prepTime: 20, season: 'all'
+                }, ...prev]);
+                showToast(`Im TK angelegt: ${act.name}`);
+              } else {
+                addOrUpdatePantryItem(
+                  act.name || rawCmdText,
+                  Number(act.amount) || 1,
+                  act.unitType || 'Stück',
+                  act.category || 'pantry',
+                  act.expiryDate || undefined
+                );
+              }
+            });
           }
-          setVoiceText(''); setVoiceOverlay(false);
-          return;
+          setVoiceText('');
+          setVoiceOverlay(false);
+        } catch (err) {
+          showToast(`Sprach-Fehler: ${err.message}`);
+        } finally {
+          setIsProcessingVoice(false);
         }
-
-        const numMatch = text.match(/(\d+(?:[.,]\d+)?)/);
-        const amount = numMatch ? Number(numMatch[1].replace(',', '.')) : 1;
-
-        let detectedUnit = 'Stück';
-        if (/\b(flaschen|flasche)\b/i.test(text)) detectedUnit = 'Flasche';
-        else if (/\b(dosen|dose)\b/i.test(text)) detectedUnit = 'Dosen';
-        else if (/\b(gläser|glas)\b/i.test(text)) detectedUnit = 'Gläser';
-        else if (/\b(tuben|tube)\b/i.test(text)) detectedUnit = 'Tube';
-        else if (/\b(packungen|packung|paket|pakete)\b/i.test(text)) detectedUnit = 'Packung';
-        else if (/\b(gramm|g)\b/i.test(text)) detectedUnit = 'g';
-        else if (/\b(milliliter|ml)\b/i.test(text)) detectedUnit = 'ml';
-
-        const isSettingAbsolute = /\b(noch|nur noch|auf)\b/i.test(text) && !/\b(füge|hinzu|gekauft|plus)\b/i.test(text);
-
-        let cleanProductName = normalizedText
-          .replace(/\b(füge|hinzu|bitte|zum|in|den|die|das|schrank|vorratsschrank|kühlschrank|tiefkühler|tk|vorrat|packe|lege|setze|stelle|ich|habe|wir|haben|gekauft|noch|nur|auf|flaschen|flasche|dosen|dose|gläser|glas|tuben|tube|packungen|packung|paket|pakete|stück|gramm|milliliter|ml|g)\b/gi, ' ')
-          .replace(/\d+(?:[.,]\d+)?/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        const existingItem = pantry.find(p => {
-          const pLower = p.name.toLowerCase();
-          const cLower = cleanProductName.toLowerCase();
-          return (cLower.length > 2 && (pLower.includes(cLower) || cLower.includes(pLower)));
-        });
-
-        if (existingItem && isSettingAbsolute && numMatch) {
-          updatePantryAmount(existingItem.id, amount);
-          showToast(`${existingItem.name} auf ${amount} ${existingItem.unitType} gesetzt!`);
-        } else {
-          let targetCategory = 'pantry';
-          if (/kühlschrank|frisch|milch|sahne|butter|käse|hack/i.test(text)) targetCategory = 'fridge';
-          else if (/tk|tiefkühl|gefrier|fischstäbchen|pommes/i.test(text)) targetCategory = 'freezer_items';
-          else if (/soja|essig|balsamico|sauce/i.test(text)) targetCategory = 'sauces';
-          else if (/gewürz|piment|nelken|muskat/i.test(text)) targetCategory = 'spices';
-
-          addOrUpdatePantryItem(existingItem ? existingItem.name : (cleanProductName || rawCmdText), amount, detectedUnit, targetCategory);
-        }
-
-        setVoiceText('');
-        setVoiceOverlay(false);
       };
 
       const copyShareLink = () => {
@@ -871,7 +978,7 @@
           {isAnalyzingPhoto && (
             <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center p-6 text-white space-y-3 text-center">
               <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm font-semibold">Aktuelles Gemini-Modell erkennt Foto...</p>
+              <p className="text-sm font-semibold">Gemini analysiert dein Foto & Haltbarkeit...</p>
             </div>
           )}
 
@@ -910,7 +1017,7 @@
             </div>
           </header>
 
-          {/* TOAST (jetzt mehrzeilig lesbar, schneidet nichts mehr ab) */}
+          {/* TOAST */}
           {toastMsg && (
             <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-start gap-2 w-[90vw] max-w-sm break-words">
               <Icon name="info" size={15} className="text-emerald-400 mt-0.5" />
@@ -923,6 +1030,37 @@
             {/* TAB HOME */}
             {activeTab === 'home' && (
               <div className="space-y-4">
+                {/* FRISCHE-ALARM FÜR BALD ABLAUFENDE KÜHLSCHRANK-PRODUKTE */}
+                {urgentExpiringItems.length > 0 && (
+                  <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-2.5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-amber-950 font-semibold text-xs">
+                        <Icon name="flame" size={16} className="text-amber-600" />
+                        <span>Frische-Alarm: Bald verbrauchen!</span>
+                      </div>
+                      <button
+                        onClick={() => { setActiveTab('decide'); setCurrentSuggestionIndex(0); }}
+                        className="text-[11px] font-semibold bg-amber-900 text-white px-2.5 py-1 rounded-lg"
+                      >
+                        Passende Rezepte →
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {urgentExpiringItems.map(it => {
+                        const badge = formatExpiryBadge(it.daysLeft, it.expiryDate);
+                        return (
+                          <div key={it.id} className="flex items-center justify-between text-xs bg-white/80 px-2.5 py-1.5 rounded-lg border border-amber-200">
+                            <span className="font-medium text-stone-900">{it.name} ({it.amount} {it.unitType})</span>
+                            <span className={`text-[11px] font-semibold ${badge?.expired ? 'text-red-700' : 'text-amber-800'}`}>
+                              {badge?.text}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-stone-900 text-white rounded-2xl p-5 space-y-3 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium uppercase tracking-wider text-stone-400">Was kochen wir heute?</span>
@@ -930,7 +1068,7 @@
                   </div>
                   <h2 className="text-xl font-semibold">Ab in die Küche!</h2>
                   <p className="text-xs text-stone-300 leading-relaxed">
-                    Wähle Rezepte für die nächsten Tage im Voraus aus – fehlende Zutaten landen direkt auf eurer Einkaufsliste.
+                    Rezepte mit bald ablaufenden Zutaten (wie frischem Hackfleisch) werden im Würfler automatisch zuerst vorgeschlagen.
                   </p>
                   <button
                     onClick={() => setActiveTab('decide')}
@@ -1057,6 +1195,16 @@
 
                 {activeSuggestion ? (
                   <div className="bg-white border border-stone-200 rounded-xl p-5 space-y-4">
+                    {/* PRIORISIERUNGS-BANNER WENN REZEPT BALD ABLAUFENDE ZUTAT VERBRAUCHT */}
+                    {activeSuggestion.urgentFridgeItems && activeSuggestion.urgentFridgeItems.length > 0 && (
+                      <div className="bg-amber-50 border border-amber-300 rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-xs text-amber-950 font-medium">
+                        <Icon name="flame" size={16} className="text-amber-600" />
+                        <span>
+                          <strong>Priorisiert (MHD):</strong> Verbraucht <em>{activeSuggestion.urgentFridgeItems.map(u => `${u.name} (${u.daysLeft <= 0 ? 'heute!' : `noch ${u.daysLeft} T.`})`).join(', ')}</em>
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
@@ -1077,10 +1225,18 @@
                         {(activeSuggestion.ingredients || []).map((ing, i) => {
                           const isMissing = (activeSuggestion.missing || []).includes(ing.name);
                           const matchedPantry = pantry.find(p => p.name.toLowerCase().includes(ing.name.toLowerCase()) || ing.name.toLowerCase().includes(p.name.toLowerCase()));
+                          const matchedDays = getDaysUntilExpiry(matchedPantry);
                           return (
                             <div key={i} className="px-3 py-2.5 flex items-start justify-between gap-3 text-xs bg-white">
                               <div className="flex flex-col text-left">
-                                <span className="font-medium text-stone-800">{ing.name}</span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-medium text-stone-800">{ing.name}</span>
+                                  {matchedDays !== undefined && matchedDays <= 2 && (
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">
+                                      🔥 {matchedDays <= 0 ? 'Heute fällig' : `Noch ${matchedDays} T.`}
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="text-[11px] text-stone-500 mt-0.5">Benötigt: {ing.amount}</span>
                                 {matchedPantry && matchedPantry.amount !== undefined && (
                                   <span className="text-[11px] text-stone-400 mt-0.5">Auf Lager: {matchedPantry.amount} {matchedPantry.unitType}</span>
@@ -1208,65 +1364,102 @@
                     <div className="flex justify-between items-center">
                       <div>
                         <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block">Bestandsliste</span>
-                        <span className="text-[11px] text-stone-500">Live in Firebase gespeichert</span>
+                        <span className="text-[11px] text-stone-500">
+                          {pantrySubTab === 'fridge' ? 'Tippe auf das MHD-Datum zum Anpassen' : 'Live in Firebase gespeichert'}
+                        </span>
                       </div>
-                      <button onClick={() => { setNewPantryCategory(pantrySubTab); setShowNewPantryItemModal(true); }} className="flex items-center gap-1 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium">
+                      <button
+                        onClick={() => {
+                          setNewPantryCategory(pantrySubTab);
+                          setNewPantryExpiryDate(getFutureDateStr(pantrySubTab === 'fridge' ? 3 : 14));
+                          setShowNewPantryItemModal(true);
+                        }}
+                        className="flex items-center gap-1 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium"
+                      >
                         <Icon name="plus" size={13} />
                         <span>Neu</span>
                       </button>
                     </div>
 
-                    {pantry.filter(p => p.category === pantrySubTab).map(item => (
-                      <div key={item.id} className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-2.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="text-sm font-semibold text-stone-900">{item.name}</span>
-                            {item.expiryDays !== undefined && (
-                              <span className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded ${item.expiryDays <= 2 ? 'bg-amber-100 text-amber-900' : 'bg-emerald-50 text-emerald-800'}`}>
-                                Noch {item.expiryDays} Tage
-                              </span>
+                    {pantry
+                      .filter(p => p.category === pantrySubTab)
+                      .sort((a, b) => {
+                        const da = getDaysUntilExpiry(a) ?? 999;
+                        const db = getDaysUntilExpiry(b) ?? 999;
+                        return da - db;
+                      })
+                      .map(item => {
+                        const daysLeft = getDaysUntilExpiry(item);
+                        const badge = formatExpiryBadge(daysLeft, item.expiryDate);
+                        return (
+                          <div key={item.id} className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                <span className="text-sm font-semibold text-stone-900 block">{item.name}</span>
+                                {/* ANTIPPBARES HALTBARKEITSDATUM (MHD) */}
+                                {(badge || item.category === 'fridge') && (
+                                  <button
+                                    onClick={() => {
+                                      setEditingExpiryItem(item);
+                                      setEditingExpiryDateVal(item.expiryDate || getFutureDateStr(daysLeft ?? 3));
+                                    }}
+                                    className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border transition ${
+                                      badge?.expired
+                                        ? 'bg-red-100 text-red-900 border-red-300'
+                                        : badge?.urgent
+                                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    }`}
+                                    title="Haltbarkeitsdatum ändern"
+                                  >
+                                    <Icon name="calendar" size={11} />
+                                    <span>{badge ? badge.text : 'MHD festlegen'}</span>
+                                    <Icon name="edit-2" size={9} className="opacity-60" />
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                {['in_stock', 'low', 'empty'].map(st => (
+                                  <button
+                                    key={st}
+                                    onClick={() => {
+                                      setPantry(prev => prev.map(p => p.id === item.id ? { ...p, status: st, ...(st === 'empty' && p.amount !== undefined ? { amount: 0 } : {}) } : p));
+                                      if (st === 'empty') {
+                                        setShoppingList(prev => prev.some(s => s.name.toLowerCase() === item.name.toLowerCase()) ? prev : [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }]);
+                                        showToast(`${item.name} → Einkaufsliste`);
+                                      }
+                                    }}
+                                    className={`px-2 py-1 rounded text-[10px] font-medium border ${
+                                      item.status === st
+                                        ? st === 'in_stock' ? 'bg-stone-900 text-white border-stone-900' : st === 'low' ? 'bg-amber-600 text-white border-amber-600' : 'bg-red-600 text-white border-red-600'
+                                        : 'bg-stone-50 text-stone-400 border-stone-200'
+                                    }`}
+                                  >
+                                    {st === 'in_stock' ? 'Da' : st === 'low' ? 'Knapp' : 'Leer'}
+                                  </button>
+                                ))}
+                                <button onClick={() => deletePantryItem(item.id)} className="text-stone-400 hover:text-red-600 p-1 ml-1">
+                                  <Icon name="trash-2" size={15} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {item.amount !== undefined && (
+                              <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                                <span className="text-xs text-stone-500">Bestand:</span>
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => updatePantryAmount(item.id, item.amount - (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))} className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center font-bold text-xs">-</button>
+                                  <button onClick={() => { setEditingAmountItem(item); setEditingAmountValue(String(item.amount)); }} className="px-2.5 py-1 rounded bg-white border border-stone-300 text-xs font-semibold text-stone-900 min-w-[68px] text-center">
+                                    {item.amount} {item.unitType}
+                                  </button>
+                                  <button onClick={() => updatePantryAmount(item.id, item.amount + (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))} className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center font-bold text-xs">+</button>
+                                </div>
+                              </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {['in_stock', 'low', 'empty'].map(st => (
-                              <button
-                                key={st}
-                                onClick={() => {
-                                  setPantry(prev => prev.map(p => p.id === item.id ? { ...p, status: st, ...(st === 'empty' && p.amount !== undefined ? { amount: 0 } : {}) } : p));
-                                  if (st === 'empty') {
-                                    setShoppingList(prev => prev.some(s => s.name.toLowerCase() === item.name.toLowerCase()) ? prev : [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }]);
-                                    showToast(`${item.name} → Einkaufsliste`);
-                                  }
-                                }}
-                                className={`px-2 py-1 rounded text-[10px] font-medium border ${
-                                  item.status === st
-                                    ? st === 'in_stock' ? 'bg-stone-900 text-white border-stone-900' : st === 'low' ? 'bg-amber-600 text-white border-amber-600' : 'bg-red-600 text-white border-red-600'
-                                    : 'bg-stone-50 text-stone-400 border-stone-200'
-                                }`}
-                              >
-                                {st === 'in_stock' ? 'Da' : st === 'low' ? 'Knapp' : 'Leer'}
-                              </button>
-                            ))}
-                            <button onClick={() => deletePantryItem(item.id)} className="text-stone-400 hover:text-red-600 p-1 ml-1">
-                              <Icon name="trash-2" size={15} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {item.amount !== undefined && (
-                          <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
-                            <span className="text-xs text-stone-500">Bestand:</span>
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => updatePantryAmount(item.id, item.amount - (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))} className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center font-bold text-xs">-</button>
-                              <button onClick={() => { setEditingAmountItem(item); setEditingAmountValue(String(item.amount)); }} className="px-2.5 py-1 rounded bg-white border border-stone-300 text-xs font-semibold text-stone-900 min-w-[68px] text-center">
-                                {item.amount} {item.unitType}
-                              </button>
-                              <button onClick={() => updatePantryAmount(item.id, item.amount + (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))} className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center font-bold text-xs">+</button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                        );
+                      })}
                   </div>
                 )}
               </div>
@@ -1406,7 +1599,7 @@
               </div>
             )}
 
-            {/* TAB: EINKAUF & BRING-ÜBERGABE */}
+            {/* TAB: EINKAUF */}
             {activeTab === 'shopping' && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -1492,6 +1685,59 @@
             )}
           </main>
 
+          {/* MODAL: HALTBARKEITSDATUM (MHD) BEARBEITEN */}
+          {editingExpiryItem && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-stone-900">MHD: {editingExpiryItem.name}</h3>
+                  <button onClick={() => setEditingExpiryItem(null)} className="text-stone-400"><Icon name="x" size={18} /></button>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-stone-600 block">Schnellwahl:</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { label: 'Morgen', d: 1 },
+                      { label: '+2 Tage', d: 2 },
+                      { label: '+3 Tage', d: 3 },
+                      { label: '+7 Tage', d: 7 }
+                    ].map(btn => (
+                      <button
+                        key={btn.d}
+                        onClick={() => setEditingExpiryDateVal(getFutureDateStr(btn.d))}
+                        className="py-1.5 px-1 bg-stone-100 hover:bg-stone-200 rounded-lg text-[11px] font-medium text-stone-800"
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-stone-600 block mb-1">Oder genaues Datum wählen:</label>
+                  <input
+                    type="date"
+                    value={editingExpiryDateVal}
+                    onChange={e => setEditingExpiryDateVal(e.target.value)}
+                    className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm font-semibold"
+                  />
+                </div>
+
+                <button
+                  onClick={() => {
+                    setPantry(prev => prev.map(p => p.id === editingExpiryItem.id ? { ...p, expiryDate: editingExpiryDateVal, expiryDays: undefined } : p));
+                    setEditingExpiryItem(null);
+                    showToast('Haltbarkeitsdatum gespeichert!');
+                  }}
+                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
+                >
+                  Speichern
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* MODAL: BRING! EINZEL-KACHEL ASSISTENT */}
           {showBringModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1554,7 +1800,6 @@
                   </button>
                 </div>
 
-                {/* LIVE-STATUS DER FIREBASE-DATENBANK */}
                 <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-stone-800">Firebase Cloud-Datenbank</span>
@@ -1600,7 +1845,7 @@
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-stone-800 block mb-1">2. Gemini KI Foto-Scanner</label>
+                    <label className="text-xs font-semibold text-stone-800 block mb-1">2. Gemini KI (Foto & Sprache)</label>
                     {geminiKey && !isEditingKey ? (
                       <div className="space-y-2">
                         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
@@ -1779,7 +2024,7 @@
             </div>
           )}
 
-          {/* MODAL: NEUER VORRAT */}
+          {/* MODAL: NEUER VORRAT (INKLUSIVE MHD-AUSWAHL BEI FRISCHEPRODUKTEN) */}
           {showNewPantryItemModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
@@ -1788,18 +2033,28 @@
                   <button onClick={() => setShowNewPantryItemModal(false)} className="text-stone-400"><Icon name="x" size={18} /></button>
                 </div>
                 <div className="space-y-3">
-                  <select value={newPantryCategory} onChange={e => setNewPantryCategory(e.target.value)} className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white">
+                  <select
+                    value={newPantryCategory}
+                    onChange={e => {
+                      const cat = e.target.value;
+                      setNewPantryCategory(cat);
+                      if (cat === 'fridge') setNewPantryExpiryDate(getFutureDateStr(3));
+                    }}
+                    className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
+                  >
                     <option value="pantry">Vorratsschrank</option>
-                    <option value="fridge">Kühlschrank (Frisch)</option>
+                    <option value="fridge">Kühlschrank (Frisch mit MHD)</option>
                     <option value="freezer_items">Tiefkühler (TK-Vorrat)</option>
                     <option value="sauces">Öle & Essige</option>
                     <option value="spices">Gewürzschrank</option>
                   </select>
-                  <input type="text" placeholder="Bezeichnung (z.B. Mutti Passata)" value={newPantryName} onChange={e => setNewPantryName(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs" />
+
+                  <input type="text" placeholder="Bezeichnung (z.B. Rinderhackfleisch, Passata)" value={newPantryName} onChange={e => setNewPantryName(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs" />
+
                   {newPantryCategory !== 'spices' && (
                     <div className="grid grid-cols-2 gap-2">
                       <input type="number" min="0" value={newPantryAmount} onChange={e => setNewPantryAmount(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold" />
-                      <select value={newPantryUnitType} onChange={e => { const u = e.target.value; setNewPantryUnitType(u); setNewPantryAmount(u === 'g' || u === 'ml' ? 250 : 1); }} className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white">
+                      <select value={newPantryUnitType} onChange={e => { const u = e.target.value; setNewPantryUnitType(u); setNewPantryAmount(u === 'g' || u === 'ml' ? 500 : 1); }} className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white">
                         <option value="Flasche">Flasche</option>
                         <option value="Dosen">Dose / Glas</option>
                         <option value="Stück">Stück</option>
@@ -1808,6 +2063,35 @@
                         <option value="Tube">Tube</option>
                         <option value="Packung">Packung</option>
                       </select>
+                    </div>
+                  )}
+
+                  {newPantryCategory === 'fridge' && (
+                    <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 space-y-2">
+                      <label className="text-[11px] font-semibold text-amber-950 block">Haltbar bis (MHD):</label>
+                      <div className="grid grid-cols-4 gap-1">
+                        {[
+                          { label: 'Morgen', d: 1 },
+                          { label: '+2 Tage', d: 2 },
+                          { label: '+3 Tage', d: 3 },
+                          { label: '+7 Tage', d: 7 }
+                        ].map(b => (
+                          <button
+                            key={b.d}
+                            type="button"
+                            onClick={() => setNewPantryExpiryDate(getFutureDateStr(b.d))}
+                            className="py-1 bg-white border border-amber-300 rounded text-[10px] font-semibold text-amber-900 hover:bg-amber-100"
+                          >
+                            {b.label}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="date"
+                        value={newPantryExpiryDate}
+                        onChange={e => setNewPantryExpiryDate(e.target.value)}
+                        className="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold"
+                      />
                     </div>
                   )}
                 </div>
@@ -1854,35 +2138,53 @@
             </div>
           )}
 
-          {/* MODAL: SPRACHBEFEHL */}
+          {/* MODAL: GEMINI KI SPRACH-ASSISTENT */}
           {voiceOverlay && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-stone-900">Sprach-Assistent</h3>
-                  <button onClick={() => setVoiceOverlay(false)} className="text-stone-400"><Icon name="x" size={18} /></button>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-stone-900">Gemini Sprach-Assistent</h3>
+                    <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">KI aktiv</span>
+                  </div>
+                  <button onClick={() => { stopListening(); setVoiceOverlay(false); }} className="text-stone-400"><Icon name="x" size={18} /></button>
                 </div>
-                <p className="text-xs text-stone-500">
-                  Beispiele: <em>„Füge zwei Flaschen Mutti Passata hinzu“</em> oder <em>„Fischstäbchen noch 4“</em>
+
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  Sprich ganz natürlich, z. B.: <em>„Ich hab 500g frisches Hackfleisch für den Kühlschrank, läuft übermorgen ab, und zwei Flaschen Mutti Passata“</em>
                 </p>
+
                 <button
-                  onClick={startListening}
+                  onClick={isListening ? stopListening : startListening}
                   className={`w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
                     isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-100 text-stone-900'
                   }`}
                 >
                   <Icon name="mic" size={16} />
-                  <span>{isListening ? 'Ich höre zu... (jetzt sprechen)' : 'Erneut zuhören'}</span>
+                  <span>{isListening ? 'Höre zu... (Tippen zum Pausieren)' : 'Mikrofon fortsetzen'}</span>
                 </button>
-                <input
-                  type="text"
-                  placeholder="Erkannter Text..."
+
+                <textarea
+                  rows={3}
+                  placeholder="Erkannter Text erscheint hier..."
                   value={voiceText}
                   onChange={e => setVoiceText(e.target.value)}
-                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
+                  className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs"
                 />
-                <button onClick={() => executeVoiceCommand(voiceText)} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">
-                  Befehl ausführen
+
+                <button
+                  disabled={isProcessingVoice || !voiceText.trim()}
+                  onClick={() => executeVoiceCommand(voiceText)}
+                  className="w-full py-2.5 bg-stone-900 disabled:bg-stone-400 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2"
+                >
+                  {isProcessingVoice ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Gemini verarbeitet Befehl...</span>
+                    </>
+                  ) : (
+                    <span>Mit Gemini ausführen</span>
+                  )}
                 </button>
               </div>
             </div>
