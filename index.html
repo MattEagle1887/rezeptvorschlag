@@ -97,8 +97,7 @@
         title: 'Pasta al Limone',
         effort: 'quick',
         season: 'summer',
-        calories: 'light',
-        kcalPer100g: 170,
+        kcalPer100g: 140, // Unter 150 kcal
         isFamilyRecipe: true,
         isKidFriendly: true,
         isMealPrep: false,
@@ -123,8 +122,7 @@
         title: 'Klassisches Rindergulasch',
         effort: 'elaborate',
         season: 'winter',
-        calories: 'heavy',
-        kcalPer100g: 220,
+        kcalPer100g: 320, // Über 300 kcal
         isFamilyRecipe: true,
         isKidFriendly: false,
         isMealPrep: false,
@@ -147,8 +145,7 @@
         title: 'Ragù aus dem TK mit Tagliatelle',
         effort: 'quick',
         season: 'all',
-        calories: 'heavy',
-        kcalPer100g: 210,
+        kcalPer100g: 280, // Zwischen 150 und 300 kcal
         isFamilyRecipe: true,
         isKidFriendly: true,
         isMealPrep: true,
@@ -171,8 +168,7 @@
         title: 'Currysauce (TK) mit Hähnchen & Reis',
         effort: 'quick',
         season: 'all',
-        calories: 'normal',
-        kcalPer100g: 150,
+        kcalPer100g: 160, // Zwischen 150 und 300 kcal
         isFamilyRecipe: true,
         isKidFriendly: true,
         isMealPrep: true,
@@ -195,8 +191,7 @@
         title: 'Fischstäbchen mit Pommes & TK-Erbsen',
         effort: 'quick',
         season: 'all',
-        calories: 'normal',
-        kcalPer100g: 230,
+        kcalPer100g: 340, // Über 300 kcal
         isFamilyRecipe: false,
         isKidFriendly: true,
         isKidOnlyFastDay: true,
@@ -219,8 +214,7 @@
         title: 'Kartoffelpuffer mit Apfelmus',
         effort: 'quick',
         season: 'all',
-        calories: 'normal',
-        kcalPer100g: 180,
+        kcalPer100g: 190, // Zwischen 150 und 300 kcal
         isFamilyRecipe: false,
         isKidFriendly: true,
         isKidOnlyFastDay: true,
@@ -241,8 +235,7 @@
         title: 'Pasta mit Öl & Parmesan (Kinderspaß)',
         effort: 'quick',
         season: 'all',
-        calories: 'normal',
-        kcalPer100g: 190,
+        kcalPer100g: 240, // Zwischen 150 und 300 kcal
         isFamilyRecipe: true,
         isKidFriendly: true,
         isKidOnlyFastDay: true,
@@ -265,8 +258,7 @@
         title: 'Nudeln mit Ketchup',
         effort: 'quick',
         season: 'all',
-        calories: 'normal',
-        kcalPer100g: 160,
+        kcalPer100g: 160, // Zwischen 150 und 300 kcal
         isFamilyRecipe: false,
         isKidFriendly: true,
         isKidOnlyFastDay: true,
@@ -288,39 +280,37 @@
       const [activeTab, setActiveTab] = useState('home');
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v15');
+        const saved = localStorage.getItem('kueche_pantry_v18');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v15');
+        const saved = localStorage.getItem('kueche_mealprep_v18');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v15');
+        const saved = localStorage.getItem('kueche_recipes_v18');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v15');
+        const saved = localStorage.getItem('kueche_shopping_v18');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
-
-      // NEU: Kochplan / Wochenplan (gemerkte Rezepte für die nächsten Tage)
       const [mealPlan, setMealPlan] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealplan_v15');
+        const saved = localStorage.getItem('kueche_mealplan_v18');
         return saved ? JSON.parse(saved) : [];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry_v15', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep_v15', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes_v15', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping_v15', JSON.stringify(shoppingList)); }, [shoppingList]);
-      useEffect(() => { localStorage.setItem('kueche_mealplan_v15', JSON.stringify(mealPlan)); }, [mealPlan]);
+      useEffect(() => { localStorage.setItem('kueche_pantry_v18', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v18', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v18', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v18', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_mealplan_v18', JSON.stringify(mealPlan)); }, [mealPlan]);
 
       const [filterEffort, setFilterEffort] = useState('all');
-      const [filterCalories, setFilterCalories] = useState('all');
-      const [filterShopping, setFilterShopping] = useState('all_here');
+      const [filterCalories, setFilterCalories] = useState('all'); // 'all', 'under150', '150to300', 'over300'
+      const [filterShopping, setFilterShopping] = useState('all_here'); // 'all_here', 'shop_3', 'any_plan'
       const [filterMode, setFilterMode] = useState('normal');
       const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
 
@@ -446,13 +436,20 @@
             return { ...r, ...avail };
           })
           .filter(r => {
-            if (filterShopping === 'any_plan') return true; // Neuer Filter: Alle Rezepte für den Großeinkauf/Wochenplan
+            if (filterShopping === 'any_plan') return true; // Großeinkauf / Wochenplan (alle Rezepte)
             if (filterMode === 'kid') return r.isKidFriendly;
             if (filterMode === 'mealprep') return r.isMealPrep;
             if (filterEffort !== 'all' && r.effort !== filterEffort) return false;
-            if (filterCalories !== 'all' && r.calories !== filterCalories) return false;
+
+            // Kalorien-Filter nach festen Bereichen
+            if (filterCalories === 'under150' && (r.kcalPer100g === undefined || r.kcalPer100g >= 150)) return false;
+            if (filterCalories === '150to300' && (r.kcalPer100g === undefined || r.kcalPer100g < 150 || r.kcalPer100g > 300)) return false;
+            if (filterCalories === 'over300' && (r.kcalPer100g === undefined || r.kcalPer100g <= 300)) return false;
+
+            // Verfügbarkeits-Filter
             if (filterShopping === 'all_here' && r.missing.length > 0) return false;
-            if (filterShopping === 'shop_1_2' && r.missing.length > 2) return false;
+            if (filterShopping === 'shop_3' && r.missing.length > 3) return false;
+
             return true;
           })
           .sort((a, b) => {
@@ -497,7 +494,6 @@
             title: `${newMpName.trim()} (aus dem TK)`,
             effort: 'quick',
             season: 'all',
-            calories: 'normal',
             kcalPer100g: 170,
             isFamilyRecipe: true,
             isKidFriendly: true,
@@ -674,7 +670,6 @@
         }));
       };
 
-      // Kochplan-Logik: Rezept vormerken & fehlende Zutaten auf Einkaufsliste packen
       const addToMealPlan = (recipe) => {
         if (mealPlan.some(m => m.id === recipe.id)) {
           showToast('Rezept ist bereits im Kochplan!');
@@ -682,7 +677,6 @@
         }
         setMealPlan(prev => [...prev, recipe]);
 
-        // Fehlende Zutaten automatisch auf die Einkaufsliste setzen
         const avail = checkRecipeAvailability(recipe);
         const newShoppingItems = avail.missing.map(ingName => ({
           id: 's_' + Date.now() + '_' + Math.random(),
@@ -710,8 +704,10 @@
         showToast('Bring! App wird geöffnet (Liste: Zuhause)...');
       };
 
-      const handleGlobalPhotoScan = () => {
-        showToast('Kamera aktiv: Erkenne Vorräte...');
+      const handleFileSelected = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        showToast('Foto wird analysiert...');
         setTimeout(() => {
           const scannedItems = [
             { name: 'Dosentomaten', target: 'pantry' },
@@ -722,7 +718,7 @@
 
           const newItem = {
             id: 'p_' + Date.now(),
-            name: `${chosen.name} (Scan)`,
+            name: `${chosen.name} (Foto-Scan)`,
             category: chosen.target,
             status: 'in_stock',
             amount: 2,
@@ -731,7 +727,7 @@
           };
           setPantry(prev => [newItem, ...prev]);
           showToast(`Erkannt & sortiert: ${newItem.name} → ${chosen.target === 'pantry' ? 'Schrank' : chosen.target === 'fridge' ? 'Kühlschrank' : 'TK'}`);
-        }, 1500);
+        }, 1200);
       };
 
       const startListening = () => {
@@ -804,23 +800,32 @@
 
       return (
         <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col max-w-md mx-auto border-x border-stone-200 shadow-sm relative pb-24">
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            id="globalCameraInput"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
+
           {/* HEADER */}
           <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Wochenplan & Großeinkauf</p>
+              <p className="text-xs text-stone-500">Dashboard & Auto-Sortierung</p>
             </div>
             <div className="flex items-center gap-1.5">
               <button
-                onClick={handleGlobalPhotoScan}
-                className="p-2.5 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-lg transition"
-                title="Foto-Scan"
+                onClick={() => document.getElementById('globalCameraInput').click()}
+                className="flex items-center justify-center bg-stone-900 text-white w-9 h-9 rounded-lg hover:bg-stone-800 transition shadow-sm"
+                title="Foto / Kamera öffnen"
               >
                 <Icon name="camera" size={16} />
               </button>
               <button
                 onClick={() => setVoiceOverlay(true)}
-                className="flex items-center gap-1.5 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-stone-800 transition"
+                className="flex items-center gap-1.5 bg-stone-900 text-white px-3 h-9 rounded-lg text-xs font-medium hover:bg-stone-800 transition shadow-sm"
               >
                 <Icon name="mic" size={14} />
                 <span>Sprache</span>
@@ -873,7 +878,7 @@
 
           {/* MAIN CONTENT */}
           <main className="flex-1 px-4 pt-4">
-            {/* TAB HOME: DASHBOARD & WOCHENPLAN */}
+            {/* TAB HOME: DASHBOARD */}
             {activeTab === 'home' && (
               <div className="space-y-4">
                 <div className="bg-stone-900 text-white rounded-2xl p-5 space-y-3 shadow-sm">
@@ -896,7 +901,7 @@
                   </button>
                 </div>
 
-                {/* AKTUELLER KOCHPLAN (FÜR DIE NÄCHSTEN TAGE) */}
+                {/* KOCHPLAN */}
                 <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">Dein Kochplan ({mealPlan.length})</h3>
@@ -1023,12 +1028,12 @@
               </div>
             )}
 
-            {/* TAB: WÜRFLER & PLANER */}
+            {/* TAB: WÜRFLER */}
             {activeTab === 'decide' && (
               <div className="space-y-4">
                 <div className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Wochenplan-Filter</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Filter</span>
                     <span className="text-xs text-stone-500">{filteredSuggestions.length} Gerichte</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -1062,24 +1067,28 @@
                         <option value="quick">Schnell (&lt; 30 Min)</option>
                         <option value="elaborate">Aufwendig</option>
                       </select>
+                      
+                      {/* NEUE EXAKTE KALORIEN-BEREICHE */}
                       <select
                         value={filterCalories}
                         onChange={(e) => { setFilterCalories(e.target.value); setCurrentSuggestionIndex(0); }}
                         className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-2 text-xs text-stone-700"
                       >
-                        <option value="all">Kalorien: Alle</option>
-                        <option value="light">🟢 Leicht</option>
-                        <option value="normal">🟡 Normal</option>
-                        <option value="heavy">🔴 Deftig</option>
+                        <option value="all">kcal: Alle</option>
+                        <option value="under150">&lt; 150 kcal</option>
+                        <option value="150to300">150 - 300 kcal</option>
+                        <option value="over300">&gt; 300 kcal</option>
                       </select>
+
+                      {/* ANGEPASSTE FILTER-BEZEICHNUNGEN */}
                       <select
                         value={filterShopping}
                         onChange={(e) => { setFilterShopping(e.target.value); setCurrentSuggestionIndex(0); }}
                         className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-2 text-xs text-stone-700"
                       >
-                        <option value="all_here">Nur was da</option>
-                        <option value="shop_1_2">Max. 1-2 fehlen</option>
-                        <option value="any_plan">📅 Wochenplan / Großeinkauf</option>
+                        <option value="all_here">Hab ich da</option>
+                        <option value="shop_3">Max. 3 fehlen</option>
+                        <option value="any_plan">Großeinkauf</option>
                       </select>
                     </div>
                   )}
@@ -1128,6 +1137,7 @@
                       </div>
                     )}
 
+                    {/* ZUTATEN-CHECK (SAUBER UNTEREINANDER AUSGERICHTET) */}
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zutaten-Check</p>
                       <div className="divide-y divide-stone-100 border border-stone-100 rounded-lg overflow-hidden">
@@ -1138,16 +1148,16 @@
                             ing.name.toLowerCase().includes(p.name.toLowerCase())
                           );
                           return (
-                            <div key={i} className="px-3 py-2 flex items-center justify-between text-xs bg-white">
-                              <div>
+                            <div key={i} className="px-3 py-2.5 flex items-start justify-between text-xs bg-white">
+                              <div className="flex flex-col">
                                 <span className="font-medium text-stone-800">{ing.name}</span>
                                 {matchedPantry && matchedPantry.amount !== undefined && (
-                                  <span className="ml-1.5 text-[11px] text-stone-400">
-                                    (Auf Lager: {matchedPantry.amount} {matchedPantry.unitType})
+                                  <span className="text-[11px] text-stone-400 mt-0.5">
+                                    Auf Lager: {matchedPantry.amount} {matchedPantry.unitType}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 shrink-0 pt-0.5">
                                 <span className="text-stone-500">{ing.amount}</span>
                                 <span className={`w-2 h-2 rounded-full ${isMissing ? 'bg-red-500' : 'bg-emerald-500'}`} />
                               </div>
@@ -1157,14 +1167,14 @@
                       </div>
                     </div>
 
-                    {/* AKTIONEN: FÜR KOCHPLAN VORMERKEN ODER KOCHEN */}
+                    {/* SALBEIFARBENER WOCHENPLAN-BUTTON */}
                     <div className="space-y-2 pt-2">
                       <button
                         onClick={() => addToMealPlan(activeSuggestion)}
-                        className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border border-stone-300 transition"
+                        className="w-full py-2.5 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
                       >
                         <Icon name="calendar-plus" size={15} />
-                        <span>Für den Wochenplan vormerken (Fehlendes auf Einkaufsliste)</span>
+                        <span>Für den Wochenplan vormerken</span>
                       </button>
 
                       <div className="grid grid-cols-2 gap-2">
@@ -1192,7 +1202,7 @@
                   <div className="bg-white border border-stone-200 rounded-xl p-8 text-center space-y-2">
                     <p className="text-sm font-medium text-stone-800">Keine passenden Rezepte für diesen Filter.</p>
                     <button
-                      onClick={() => { setFilterEffort('all'); setFilterCalories('all'); setFilterShopping('shop_1_2'); setFilterMode('normal'); }}
+                      onClick={() => { setFilterEffort('all'); setFilterCalories('all'); setFilterShopping('shop_3'); setFilterMode('normal'); }}
                       className="text-xs font-medium text-stone-900 underline"
                     >
                       Filter lockern
@@ -1479,16 +1489,12 @@
                             👨‍👩‍👧 Familie
                           </span>
                         )}
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${
-                          selectedRecipe.calories === 'light' ? 'bg-emerald-100 text-emerald-900' :
-                          selectedRecipe.calories === 'heavy' ? 'bg-red-100 text-red-900' : 'bg-stone-100 text-stone-700'
-                        }`}>
-                          {selectedRecipe.calories === 'light' ? '🟢 Leicht' : selectedRecipe.calories === 'heavy' ? '🔴 Deftig / Viel' : '🟡 Normal'}
+                        <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">
+                          ~{selectedRecipe.kcalPer100g || 0} kcal / 100g
                         </span>
                       </div>
                     </div>
 
-                    {/* BEARBEITUNGS-BEREICH */}
                     {isEditingRecipe && (
                       <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-3">
                         <p className="text-xs font-semibold text-stone-800">Kategorien & Kalorien einstellen</p>
@@ -1666,15 +1672,12 @@
                                 👶 Kinder
                               </span>
                             )}
-                            <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
-                              r.calories === 'light' ? 'bg-emerald-100 text-emerald-900' :
-                              r.calories === 'heavy' ? 'bg-red-100 text-red-900' : 'bg-stone-100 text-stone-700'
-                            }`}>
-                              {r.calories === 'light' ? '🟢 Leicht' : r.calories === 'heavy' ? '🔴 Deftig' : '🟡 Normal'}
+                            <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-amber-50 text-amber-900 border border-amber-200">
+                              ~{r.kcalPer100g || 0} kcal/100g
                             </span>
                           </div>
                           <p className="text-xs text-stone-500 mt-0.5">
-                            {r.kcalPer100g !== undefined ? `~${r.kcalPer100g} kcal/100g · ` : ''}Vor {r.lastCookedDaysAgo} Tagen gekocht
+                            Vor {r.lastCookedDaysAgo} Tagen gekocht
                           </p>
                         </div>
                         <Icon name="chevron-right" size={18} className="text-stone-400" />
@@ -1846,7 +1849,10 @@
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={handlePhotoScan}
+                    onClick={() => {
+                      setShowNewPantryItemModal(false);
+                      document.getElementById('globalCameraInput').click();
+                    }}
                     className="py-2.5 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-semibold flex items-center justify-center gap-1.5 border border-stone-200 transition"
                   >
                     <Icon name="camera" size={15} />
