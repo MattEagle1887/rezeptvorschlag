@@ -146,7 +146,7 @@
         prepTime: 150,
         ingredients: [
           { name: 'Rindergulasch', amount: 'Beim Kochen abwiegen', essential: true },
-          { name: 'Kalbsfond', amount: '1 Glas (oder Rinderfond als Joker)', essential: true, isFond: true },
+          { name: 'Kalbsfond', amount: '1 Glas (or Rinderfond als Joker)', essential: true, isFond: true },
           { name: 'Zwiebeln & Knoblauch', amount: 'Große Menge', essential: true },
           { name: 'Tomatenmark', amount: 'Nach Gefühl', essential: true },
           { name: 'Wacholderbeeren', amount: '3-4 Stück', essential: false }
@@ -373,25 +373,25 @@
       }, []);
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v34');
+        const saved = localStorage.getItem('kueche_pantry_v35');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v34');
+        const saved = localStorage.getItem('kueche_mealprep_v35');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v34');
+        const saved = localStorage.getItem('kueche_recipes_v35');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v34');
+        const saved = localStorage.getItem('kueche_shopping_v35');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
       const [mealPlan, setMealPlan] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealplan_v34');
+        const saved = localStorage.getItem('kueche_mealplan_v35');
         return saved ? JSON.parse(saved) : [];
       });
 
@@ -452,11 +452,11 @@
       }, [firebaseUrl]);
 
       useEffect(() => {
-        localStorage.setItem('kueche_pantry_v34', JSON.stringify(pantry));
-        localStorage.setItem('kueche_mealprep_v34', JSON.stringify(mealPrep));
-        localStorage.setItem('kueche_recipes_v34', JSON.stringify(recipes));
-        localStorage.setItem('kueche_shopping_v34', JSON.stringify(shoppingList));
-        localStorage.setItem('kueche_mealplan_v34', JSON.stringify(mealPlan));
+        localStorage.setItem('kueche_pantry_v35', JSON.stringify(pantry));
+        localStorage.setItem('kueche_mealprep_v35', JSON.stringify(mealPrep));
+        localStorage.setItem('kueche_recipes_v35', JSON.stringify(recipes));
+        localStorage.setItem('kueche_shopping_v35', JSON.stringify(shoppingList));
+        localStorage.setItem('kueche_mealplan_v35', JSON.stringify(mealPlan));
         if (firebaseUrl && !isApplyingRemote.current) {
           pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
         }
@@ -873,29 +873,27 @@
       };
 
       const addToMealPlan = (recipe) => {
-        key_check: {
-          if (mealPlan.some(m => m.id === recipe.id)) {
-            showToast('Rezept ist bereits im Kochplan!');
-            break key_check;
-          }
-          setMealPlan(prev => [...prev, recipe]);
+        if (mealPlan.some(m => m.id === recipe.id)) {
+          showToast('Rezept ist bereits im Kochplan!');
+          return;
+        }
+        setMealPlan(prev => [...prev, recipe]);
 
-          const avail = checkRecipeAvailability(recipe);
-          const newShoppingItems = avail.missing
-            .filter(ingName => !shoppingList.some(s => s.name.toLowerCase() === ingName.toLowerCase()))
-            .map(ingName => ({
-              id: 's_' + Date.now() + '_' + Math.random(),
-              name: ingName,
-              reason: `Für Wochenplan: ${recipe.title}`,
-              done: false
-            }));
+        const avail = checkRecipeAvailability(recipe);
+        const newShoppingItems = avail.missing
+          .filter(ingName => !shoppingList.some(s => s.name.toLowerCase() === ingName.toLowerCase()))
+          .map(ingName => ({
+            id: 's_' + Date.now() + '_' + Math.random(),
+            name: ingName,
+            reason: `Für Wochenplan: ${recipe.title}`,
+            done: false
+          }));
 
-          if (newShoppingItems.length > 0) {
-            setShoppingList(prev => [...prev, ...newShoppingItems]);
-            showToast(`"${recipe.title}" gemerkt & ${newShoppingItems.length} Zutat(en) auf Einkaufsliste!`);
-          } else {
-            showToast(`"${recipe.title}" im Wochenplan gemerkt!`);
-          }
+        if (newShoppingItems.length > 0) {
+          setShoppingList(prev => [...prev, ...newShoppingItems]);
+          showToast(`"${recipe.title}" gemerkt & ${newShoppingItems.length} Zutat(en) auf Einkaufsliste!`);
+        } else {
+          showToast(`"${recipe.title}" im Wochenplan gemerkt!`);
         }
       };
 
@@ -928,7 +926,7 @@
         }, 600);
       };
 
-      // VOLLAUTOMATISCHER MODELL-FINDER (Holt sich die erlaubten Modelle direkt aus der Google API)
+      // AUTOMATISCHER MODELL-FINDER (Fragt Google im Hintergrund direkt ab, welches Modell aktiv ist)
       const handleFileSelected = async (e, scanType = 'pantry') => {
         const file = e.target.files[0];
         if (!file) return;
@@ -947,12 +945,11 @@
 
           let response = null;
 
-          // 1. Hole live die Liste aller von deinem Key unterstützten Modelle
+          // 1. Hole live die Liste aller verfügbaren Modelle vom Key
           try {
             const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(activeKey)}`);
             const listData = await listRes.json();
             if (listData && listData.models) {
-              // Finde das erste Flash-Modell in der Liste, das Bilder verarbeiten kann
               const foundModel = listData.models.find(m => m.name.toLowerCase().includes('flash') && m.supportedGenerationMethods?.includes('generateContent'));
               if (foundModel) {
                 const modelPath = foundModel.name; // z.B. "models/gemini-1.5-flash"
@@ -972,9 +969,9 @@
             }
           } catch (modelDiscoveryErr) {}
 
-          // 2. Fallback-Schleife mit den absolut gängigsten Live-Modellen falls die Liste blockiert wurde
+          // 2. Automatischer Fallback (probiert gemini-2.0-flash, gemini-1.5-flash etc.)
           if (!response || !response.ok) {
-            for (const fallbackModel of ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash-exp']) {
+            for (const fallbackModel of ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']) {
               response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent?key=${encodeURIComponent(activeKey)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1035,6 +1032,7 @@
         }
       };
 
+      // SPRACHERKENNUNG STARTET JETZT SOFORT AUTOMATISCH OHNE EXTRA KLICK
       const startListening = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -1058,6 +1056,16 @@
         recognition.onerror = () => setIsListening(false);
         recognition.start();
       };
+
+      // Wenn das Sprach-Fenster aufgeht, startet das Mikrofon ab sofort sofort von selbst!
+      useEffect(() => {
+        if (voiceOverlay) {
+          const timer = setTimeout(() => {
+            startListening();
+          }, 300);
+          return () => clearTimeout(timer);
+        }
+      }, [voiceOverlay]);
 
       const executeVoiceCommand = (rawCmdText) => {
         if (!rawCmdText || !rawCmdText.trim()) return;
