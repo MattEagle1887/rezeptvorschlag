@@ -11,7 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
@@ -43,6 +43,7 @@
       return <span ref={spanRef} className="inline-flex items-center justify-center shrink-0" />;
     };
 
+    // Hilfsfunktionen für echte Haltbarkeitsdaten (MHD)
     const getFutureDateStr = (daysToAdd) => {
       const d = new Date();
       d.setHours(12, 0, 0, 0);
@@ -78,6 +79,7 @@
       return { text: `Noch ${days} Tage${dateHint}`, urgent: false, expired: false };
     };
 
+    // Start-Daten (falls Datenbank noch leer)
     const SEED_DATA = {
       pantry: [
         { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(1), amount: 500, unitType: 'g', lowThreshold: 200 },
@@ -88,10 +90,21 @@
         { id: 'p6c', name: 'Spaghetti', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 800, unitType: 'g', lowThreshold: 300 },
         { id: 'p7', name: 'Dosentomaten (San Marzano)', category: 'pantry', status: 'in_stock', amount: 4, unitType: 'Dosen', lowThreshold: 2 },
         { id: 'p7b', name: 'Mutti Passata', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 'p12', name: 'Olivenöl Extra Vergine', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 }
+        { id: 'p8', name: 'Risottoreis / Basmati', category: 'pantry', status: 'in_stock', group: 'Reis', amount: 800, unitType: 'g', lowThreshold: 250 },
+        { id: 'p12', name: 'Olivenöl Extra Vergine', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+        { id: 's_soja1', name: 'Sojasauce (helle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+        { id: 's_essig2', name: 'Balsamico-Essig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+        { id: 'sp_1', name: 'Piment', category: 'spices', status: 'in_stock' },
+        { id: 'sp_2', name: 'Wacholderbeeren', category: 'spices', status: 'in_stock' },
+        { id: 'p14', name: 'Hähnchenbrustfilet (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 800, unitType: 'g', lowThreshold: 300 },
+        { id: 'p18', name: 'Fischstäbchen', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 6, unitType: 'Stück', lowThreshold: 5 },
+        { id: 'p20', name: 'Pommes Frites', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 300, unitType: 'g', lowThreshold: 200 },
+        { id: 'p21', name: 'TK-Erbsen', category: 'freezer_items', status: 'in_stock', subType: 'veggie', amount: 350, unitType: 'g', lowThreshold: 100 }
       ],
       mealPrep: [
-        { id: 'mp1', name: 'Ragù alla Bolognese', blocks500: 3, blocks250: 2, kcalPer100g: 210, needsFresh: ['Tagliatelle', 'Parmesan (am Stück)'], prepTime: 15, season: 'all' }
+        { id: 'mp1', name: 'Ragù alla Bolognese', blocks500: 3, blocks250: 2, kcalPer100g: 210, needsFresh: ['Tagliatelle', 'Parmesan (am Stück)'], prepTime: 15, season: 'all' },
+        { id: 'mp2', name: 'Grünkohl (fertig geschmort)', blocks500: 2, blocks250: 1, kcalPer100g: 180, needsFresh: ['Kartoffeln', 'Mettenden / Kassler'], prepTime: 20, season: 'winter' },
+        { id: 'mp3', name: 'Schmorkohl (Familienrezept)', blocks500: 2, blocks250: 0, kcalPer100g: 130, needsFresh: ['Kartoffeln'], prepTime: 20, season: 'winter' }
       ],
       recipes: [
         {
@@ -100,21 +113,43 @@
           ingredients: [
             { name: 'Rinderhackfleisch (Frisch)', amount: '500 g', essential: true },
             { name: 'Mutti Passata', amount: '1 Flasche', essential: true },
-            { name: 'Spaghetti', amount: '400 g', essential: true, isPasta: true }
+            { name: 'Spaghetti', amount: '400 g', essential: true, isPasta: true },
+            { name: 'Parmesan (am Stück)', amount: '60 g', essential: true }
           ],
-          steps: ['Hackfleisch anbraten, Passata dazugeben, mit Spaghetti servieren.']
+          steps: ['Frisches Rinderhackfleisch krümelig und kräftig anbraten.', 'Mit Mutti Passata ablöschen und 15 Min. sämig einkochen.', 'Mit al dente gekochter Pasta und frisch geriebenem Parmesan servieren.']
+        },
+        {
+          id: 'r1', title: 'Pasta al Limone', effort: 'quick', season: 'summer', kcalPer100g: 140,
+          isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, lastCookedDaysAgo: 18, prepTime: 20,
+          ingredients: [
+            { name: 'Spaghetti', amount: '400 g', essential: true, isPasta: true },
+            { name: 'Zitronen (Bio)', amount: '2 Stück', essential: true },
+            { name: 'Parmesan (am Stück)', amount: '80 g', essential: true },
+            { name: 'Butter', amount: '40 g', essential: true }
+          ],
+          steps: ['Spaghetti al dente kochen.', 'Mit Zitronenabrieb, Zitronensaft, Butter, Nudelwasser und Parmesan cremig schwenken.']
+        },
+        {
+          id: 'r3', title: 'Ragù aus dem TK mit Tagliatelle', effort: 'quick', season: 'all', kcalPer100g: 210,
+          isFamilyRecipe: true, isKidFriendly: true, isMealPrep: true, mealPrepId: 'mp1', lastCookedDaysAgo: 12, prepTime: 15,
+          ingredients: [
+            { name: 'Ragù alla Bolognese (TK)', amount: '500g Block', essential: true, isFromMealPrep: 'mp1' },
+            { name: 'Tagliatelle', amount: '400 g', essential: true, isPasta: true },
+            { name: 'Parmesan (am Stück)', amount: 'Nach Wunsch', essential: true }
+          ],
+          steps: ['Ragù-Block erwärmen, Pasta kochen und vermengen.']
+        },
+        {
+          id: 'r5', title: 'Fischstäbchen mit Pommes & Erbsen', effort: 'quick', season: 'all', kcalPer100g: 340,
+          isFamilyRecipe: false, isKidFriendly: true, isMealPrep: false, lastCookedDaysAgo: 9, prepTime: 20,
+          ingredients: [
+            { name: 'Fischstäbchen', amount: '6 Stück', essential: true },
+            { name: 'Pommes Frites', amount: '200 g', essential: true },
+            { name: 'TK-Erbsen', amount: '100 g', essential: true }
+          ],
+          steps: ['Fischstäbchen und Pommes backen, Erbsen kurz dünsten.']
         }
       ]
-    };
-
-    const replaceGermanNumberWords = (str) => {
-      const map = {
-        'einhalb': '0.5', 'eineinhalb': '1.5', 'anderthalb': '1.5',
-        'einen': '1', 'eine': '1', 'eins': '1', 'ein': '1',
-        'zwei': '2', 'zwo': '2', 'zweimal': '2', 'drei': '3', 'dreimal': '3',
-        'vier': '4', 'fünf': '5', 'sechs': '6', 'sieben': '7', 'acht': '8', 'neun': '9', 'zehn': '10'
-      };
-      return str.replace(/\b(einhalb|eineinhalb|anderthalb|einen|eine|eins|ein|zwei|zwo|zweimal|drei|dreimal|vier|fünf|sechs|sieben|acht|neun|zehn)\b/gi, (m) => map[m.toLowerCase()] || m);
     };
 
     const compressImageToBase64 = (file, maxWidth = 1024, quality = 0.75) => new Promise((resolve, reject) => {
@@ -142,37 +177,59 @@
       reader.readAsDataURL(file);
     });
 
+    // DYNAMISCHER GEMINI AUFRUF (für Foto-Scan UND natürliche Spracheingabe!)
     let cachedWorkingModel = null;
+
     async function callGeminiWithAutoModel(apiKey, promptText, base64Image = null) {
       const cleanKey = apiKey.trim();
       let candidateModels = [];
 
-      if (cachedWorkingModel) candidateModels.push(cachedWorkingModel);
+      if (cachedWorkingModel) {
+        candidateModels.push(cachedWorkingModel);
+      }
 
       try {
         const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
         const listData = await listRes.json();
         if (listRes.ok && listData && Array.isArray(listData.models)) {
           const validModels = listData.models
-            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent') && !m.name.includes('embedding'))
+            .filter(m =>
+              m.supportedGenerationMethods &&
+              m.supportedGenerationMethods.includes('generateContent') &&
+              !m.name.includes('embedding') &&
+              !m.name.includes('aqa') &&
+              !m.name.includes('imagen') &&
+              !m.name.includes('veo') &&
+              !m.name.includes('tts') &&
+              !m.name.includes('audio')
+            )
             .map(m => m.name.replace(/^models\//, ''));
+
           validModels.sort((a, b) => {
             const aFlash = a.includes('flash') ? 1 : 0;
             const bFlash = b.includes('flash') ? 1 : 0;
             if (aFlash !== bFlash) return bFlash - aFlash;
             return b.localeCompare(a, undefined, { numeric: true });
           });
-          for (const vm of validModels) { if (!candidateModels.includes(vm)) candidateModels.push(vm); }
+
+          for (const vm of validModels) {
+            if (!candidateModels.includes(vm)) candidateModels.push(vm);
+          }
         }
       } catch (err) {}
 
       const fallbacks = ['gemini-flash-latest', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.0-flash'];
-      for (const fb of fallbacks) { if (!candidateModels.includes(fb)) candidateModels.push(fb); }
+      for (const fb of fallbacks) {
+        if (!candidateModels.includes(fb)) candidateModels.push(fb);
+      }
 
       const parts = [{ text: promptText }];
-      if (base64Image) parts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Image } });
+      if (base64Image) {
+        parts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Image } });
+      }
 
       let lastErrorMsg = 'Kein passendes Gemini-Modell gefunden.';
+
       for (const modelName of candidateModels) {
         try {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(cleanKey)}`, {
@@ -181,9 +238,13 @@
             body: JSON.stringify({ contents: [{ parts }] })
           });
           const data = await res.json();
+
           if (res.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
             cachedWorkingModel = modelName;
-            return { text: data.candidates[0].content.parts[0].text, usedModel: modelName };
+            return {
+              text: data.candidates[0].content.parts[0].text,
+              usedModel: modelName
+            };
           } else {
             lastErrorMsg = data?.error?.message || `HTTP ${res.status}`;
           }
@@ -191,6 +252,7 @@
           lastErrorMsg = netErr.message;
         }
       }
+
       throw new Error(lastErrorMsg);
     }
 
@@ -200,24 +262,33 @@
       const [firebaseUrl, setFirebaseUrl] = useState(() => {
         const params = new URLSearchParams(window.location.search);
         const fromUrl = params.get('db');
-        if (fromUrl) { localStorage.setItem('kueche_firebase_url', fromUrl); return fromUrl; }
+        if (fromUrl) {
+          localStorage.setItem('kueche_firebase_url', fromUrl);
+          return fromUrl;
+        }
         return localStorage.getItem('kueche_firebase_url') || DEFAULT_FIREBASE_URL;
       });
 
       const [geminiKey, setGeminiKey] = useState(() => {
         const params = new URLSearchParams(window.location.search);
         const fromUrl = params.get('gemini');
-        if (fromUrl) { localStorage.setItem('kueche_gemini_key', fromUrl); return fromUrl; }
+        if (fromUrl) {
+          localStorage.setItem('kueche_gemini_key', fromUrl);
+          return fromUrl;
+        }
         return localStorage.getItem('kueche_gemini_key') || DEFAULT_GEMINI_KEY;
       });
 
       const [isEditingKey, setIsEditingKey] = useState(false);
       const [tempKeyInput, setTempKeyInput] = useState('');
       const [detectedModelInfo, setDetectedModelInfo] = useState('');
+
       const [bringListName, setBringListName] = useState(() => localStorage.getItem('kueche_bring_list') || 'Zuhause');
 
       const [showSettingsModal, setShowSettingsModal] = useState(false);
       const [showResetConfirm, setShowResetConfirm] = useState(false);
+      const [showBringModal, setShowBringModal] = useState(false);
+
       const [syncStatus, setSyncStatus] = useState('local');
       const lastSyncTimestamp = useRef(0);
       const isApplyingRemote = useRef(false);
@@ -234,6 +305,13 @@
         setToastMsg(msg);
         setTimeout(() => setToastMsg(null), 5500);
       };
+
+      useEffect(() => {
+        if (window.location.search.includes('db=') || window.location.search.includes('gemini=')) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(() => showToast('Sync & KI-Einstellungen übernommen!'), 500);
+        }
+      }, []);
 
       const pushToCloud = async (stateObj) => {
         if (!firebaseUrl || isApplyingRemote.current) return;
@@ -338,7 +416,11 @@
 
       const handleDatabaseReset = async () => {
         isApplyingRemote.current = true;
-        setPantry([]); setMealPrep([]); setRecipes([]); setShoppingList([]); setMealPlan([]);
+        setPantry([]);
+        setMealPrep([]);
+        setRecipes([]);
+        setShoppingList([]);
+        setMealPlan([]);
         if (firebaseUrl) {
           const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
           const now = Date.now();
@@ -346,13 +428,17 @@
           await fetch(`${cleanUrl}/kueche_shared.json`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isInitialized: true, pantry: [], mealPrep: [], recipes: [], shoppingList: [], mealPlan: [], updatedAt: now })
+            body: JSON.stringify({
+              isInitialized: true,
+              pantry: [], mealPrep: [], recipes: [], shoppingList: [], mealPlan: [],
+              updatedAt: now
+            })
           });
         }
         setTimeout(() => { isApplyingRemote.current = false; }, 300);
         setShowResetConfirm(false);
         setShowSettingsModal(false);
-        showToast('Datenbank komplett geleert!');
+        showToast('Datenbank komplett geleert! Ihr startet jetzt bei Null.');
       };
 
       const [filterEffort, setFilterEffort] = useState('all');
@@ -385,6 +471,7 @@
       const [newPantryCategory, setNewPantryCategory] = useState('pantry');
       const [newPantryExpiryDate, setNewPantryExpiryDate] = useState(() => getFutureDateStr(5));
 
+      // Modal zum nachträglichen Ändern des Haltbarkeitsdatums (MHD)
       const [editingExpiryItem, setEditingExpiryItem] = useState(null);
       const [editingExpiryDateVal, setEditingExpiryDateVal] = useState('');
 
@@ -406,7 +493,9 @@
       const [isProcessingVoice, setIsProcessingVoice] = useState(false);
       const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
       const [newShopItemName, setNewShopItemName] = useState('');
+      const recognitionRef = useRef(null);
 
+      // Alle bald ablaufenden Produkte (<= 2 Tage) für Warn-Banner & Priorisierung ermitteln
       const urgentExpiringItems = useMemo(() => {
         return pantry
           .filter(p => p.status !== 'empty' && (p.amount === undefined || p.amount > 0))
@@ -453,6 +542,7 @@
         const lowerClean = cleanName.toLowerCase();
         const targetCat = category || (pantrySubTab === 'mealprep' ? 'pantry' : pantrySubTab);
 
+        // Berechne sauberes YYYY-MM-DD Ablaufdatum (falls angegeben oder falls Kühlschrank)
         let resolvedExpiryDate = undefined;
         if (typeof expiryInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expiryInput)) {
           resolvedExpiryDate = expiryInput;
@@ -556,12 +646,14 @@
             return true;
           })
           .sort((a, b) => {
+            // 1. Höchste Priorität: Rezepte, die bald ablaufende Kühlschrank-Zutaten (z.B. Hackfleisch) retten!
             if (a.urgentFridgeItems.length !== b.urgentFridgeItems.length) {
               return b.urgentFridgeItems.length - a.urgentFridgeItems.length;
             }
             if (a.minExpiryDays !== b.minExpiryDays) {
               return a.minExpiryDays - b.minExpiryDays;
             }
+            // 2. Danach: Was am längsten nicht gekocht wurde
             return (b.lastCookedDaysAgo || 0) - (a.lastCookedDaysAgo || 0);
           });
       }, [recipes, pantry, mealPrep, filterEffort, filterCalories, filterShopping, filterMode]);
@@ -661,6 +753,19 @@
         }
       };
 
+      const triggerOfficialBringImport = async () => {
+        if (!firebaseUrl) {
+          showToast('Bitte Firebase-URL in den Einstellungen prüfen.');
+          return;
+        }
+        await pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
+        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
+        const recipeJsonUrl = `${cleanUrl}/kueche_shared/bringRecipe.json`;
+        const officialDeepLink = `https://api.getbring.com/rest/bringrecipes/deeplink?url=${encodeURIComponent(recipeJsonUrl)}&source=web&baseQuantity=1&requestedQuantity=1`;
+        window.open(officialDeepLink, '_blank');
+      };
+
+      // FOTO-SCAN MIT AUTOMATISCHER MHD-ERKENNUNG (falls auf Packung sichtbar)
       const handleFileSelected = async (e, scanType = 'pantry') => {
         const file = e.target.files[0];
         if (!file) return;
@@ -676,7 +781,7 @@
 
           const prompt = scanType === 'recipe'
             ? `Analysiere diese abfotografierte Kochbuchseite und antworte NUR mit reinem JSON: {"title": "Name des Gerichts", "prepTime": 30, "kcalPer100g": 180, "ingredients": [{"name": "Zutat", "amount": "Menge"}], "steps": ["Schritt 1", "Schritt 2"]}`
-            : `Heute ist ${todayStr}. Erkenne das fotografierte Lebensmittel oder den Kassenbon. Falls ein Haltbarkeitsdatum (MHD) auf der Packung lesbar ist, gib es als YYYY-MM-DD in "expiryDate" an (sonst bei frischen Kühlschrank-Produkten geschätztes Datum in 2-5 Tagen). Antworte NUR mit reinem JSON: {"items": [{"name": "Genauer Produktname", "amount": 1, "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDate": "YYYY-MM-DD"}]}`;
+            : `Heute ist ${todayStr}. Erkenne das fotografierte Lebensmittel oder den Kassenbon. Falls ein Haltbarkeitsdatum (MHD / zu verbrauchen bis) auf der Packung lesbar ist, gib es als YYYY-MM-DD in "expiryDate" an (sonst bei frischen Kühlschrank-Produkten wie Hackfleisch/Milch geschätztes Datum in 2-5 Tagen). Antworte NUR mit reinem JSON: {"items": [{"name": "Genauer Produktname (z.B. Mutti Passata)", "amount": 1, "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDate": "YYYY-MM-DD"}]}`;
 
           const { text: rawText, usedModel } = await callGeminiWithAutoModel(activeKey, prompt, base64Data);
           setDetectedModelInfo(usedModel);
@@ -724,7 +829,7 @@
         }
       };
 
-      // SAUBERE SPRACHERKENNUNG (Stoppt automatisch nach Satzende und dupliziert nichts mehr)
+      // VERBESSERTE SPRACHERKENNUNG (Continuous + Gemini KI Auswertung im Hintergrund!)
       const startListening = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -738,26 +843,17 @@
           const recognition = new SpeechRecognition();
           recognitionRef.current = recognition;
           recognition.lang = 'de-DE';
-          recognition.continuous = false; // Schaltet nach einmaligem Sprechen ab -> keine Endlos-Duplizierung!
+          recognition.continuous = true; // Bricht bei kurzen Sprechpausen nicht mehr ab!
           recognition.interimResults = true;
           recognition.maxAlternatives = 1;
 
           setIsListening(true);
           recognition.onresult = (event) => {
-            let interim = '';
-            let final = '';
+            let transcript = '';
             for (let i = 0; i < event.results.length; i++) {
-              if (event.results[i].isFinal) {
-                final += event.results[i][0].transcript;
-              } else {
-                interim += event.results[i][0].transcript;
-              }
+              transcript += event.results[i][0].transcript + ' ';
             }
-            if (final) {
-              setVoiceText(final.trim());
-            } else if (interim) {
-              setVoiceText(interim.trim());
-            }
+            setVoiceText(transcript.trim());
           };
           recognition.onend = () => setIsListening(false);
           recognition.onerror = () => setIsListening(false);
@@ -780,7 +876,7 @@
         startListening();
       };
 
-      // GEMINI KI SPRACH-INTERPRETER
+      // GEMINI KI SPRACH-INTERPRETER: Versteht natürliche Sätze, Mengen, Lagerorte und Haltbarkeitsdaten!
       const executeVoiceCommand = async (rawCmdText) => {
         if (!rawCmdText || !rawCmdText.trim()) return;
         stopListening();
@@ -801,18 +897,22 @@ Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSO
   "actions": [
     {
       "type": "add_or_increment" | "set_exact" | "delete" | "mealprep_add" | "query",
-      "name": "Sauberer Produktname",
+      "name": "Sauberer Produktname (WICHTIG: Wenn ein ähnlicher Artikel schon im Bestand existiert, nutze EXAKT dessen Namen aus der Bestandsliste!)",
       "amount": 1,
       "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube|Gläser",
       "category": "pantry|fridge|freezer_items|sauces|spices",
-      "expiryDate": "YYYY-MM-DD (nur falls Kühlschrank/Frischware oder MHD genannt, sonst null)",
-      "answerText": "Antwort-Text falls der Nutzer eine Frage gestellt hat"
+      "expiryDate": "YYYY-MM-DD (nur falls Kühlschrank/Frischware oder falls ein Haltbarkeitsdatum/Tage genannt wurde, z.B. 'läuft morgen ab' -> Datum von morgen berechnen, sonst null)",
+      "blocks500": 1,
+      "blocks250": 0,
+      "answerText": "Antwort-Text falls der Nutzer eine Frage gestellt hat (z.B. 'Haben wir noch Piment?')"
     }
   ]
 }
 Wichtige Regeln:
-- Entferne alle Befehlswörter aus dem Produktnamen!
-- Achte darauf, dass Zahlen (z.B. 100g Pancetta) korrekt als amount: 100, unitType: "g" interpretiert werden und sich NICHT duplizieren!`;
+- Entferne alle Befehlswörter ("füge hinzu", "packe in den Schrank", "bitte") aus dem Produktnamen!
+- "füge 2 Flaschen Mutti Passata hinzu" -> type: "add_or_increment", name: "Mutti Passata", amount: 2, unitType: "Flasche", category: "pantry"
+- "500g frisches Hackfleisch in den Kühlschrank, noch 2 Tage haltbar" -> type: "add_or_increment", name: "Rinderhackfleisch (Frisch)", amount: 500, unitType: "g", category: "fridge", expiryDate: "${getFutureDateStr(2)}"
+- "Wir haben nur noch 3 Fischstäbchen" -> type: "set_exact", name: "Fischstäbchen", amount: 3`;
 
           const { text: aiResponse } = await callGeminiWithAutoModel(activeKey, voicePrompt);
           const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
@@ -830,7 +930,7 @@ Wichtige Regeln:
                 const found = pantry.find(p => p.name.toLowerCase().includes((act.name || '').toLowerCase()));
                 if (found) {
                   updatePantryAmount(found.id, Number(act.amount) || 0);
-                  showToast(`${found.name} auf ${act.amount} gesetzt!`);
+                  showToast(`${found.name} auf ${act.amount} ${found.unitType || ''} gesetzt!`);
                 } else {
                   addOrUpdatePantryItem(act.name, Number(act.amount) || 1, act.unitType || 'Stück', act.category || 'pantry', act.expiryDate);
                 }
@@ -910,13 +1010,14 @@ Wichtige Regeln:
               <button
                 onClick={() => setShowSettingsModal(true)}
                 className="flex items-center justify-center bg-stone-900 text-white w-9 h-9 rounded-lg hover:bg-stone-800 transition shadow-sm"
-                title="Einstellungen"
+                title="Einstellungen & Datenbank-Reset"
               >
                 <Icon name="settings" size={16} />
               </button>
             </div>
           </header>
 
+          {/* TOAST */}
           {toastMsg && (
             <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-start gap-2 w-[90vw] max-w-sm break-words">
               <Icon name="info" size={15} className="text-emerald-400 mt-0.5" />
@@ -924,9 +1025,12 @@ Wichtige Regeln:
             </div>
           )}
 
+          {/* MAIN CONTENT */}
           <main className="flex-1 px-4 pt-4">
+            {/* TAB HOME */}
             {activeTab === 'home' && (
               <div className="space-y-4">
+                {/* FRISCHE-ALARM FÜR BALD ABLAUFENDE KÜHLSCHRANK-PRODUKTE */}
                 {urgentExpiringItems.length > 0 && (
                   <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-2.5 shadow-sm">
                     <div className="flex items-center justify-between">
@@ -975,6 +1079,7 @@ Wichtige Regeln:
                   </button>
                 </div>
 
+                {/* KOCHPLAN */}
                 <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">Kochplan ({mealPlan.length})</h3>
@@ -988,10 +1093,16 @@ Wichtige Regeln:
                             <p className="text-[11px] text-stone-500">{meal.prepTime} Min. · ~{meal.kcalPer100g || 170} kcal/100g</p>
                           </div>
                           <div className="flex items-center gap-1">
-                            <button onClick={() => { setCookedModalRecipe(meal); setMealPlan(prev => prev.filter(m => m.id !== meal.id)); }} className="text-emerald-700 hover:bg-emerald-50 p-1.5 rounded">
+                            <button
+                              onClick={() => { setCookedModalRecipe(meal); setMealPlan(prev => prev.filter(m => m.id !== meal.id)); }}
+                              className="text-emerald-700 hover:bg-emerald-50 p-1.5 rounded"
+                            >
                               <Icon name="check" size={15} />
                             </button>
-                            <button onClick={() => setMealPlan(prev => prev.filter(m => m.id !== meal.id))} className="text-stone-400 hover:text-red-600 p-1.5">
+                            <button
+                              onClick={() => setMealPlan(prev => prev.filter(m => m.id !== meal.id))}
+                              className="text-stone-400 hover:text-red-600 p-1.5"
+                            >
                               <Icon name="trash-2" size={15} />
                             </button>
                           </div>
@@ -1032,6 +1143,7 @@ Wichtige Regeln:
               </div>
             )}
 
+            {/* TAB: WÜRFLER */}
             {activeTab === 'decide' && (
               <div className="space-y-4">
                 <div className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-3">
@@ -1040,18 +1152,50 @@ Wichtige Regeln:
                     <span className="text-xs text-stone-500">{filteredSuggestions.length} Gerichte</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
-                    <button onClick={() => { setFilterMode('normal'); setCurrentSuggestionIndex(0); }} className={`py-2 px-2 rounded-lg text-xs font-medium border transition ${filterMode === 'normal' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'}`}>
+                    <button
+                      onClick={() => { setFilterMode('normal'); setCurrentSuggestionIndex(0); }}
+                      className={`py-2 px-2 rounded-lg text-xs font-medium border transition ${
+                        filterMode === 'normal' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
+                      }`}
+                    >
                       Familie / Alle
                     </button>
-                    <button onClick={() => { setFilterMode('kid'); setCurrentSuggestionIndex(0); }} className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${filterMode === 'kid' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'}`}>
+                    <button
+                      onClick={() => { setFilterMode('kid'); setCurrentSuggestionIndex(0); }}
+                      className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${
+                        filterMode === 'kid' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
+                      }`}
+                    >
                       <Icon name="baby" size={14} />
                       <span>Nur Kinder-Rezepte</span>
                     </button>
                   </div>
+
+                  {filterMode === 'normal' && (
+                    <div className="grid grid-cols-3 gap-2 pt-1 border-t border-stone-100">
+                      <select value={filterEffort} onChange={e => { setFilterEffort(e.target.value); setCurrentSuggestionIndex(0); }} className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-2 text-xs text-stone-700">
+                        <option value="all">Zeit: Egal</option>
+                        <option value="quick">Schnell (&lt; 30m)</option>
+                        <option value="elaborate">Aufwendig</option>
+                      </select>
+                      <select value={filterCalories} onChange={e => { setFilterCalories(e.target.value); setCurrentSuggestionIndex(0); }} className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-2 text-xs text-stone-700">
+                        <option value="all">kcal: Alle</option>
+                        <option value="under150">&lt; 150 kcal</option>
+                        <option value="150to300">150 - 300</option>
+                        <option value="over300">&gt; 300 kcal</option>
+                      </select>
+                      <select value={filterShopping} onChange={e => { setFilterShopping(e.target.value); setCurrentSuggestionIndex(0); }} className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-2 text-xs text-stone-700">
+                        <option value="all_here">Hab ich da</option>
+                        <option value="shop_3">Max. 3 fehlen</option>
+                        <option value="any_plan">Wochenplan</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {activeSuggestion ? (
                   <div className="bg-white border border-stone-200 rounded-xl p-5 space-y-4">
+                    {/* PRIORISIERUNGS-BANNER WENN REZEPT BALD ABLAUFENDE ZUTAT VERBRAUCHT */}
                     {activeSuggestion.urgentFridgeItems && activeSuggestion.urgentFridgeItems.length > 0 && (
                       <div className="bg-amber-50 border border-amber-300 rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-xs text-amber-950 font-medium">
                         <Icon name="flame" size={16} className="text-amber-600" />
@@ -1125,11 +1269,15 @@ Wichtige Regeln:
                 ) : (
                   <div className="bg-white border border-stone-200 rounded-xl p-8 text-center space-y-2">
                     <p className="text-sm font-medium text-stone-800">Keine passenden Rezepte gefunden.</p>
+                    <button onClick={() => { setFilterEffort('all'); setFilterCalories('all'); setFilterShopping('any_plan'); setFilterMode('normal'); }} className="text-xs font-medium text-stone-900 underline">
+                      Alle Rezepte zeigen
+                    </button>
                   </div>
                 )}
               </div>
             )}
 
+            {/* TAB: VORRÄTE */}
             {activeTab === 'pantry' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-6 gap-0.5 bg-stone-200/70 p-1 rounded-xl text-[10px] font-medium">
@@ -1172,22 +1320,36 @@ Wichtige Regeln:
                                   <Icon name="trash-2" size={14} />
                                 </button>
                               </div>
+                              {mp.needsFresh && mp.needsFresh.length > 0 && <p className="text-[11px] text-stone-500 mt-1">Dazu frisch: {mp.needsFresh.join(', ')}</p>}
                             </div>
-                            <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-stone-100 text-stone-900">
-                              Gesamt: {totalGrams} g
-                            </span>
+                            <div className="flex flex-col items-end shrink-0">
+                              <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${totalGrams > 0 ? 'bg-stone-100 text-stone-900' : 'bg-red-50 text-red-700'}`}>
+                                Gesamt: {totalGrams} g
+                              </span>
+                              <button onClick={() => { setEditingMpKcalItem(mp); setEditingMpKcalVal(String(mp.kcalPer100g || 170)); }} className="mt-1 text-[11px] text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium flex items-center gap-1">
+                                <span>~{mp.kcalPer100g || 170} kcal/100g</span>
+                                <Icon name="edit-2" size={10} />
+                              </button>
+                            </div>
                           </div>
+
                           <div className="grid grid-cols-2 gap-2.5 pt-1">
                             <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
-                              <span className="text-xs font-semibold">500g: {mp.blocks500 || 0}</span>
-                              <div className="flex gap-1">
+                              <div>
+                                <span className="text-xs font-semibold text-stone-800 block">500 g</span>
+                                <span className="text-[11px] text-stone-500">{mp.blocks500 || 0} Stk.</span>
+                              </div>
+                              <div className="flex items-center gap-1">
                                 <button onClick={() => updateMealPrepBlocks(mp.id, -1, 0, '-500g')} className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center">-</button>
                                 <button onClick={() => updateMealPrepBlocks(mp.id, 1, 0, '+500g')} className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center">+</button>
                               </div>
                             </div>
                             <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
-                              <span className="text-xs font-semibold">250g: {mp.blocks250 || 0}</span>
-                              <div className="flex gap-1">
+                              <div>
+                                <span className="text-xs font-semibold text-stone-800 block">250 g</span>
+                                <span className="text-[11px] text-stone-500">{mp.blocks250 || 0} Stk.</span>
+                              </div>
+                              <div className="flex items-center gap-1">
                                 <button onClick={() => updateMealPrepBlocks(mp.id, 0, -1, '-250g')} className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center">-</button>
                                 <button onClick={() => updateMealPrepBlocks(mp.id, 0, 1, '+250g')} className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center">+</button>
                               </div>
@@ -1200,100 +1362,234 @@ Wichtige Regeln:
                 ) : (
                   <div className="space-y-2.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Bestandsliste</span>
-                      <button onClick={() => { setNewPantryCategory(pantrySubTab); setNewPantryExpiryDate(getFutureDateStr(3)); setShowNewPantryItemModal(true); }} className="flex items-center gap-1 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium">
+                      <div>
+                        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block">Bestandsliste</span>
+                        <span className="text-[11px] text-stone-500">
+                          {pantrySubTab === 'fridge' ? 'Tippe auf das MHD-Datum zum Anpassen' : 'Live in Firebase gespeichert'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setNewPantryCategory(pantrySubTab);
+                          setNewPantryExpiryDate(getFutureDateStr(pantrySubTab === 'fridge' ? 3 : 14));
+                          setShowNewPantryItemModal(true);
+                        }}
+                        className="flex items-center gap-1 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium"
+                      >
                         <Icon name="plus" size={13} />
                         <span>Neu</span>
                       </button>
                     </div>
 
-                    {pantry.filter(p => p.category === pantrySubTab).map(item => {
-                      const daysLeft = getDaysUntilExpiry(item);
-                      const badge = formatExpiryBadge(daysLeft, item.expiryDate);
-                      return (
-                        <div key={item.id} className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-2.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <span className="text-sm font-semibold text-stone-900 block">{item.name}</span>
-                              {(badge || item.category === 'fridge') && (
-                                <button
-                                  onClick={() => { setEditingExpiryItem(item); setEditingExpiryDateVal(item.expiryDate || getFutureDateStr(daysLeft ?? 3)); }}
-                                  className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border ${badge?.expired ? 'bg-red-100 text-red-900 border-red-300' : badge?.urgent ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}
-                                >
-                                  <Icon name="calendar" size={11} />
-                                  <span>{badge ? badge.text : 'MHD festlegen'}</span>
-                                </button>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {['in_stock', 'low', 'empty'].map(st => (
-                                <button
-                                  key={st}
-                                  onClick={() => setPantry(prev => prev.map(p => p.id === item.id ? { ...p, status: st, ...(st === 'empty' && p.amount !== undefined ? { amount: 0 } : {}) } : p))}
-                                  className={`px-2 py-1 rounded text-[10px] font-medium border ${item.status === st ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-400 border-stone-200'}`}
-                                >
-                                  {st === 'in_stock' ? 'Da' : st === 'low' ? 'Knapp' : 'Leer'}
-                                </button>
-                              ))}
-                              <button onClick={() => deletePantryItem(item.id)} className="text-stone-400 hover:text-red-600 p-1">
-                                <Icon name="trash-2" size={15} />
-                              </button>
-                            </div>
-                          </div>
+                    {pantry
+                      .filter(p => p.category === pantrySubTab)
+                      .sort((a, b) => {
+                        const da = getDaysUntilExpiry(a) ?? 999;
+                        const db = getDaysUntilExpiry(b) ?? 999;
+                        return da - db;
+                      })
+                      .map(item => {
+                        const daysLeft = getDaysUntilExpiry(item);
+                        const badge = formatExpiryBadge(daysLeft, item.expiryDate);
+                        return (
+                          <div key={item.id} className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                <span className="text-sm font-semibold text-stone-900 block">{item.name}</span>
+                                {/* ANTIPPBARES HALTBARKEITSDATUM (MHD) */}
+                                {(badge || item.category === 'fridge') && (
+                                  <button
+                                    onClick={() => {
+                                      setEditingExpiryItem(item);
+                                      setEditingExpiryDateVal(item.expiryDate || getFutureDateStr(daysLeft ?? 3));
+                                    }}
+                                    className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border transition ${
+                                      badge?.expired
+                                        ? 'bg-red-100 text-red-900 border-red-300'
+                                        : badge?.urgent
+                                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    }`}
+                                    title="Haltbarkeitsdatum ändern"
+                                  >
+                                    <Icon name="calendar" size={11} />
+                                    <span>{badge ? badge.text : 'MHD festlegen'}</span>
+                                    <Icon name="edit-2" size={9} className="opacity-60" />
+                                  </button>
+                                )}
+                              </div>
 
-                          {item.amount !== undefined && (
-                            <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
-                              <span className="text-xs text-stone-500">Bestand:</span>
-                              <div className="flex items-center gap-2">
-                                <button onClick={() => updatePantryAmount(item.id, item.amount - 1)} className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center font-bold text-xs">-</button>
-                                <button onClick={() => { setEditingAmountItem(item); setEditingAmountValue(String(item.amount)); }} className="px-2.5 py-1 rounded bg-white border border-stone-300 text-xs font-semibold text-stone-900 min-w-[68px] text-center">
-                                  {item.amount} {item.unitType}
+                              <div className="flex items-center gap-1 shrink-0">
+                                {['in_stock', 'low', 'empty'].map(st => (
+                                  <button
+                                    key={st}
+                                    onClick={() => {
+                                      setPantry(prev => prev.map(p => p.id === item.id ? { ...p, status: st, ...(st === 'empty' && p.amount !== undefined ? { amount: 0 } : {}) } : p));
+                                      if (st === 'empty') {
+                                        setShoppingList(prev => prev.some(s => s.name.toLowerCase() === item.name.toLowerCase()) ? prev : [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }]);
+                                        showToast(`${item.name} → Einkaufsliste`);
+                                      }
+                                    }}
+                                    className={`px-2 py-1 rounded text-[10px] font-medium border ${
+                                      item.status === st
+                                        ? st === 'in_stock' ? 'bg-stone-900 text-white border-stone-900' : st === 'low' ? 'bg-amber-600 text-white border-amber-600' : 'bg-red-600 text-white border-red-600'
+                                        : 'bg-stone-50 text-stone-400 border-stone-200'
+                                    }`}
+                                  >
+                                    {st === 'in_stock' ? 'Da' : st === 'low' ? 'Knapp' : 'Leer'}
+                                  </button>
+                                ))}
+                                <button onClick={() => deletePantryItem(item.id)} className="text-stone-400 hover:text-red-600 p-1 ml-1">
+                                  <Icon name="trash-2" size={15} />
                                 </button>
-                                <button onClick={() => updatePantryAmount(item.id, item.amount + 1)} className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center font-bold text-xs">+</button>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+
+                            {item.amount !== undefined && (
+                              <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                                <span className="text-xs text-stone-500">Bestand:</span>
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => updatePantryAmount(item.id, item.amount - (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))} className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center font-bold text-xs">-</button>
+                                  <button onClick={() => { setEditingAmountItem(item); setEditingAmountValue(String(item.amount)); }} className="px-2.5 py-1 rounded bg-white border border-stone-300 text-xs font-semibold text-stone-900 min-w-[68px] text-center">
+                                    {item.amount} {item.unitType}
+                                  </button>
+                                  <button onClick={() => updatePantryAmount(item.id, item.amount + (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))} className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center font-bold text-xs">+</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                   </div>
                 )}
               </div>
             )}
 
+            {/* TAB: REZEPTE */}
             {activeTab === 'recipes' && (
               <div className="space-y-4">
                 {selectedRecipe ? (
                   <div className="bg-white border border-stone-200 rounded-xl p-4 space-y-4">
                     <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                      <button onClick={() => setSelectedRecipeId(null)} className="text-xs font-medium text-stone-600">← Zurück</button>
-                      <button onClick={() => { setRecipes(prev => prev.filter(r => r.id !== selectedRecipe.id)); setSelectedRecipeId(null); }} className="text-red-600 text-xs font-medium">Rezept löschen</button>
+                      <button onClick={() => { setSelectedRecipeId(null); setIsEditingRecipe(false); }} className="text-xs font-medium text-stone-600">
+                        ← Zurück
+                      </button>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => {
+                            setRecipes(prev => prev.filter(r => r.id !== selectedRecipe.id));
+                            setSelectedRecipeId(null);
+                            showToast('Rezept gelöscht');
+                          }}
+                          className="p-1.5 rounded-lg border border-red-200 text-red-600 text-xs"
+                          title="Ganzes Rezept löschen"
+                        >
+                          <Icon name="trash-2" size={14} />
+                        </button>
+                        <button
+                          onClick={() => setIsEditingRecipe(!isEditingRecipe)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${isEditingRecipe ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-800 border-stone-200'}`}
+                        >
+                          {isEditingRecipe ? 'Fertig' : 'Bearbeiten'}
+                        </button>
+                      </div>
                     </div>
-                    <h2 className="text-lg font-semibold text-stone-900">{selectedRecipe.title}</h2>
+
+                    <div>
+                      <h2 className="text-lg font-semibold text-stone-900">{selectedRecipe.title}</h2>
+                      <p className="text-xs text-stone-500 mt-0.5">{selectedRecipe.prepTime} Min. · ~{selectedRecipe.kcalPer100g || 0} kcal/100g</p>
+                    </div>
+
                     <div className="space-y-2">
                       <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zutaten</h3>
                       <div className="divide-y divide-stone-100 border border-stone-200 rounded-lg overflow-hidden">
                         {(selectedRecipe.ingredients || []).map((ing, idx) => (
-                          <div key={idx} className="px-3 py-2.5 text-xs bg-white">
-                            <strong>{ing.name}</strong> ({ing.amount})
+                          <div key={idx} className="px-3 py-2.5 flex items-center justify-between text-xs bg-white">
+                            <span><strong>{ing.name}</strong> ({ing.amount})</span>
+                            {isEditingRecipe && (
+                              <button
+                                onClick={() => setRecipes(prev => prev.map(r => r.id === selectedRecipe.id ? { ...r, ingredients: r.ingredients.filter((_, i) => i !== idx) } : r))}
+                                className="text-red-600 p-1"
+                              >
+                                <Icon name="trash-2" size={14} />
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
+
+                      {isEditingRecipe && (
+                        <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="text" placeholder="Zutat" value={newIngredientName} onChange={e => setNewIngredientName(e.target.value)} className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs" />
+                            <input type="text" placeholder="Menge" value={newIngredientAmount} onChange={e => setNewIngredientAmount(e.target.value)} className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs" />
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (!newIngredientName.trim()) return;
+                              setRecipes(prev => prev.map(r => r.id === selectedRecipe.id ? { ...r, ingredients: [...(r.ingredients || []), { name: newIngredientName.trim(), amount: newIngredientAmount.trim() || 'Nach Bedarf', essential: true }] } : r));
+                              setNewIngredientName(''); setNewIngredientAmount('');
+                            }}
+                            className="w-full py-2 bg-stone-900 text-white rounded-lg text-xs font-medium"
+                          >
+                            + Zutat einfügen
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zubereitung</h3>
+                      <ol className="space-y-2">
+                        {(selectedRecipe.steps || []).map((step, idx) => (
+                          <li key={idx} className="bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs flex justify-between gap-2">
+                            <span><strong>{idx + 1}.</strong> {step}</span>
+                            {isEditingRecipe && (
+                              <button onClick={() => setRecipes(prev => prev.map(r => r.id === selectedRecipe.id ? { ...r, steps: r.steps.filter((_, i) => i !== idx) } : r))} className="text-red-500">
+                                <Icon name="trash-2" size={14} />
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                      {isEditingRecipe && (
+                        <div className="flex gap-2">
+                          <input type="text" placeholder="Neuer Schritt..." value={newStepText} onChange={e => setNewStepText(e.target.value)} className="flex-1 bg-white border border-stone-300 rounded-lg px-3 py-2 text-xs" />
+                          <button
+                            onClick={() => {
+                              if (!newStepText.trim()) return;
+                              setRecipes(prev => prev.map(r => r.id === selectedRecipe.id ? { ...r, steps: [...(r.steps || []), newStepText.trim()] } : r));
+                              setNewStepText('');
+                            }}
+                            className="bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium"
+                          >
+                            + Schritt
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-stone-900">Rezepte ({recipes.length})</h3>
-                      <button onClick={() => setShowNewRecipeModal(true)} className="flex items-center gap-1 bg-stone-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium">
-                        <Icon name="plus" size={14} /><span>Neu</span>
-                      </button>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => document.getElementById('cookbookCameraInput').click()} className="flex items-center gap-1 bg-stone-200 text-stone-900 px-2.5 py-1.5 rounded-lg text-xs font-medium">
+                          <Icon name="camera" size={13} />
+                          <span>Buch-Scan</span>
+                        </button>
+                        <button onClick={() => setShowNewRecipeModal(true)} className="flex items-center gap-1 bg-stone-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium">
+                          <Icon name="plus" size={14} />
+                          <span>Neu</span>
+                        </button>
+                      </div>
                     </div>
+
                     {recipes.map(r => (
-                      <div key={r.id} onClick={() => setSelectedRecipeId(r.id)} className="bg-white border border-stone-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer">
+                      <div key={r.id} onClick={() => setSelectedRecipeId(r.id)} className="bg-white border border-stone-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:border-stone-400">
                         <div>
                           <h4 className="text-sm font-semibold text-stone-900">{r.title}</h4>
-                          <p className="text-xs text-stone-500 mt-0.5">{(r.ingredients || []).length} Zutaten</p>
+                          <p className="text-xs text-stone-500 mt-0.5">{(r.ingredients || []).length} Zutaten · ~{r.kcalPer100g || 0} kcal/100g</p>
                         </div>
                         <Icon name="chevron-right" size={18} className="text-stone-400" />
                       </div>
@@ -1303,14 +1599,19 @@ Wichtige Regeln:
               </div>
             )}
 
+            {/* TAB: EINKAUF */}
             {activeTab === 'shopping' && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-semibold text-stone-900">Einkaufsliste ({shoppingList.length})</h3>
+                    <p className="text-[11px] text-stone-500">Einzelne Kacheln an Bring! übergeben</p>
                   </div>
                   {shoppingList.length > 0 && (
-                    <button onClick={triggerOfficialBringImport} className="flex items-center gap-1.5 bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold">
+                    <button
+                      onClick={() => setShowBringModal(true)}
+                      className="flex items-center gap-1.5 bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-800 transition shadow-sm"
+                    >
                       <Icon name="share-2" size={13} />
                       <span>In Bring! öffnen</span>
                     </button>
@@ -1318,8 +1619,29 @@ Wichtige Regeln:
                 </div>
 
                 <div className="flex gap-2">
-                  <input type="text" placeholder="Artikel hinzufügen..." value={newShopItemName} onChange={e => setNewShopItemName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && newShopItemName.trim()) { setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: newShopItemName.trim(), reason: 'Manuell', done: false }]); setNewShopItemName(''); } }} className="flex-1 bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs" />
-                  <button onClick={() => { if (!newShopItemName.trim()) return; setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: newShopItemName.trim(), reason: 'Manuell', done: false }]); setNewShopItemName(''); }} className="bg-stone-900 text-white px-3.5 py-2 rounded-xl text-xs font-semibold">+</button>
+                  <input
+                    type="text"
+                    placeholder="Artikel hinzufügen..."
+                    value={newShopItemName}
+                    onChange={e => setNewShopItemName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newShopItemName.trim()) {
+                        setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: newShopItemName.trim(), reason: 'Manuell', done: false }]);
+                        setNewShopItemName('');
+                      }
+                    }}
+                    className="flex-1 bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!newShopItemName.trim()) return;
+                      setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: newShopItemName.trim(), reason: 'Manuell', done: false }]);
+                      setNewShopItemName('');
+                    }}
+                    className="bg-stone-900 text-white px-3.5 py-2 rounded-xl text-xs font-semibold"
+                  >
+                    +
+                  </button>
                 </div>
 
                 <div className="bg-white border border-stone-200 rounded-xl divide-y divide-stone-100">
@@ -1330,17 +1652,40 @@ Wichtige Regeln:
                         <p className="text-xs text-stone-500">{item.reason}</p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <button onClick={() => { addOrUpdatePantryItem(item.name, 1, 'Stück', 'pantry'); setShoppingList(prev => prev.filter(s => s.id !== item.id)); }} className="px-3 py-1.5 rounded-lg bg-stone-900 text-white text-xs font-medium">Gekauft</button>
-                        <button onClick={() => setShoppingList(prev => prev.filter(s => s.id !== item.id))} className="text-stone-400 hover:text-red-600 p-1"><Icon name="trash-2" size={14} /></button>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.name);
+                            showToast(`"${item.name}" einzeln kopiert!`);
+                          }}
+                          className="p-1.5 rounded-lg border border-stone-200 text-stone-600 text-xs"
+                          title="Einzeln für Bring! kopieren"
+                        >
+                          <Icon name="copy" size={13} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            addOrUpdatePantryItem(item.name, 1, 'Stück', 'pantry');
+                            setShoppingList(prev => prev.filter(s => s.id !== item.id));
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-stone-900 text-white text-xs font-medium"
+                        >
+                          Gekauft
+                        </button>
+                        <button onClick={() => setShoppingList(prev => prev.filter(s => s.id !== item.id))} className="text-stone-400 hover:text-red-600 p-1">
+                          <Icon name="trash-2" size={14} />
+                        </button>
                       </div>
                     </div>
                   ))}
+                  {shoppingList.length === 0 && (
+                    <p className="p-6 text-center text-xs text-stone-500">Einkaufsliste ist leer.</p>
+                  )}
                 </div>
               </div>
             )}
           </main>
 
-          {/* MODAL: MHD ÄNDERN */}
+          {/* MODAL: HALTBARKEITSDATUM (MHD) BEARBEITEN */}
           {editingExpiryItem && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4">
@@ -1348,105 +1693,504 @@ Wichtige Regeln:
                   <h3 className="text-sm font-semibold text-stone-900">MHD: {editingExpiryItem.name}</h3>
                   <button onClick={() => setEditingExpiryItem(null)} className="text-stone-400"><Icon name="x" size={18} /></button>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[{ label: 'Morgen', d: 1 }, { label: '+2 T', d: 2 }, { label: '+3 T', d: 3 }, { label: '+7 T', d: 7 }].map(b => (
-                    <button key={b.d} onClick={() => setEditingExpiryDateVal(getFutureDateStr(b.d))} className="py-1.5 bg-stone-100 rounded text-[11px] font-medium">{b.label}</button>
-                  ))}
+
+                <div className="space-y-2">
+                  <label className="text-xs text-stone-600 block">Schnellwahl:</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { label: 'Morgen', d: 1 },
+                      { label: '+2 Tage', d: 2 },
+                      { label: '+3 Tage', d: 3 },
+                      { label: '+7 Tage', d: 7 }
+                    ].map(btn => (
+                      <button
+                        key={btn.d}
+                        onClick={() => setEditingExpiryDateVal(getFutureDateStr(btn.d))}
+                        className="py-1.5 px-1 bg-stone-100 hover:bg-stone-200 rounded-lg text-[11px] font-medium text-stone-800"
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <input type="date" value={editingExpiryDateVal} onChange={e => setEditingExpiryDateVal(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm font-semibold" />
-                <button onClick={() => { setPantry(prev => prev.map(p => p.id === editingExpiryItem.id ? { ...p, expiryDate: editingExpiryDateVal, expiryDays: undefined } : p)); setEditingExpiryItem(null); showToast('MHD gespeichert!'); }} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">Speichern</button>
+
+                <div>
+                  <label className="text-xs text-stone-600 block mb-1">Oder genaues Datum wählen:</label>
+                  <input
+                    type="date"
+                    value={editingExpiryDateVal}
+                    onChange={e => setEditingExpiryDateVal(e.target.value)}
+                    className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm font-semibold"
+                  />
+                </div>
+
+                <button
+                  onClick={() => {
+                    setPantry(prev => prev.map(p => p.id === editingExpiryItem.id ? { ...p, expiryDate: editingExpiryDateVal, expiryDays: undefined } : p));
+                    setEditingExpiryItem(null);
+                    showToast('Haltbarkeitsdatum gespeichert!');
+                  }}
+                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
+                >
+                  Speichern
+                </button>
               </div>
             </div>
           )}
 
-          {/* MODAL: EINSTELLUNGEN */}
+          {/* MODAL: BRING! EINZEL-KACHEL ASSISTENT */}
+          {showBringModal && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-stone-900">An Bring! übergeben</h3>
+                  <button onClick={() => setShowBringModal(false)} className="text-stone-400">
+                    <Icon name="x" size={18} />
+                  </button>
+                </div>
+
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 space-y-2">
+                  <p className="text-xs font-semibold text-emerald-950">Option 1: Alle Artikel gleichzeitig (Getrennte Kacheln)</p>
+                  <p className="text-[11px] text-emerald-800 leading-relaxed">
+                    Über die offizielle Bring!-Rezept-Schnittstelle werden alle {shoppingList.length} Artikel direkt als <strong>einzelne Kacheln</strong> in eure Bring!-Liste geladen:
+                  </p>
+                  <button
+                    onClick={triggerOfficialBringImport}
+                    className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow-sm"
+                  >
+                    Jetzt alle {shoppingList.length} Artikel in Bring! importieren
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-stone-700">Option 2: Artikel einzeln antippen & kopieren</p>
+                  <div className="max-h-40 overflow-y-auto divide-y divide-stone-100 border border-stone-200 rounded-xl">
+                    {shoppingList.map(it => (
+                      <div key={it.id} className="px-3 py-2 flex items-center justify-between text-xs">
+                        <span className="font-medium">{it.name}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(it.name);
+                            showToast(`"${it.name}" kopiert!`);
+                          }}
+                          className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 rounded font-medium text-[11px]"
+                        >
+                          Kopieren
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={() => setShowBringModal(false)} className="w-full py-2 bg-stone-900 text-white rounded-xl text-xs font-semibold">
+                  Fertig
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: EINSTELLUNGEN & DATENBANK-RESET */}
           {showSettingsModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-stone-900">Einstellungen</h3>
-                  <button onClick={() => { setShowSettingsModal(false); setShowResetConfirm(false); }} className="text-stone-400"><Icon name="x" size={18} /></button>
+                  <h3 className="text-base font-semibold text-stone-900">Einstellungen & Datenbank</h3>
+                  <button onClick={() => { setShowSettingsModal(false); setShowResetConfirm(false); }} className="text-stone-400">
+                    <Icon name="x" size={18} />
+                  </button>
                 </div>
+
                 <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2">
-                  <span className="text-xs font-semibold text-stone-800 block">Cloud-Datenbank</span>
-                  <p className="text-[11px] text-stone-600">Gespeichert: <strong>{pantry.length} Vorräte</strong>, <strong>{recipes.length} Rezepte</strong>.</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-stone-800">Firebase Cloud-Datenbank</span>
+                    <span className="text-[11px] font-medium text-emerald-700">Verbunden</span>
+                  </div>
+                  <p className="text-[11px] text-stone-600">
+                    Aktuell in der Cloud gespeichert: <strong>{pantry.length} Vorräte</strong>, <strong>{mealPrep.length} Meal-Preps</strong>, <strong>{recipes.length} Rezepte</strong>.
+                  </p>
+
                   {!showResetConfirm ? (
-                    <button onClick={() => setShowResetConfirm(true)} className="w-full py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-semibold">
-                      🗑️ Datenbank komplett leeren
+                    <button
+                      onClick={() => setShowResetConfirm(true)}
+                      className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition"
+                    >
+                      🗑️ Datenbank komplett leeren (Alle {pantry.length + recipes.length} Einträge löschen)
                     </button>
                   ) : (
-                    <div className="bg-red-100 p-2.5 rounded-lg space-y-2">
-                      <p className="text-xs font-bold text-red-900 text-center">Wirklich alles löschen?</p>
+                    <div className="bg-red-100 border border-red-300 rounded-lg p-2.5 space-y-2">
+                      <p className="text-xs font-bold text-red-900 text-center">
+                        Sicher? Alle Vorräte & Rezepte werden in Firebase gelöscht!
+                      </p>
                       <div className="flex gap-2">
-                        <button onClick={handleDatabaseReset} className="flex-1 py-1.5 bg-red-600 text-white rounded text-xs font-semibold">Ja</button>
-                        <button onClick={() => setShowResetConfirm(false)} className="flex-1 py-1.5 bg-white text-stone-700 rounded text-xs">Abbrechen</button>
+                        <button onClick={handleDatabaseReset} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-xs font-semibold">
+                          Ja, endgültig leeren
+                        </button>
+                        <button onClick={() => setShowResetConfirm(false)} className="flex-1 py-2 bg-white text-stone-700 rounded-lg text-xs font-medium border border-stone-300">
+                          Abbrechen
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-stone-800 block mb-1">Gemini API-Key</label>
-                  <input type="text" value={tempKeyInput || geminiKey} onChange={e => setTempKeyInput(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs mb-2" />
-                  <button onClick={() => { setGeminiKey((tempKeyInput || geminiKey).trim()); localStorage.setItem('kueche_gemini_key', (tempKeyInput || geminiKey).trim()); showToast('Key gespeichert!'); }} className="w-full py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold">Key speichern</button>
-                </div>
-                <button onClick={() => { setShowSettingsModal(false); setShowResetConfirm(false); }} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">Schließen</button>
-              </div>
-            </div>
-          )}
 
-          {showNewPantryItemModal && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold">Vorrat hinzufügen</h3>
-                  <button onClick={() => setShowNewPantryItemModal(false)} className="text-stone-400"><Icon name="x" size={18} /></button>
-                </div>
                 <div className="space-y-3">
-                  <select value={newPantryCategory} onChange={e => setNewPantryCategory(e.target.value)} className="w-full border rounded-lg px-2.5 py-2 text-xs bg-white">
-                    <option value="pantry">Vorratsschrank</option>
-                    <option value="fridge">Kühlschrank (Frisch mit MHD)</option>
-                    <option value="freezer_items">Tiefkühler</option>
-                    <option value="sauces">Öle & Essige</option>
-                    <option value="spices">Gewürze</option>
-                  </select>
-                  <input type="text" placeholder="Bezeichnung" value={newPantryName} onChange={e => setNewPantryName(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs" />
-                  {newPantryCategory !== 'spices' && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <input type="number" min="0" value={newPantryAmount} onChange={e => setNewPantryAmount(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs font-semibold" />
-                      <select value={newPantryUnitType} onChange={e => setNewPantryUnitType(e.target.value)} className="w-full border rounded-lg px-2.5 py-2 text-xs bg-white">
-                        <option value="Flasche">Flasche</option>
-                        <option value="Stück">Stück</option>
-                        <option value="g">g</option>
-                        <option value="ml">ml</option>
-                        <option value="Packung">Packung</option>
-                      </select>
-                    </div>
-                  )}
-                  {newPantryCategory === 'fridge' && (
-                    <div className="bg-amber-50 p-3 rounded-xl space-y-2">
-                      <label className="text-xs font-semibold block">Haltbar bis (MHD):</label>
-                      <input type="date" value={newPantryExpiryDate} onChange={e => setNewPantryExpiryDate(e.target.value)} className="w-full bg-white border rounded-lg px-2 py-1 text-xs font-semibold" />
-                    </div>
-                  )}
+                  <div>
+                    <label className="text-xs font-semibold text-stone-800 block mb-1">1. Firebase Datenbank-URL</label>
+                    <input
+                      type="text"
+                      value={firebaseUrl}
+                      onChange={e => { setFirebaseUrl(e.target.value); localStorage.setItem('kueche_firebase_url', e.target.value); }}
+                      className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-stone-800 block mb-1">2. Gemini KI (Foto & Sprache)</label>
+                    {geminiKey && !isEditingKey ? (
+                      <div className="space-y-2">
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-semibold text-emerald-900 block">API-Key aktiv ({geminiKey.slice(0, 6)}...)</span>
+                            <span className="text-[10px] text-emerald-700">
+                              {detectedModelInfo ? `Genutztes Modell: ${detectedModelInfo}` : 'Automatische Modell-Wahl aktiv'}
+                            </span>
+                          </div>
+                          <button onClick={() => { setTempKeyInput(geminiKey); setIsEditingKey(true); }} className="text-[11px] font-medium text-emerald-800 underline px-2 py-1">
+                            Ändern
+                          </button>
+                        </div>
+                        <button
+                          onClick={testAvailableModels}
+                          className="w-full py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-[11px] font-medium border border-stone-200"
+                        >
+                          🔍 Verfügbare KI-Modelle jetzt testen
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          placeholder="API-Key hier einfügen..."
+                          value={tempKeyInput}
+                          onChange={e => setTempKeyInput(e.target.value)}
+                          className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
+                        />
+                        <button
+                          onClick={() => {
+                            const cleaned = tempKeyInput.trim() || DEFAULT_GEMINI_KEY;
+                            setGeminiKey(cleaned);
+                            localStorage.setItem('kueche_gemini_key', cleaned);
+                            setIsEditingKey(false);
+                            showToast('API-Key gespeichert!');
+                          }}
+                          className="w-full py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold"
+                        >
+                          Key bestätigen
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <button onClick={handleAddPantryItem} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">Speichern</button>
+
+                {firebaseUrl.trim() && (
+                  <button onClick={copyShareLink} className="w-full py-2.5 bg-[#849b82] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm">
+                    <Icon name="share-2" size={14} />
+                    <span>Link kopieren</span>
+                  </button>
+                )}
+
+                <button onClick={() => { setShowSettingsModal(false); setShowResetConfirm(false); }} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">
+                  Schließen
+                </button>
               </div>
             </div>
           )}
 
+          {/* MODAL: MEAL-PREP KCAL */}
+          {editingMpKcalItem && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-stone-900">{editingMpKcalItem.name}</h3>
+                  <button onClick={() => setEditingMpKcalItem(null)} className="text-stone-400"><Icon name="x" size={18} /></button>
+                </div>
+                <div>
+                  <label className="text-xs text-stone-600 block mb-1">Kalorien pro 100 g:</label>
+                  <input type="number" min="0" value={editingMpKcalVal} onChange={e => setEditingMpKcalVal(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base font-semibold" autoFocus />
+                </div>
+                <button
+                  onClick={() => {
+                    setMealPrep(prev => prev.map(m => m.id === editingMpKcalItem.id ? { ...m, kcalPer100g: Number(editingMpKcalVal) || 0 } : m));
+                    setEditingMpKcalItem(null);
+                  }}
+                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
+                >
+                  Übernehmen
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: EXAKTEN BESTAND EINGEBEN */}
+          {editingAmountItem && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-stone-900">{editingAmountItem.name}</h3>
+                  <button onClick={() => setEditingAmountItem(null)} className="text-stone-400"><Icon name="x" size={18} /></button>
+                </div>
+                <div>
+                  <label className="text-xs text-stone-600 block mb-1">Restmenge in <strong>{editingAmountItem.unitType}</strong>:</label>
+                  <input type="number" min="0" value={editingAmountValue} onChange={e => setEditingAmountValue(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base font-semibold" autoFocus />
+                </div>
+                <button onClick={() => { updatePantryAmount(editingAmountItem.id, editingAmountValue); setEditingAmountItem(null); }} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">
+                  Übernehmen
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: NEUES GERICHT */}
           {showNewRecipeModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold">Neues Rezept</h3>
+                  <h3 className="text-base font-semibold text-stone-900">Neues Gericht</h3>
                   <button onClick={() => setShowNewRecipeModal(false)} className="text-stone-400"><Icon name="x" size={18} /></button>
                 </div>
-                <input type="text" placeholder="Titel" value={newRecipeTitle} onChange={e => setNewRecipeTitle(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs" />
-                <button onClick={() => { if (!newRecipeTitle.trim()) return; setRecipes(prev => [...prev, { id: 'r_' + Date.now(), title: newRecipeTitle.trim(), effort: 'quick', season: 'all', kcalPer100g: 180, ingredients: [], steps: [] }]); setShowNewRecipeModal(false); setNewRecipeTitle(''); }} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">Anlegen</button>
+                <div className="space-y-3">
+                  <input type="text" placeholder="Name (z.B. Chili con Carne)" value={newRecipeTitle} onChange={e => setNewRecipeTitle(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-stone-600 block mb-1">kcal / 100g</label>
+                      <input type="number" value={newRecipeKcal} onChange={e => setNewRecipeKcal(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-stone-600 block mb-1">Dauer (Min.)</label>
+                      <input type="number" value={newRecipePrepTime} onChange={e => setNewRecipePrepTime(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold" />
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!newRecipeTitle.trim()) return;
+                    const newRec = {
+                      id: 'r_' + Date.now(), title: newRecipeTitle.trim(),
+                      effort: Number(newRecipePrepTime) <= 30 ? 'quick' : 'elaborate',
+                      season: 'all', kcalPer100g: Number(newRecipeKcal) || 180,
+                      isFamilyRecipe: true, isKidFriendly: false, isMealPrep: false,
+                      lastCookedDaysAgo: 99, prepTime: Number(newRecipePrepTime) || 30,
+                      ingredients: [], steps: []
+                    };
+                    setRecipes(prev => [newRec, ...prev]);
+                    setNewRecipeTitle(''); setShowNewRecipeModal(false);
+                    setSelectedRecipeId(newRec.id); setIsEditingRecipe(true);
+                  }}
+                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
+                >
+                  Anlegen
+                </button>
               </div>
             </div>
           )}
 
+          {/* MODAL: NEUES MEAL-PREP */}
+          {showAddMealPrepModal && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-stone-900">Meal-Prep einfrieren</h3>
+                  <button onClick={() => setShowAddMealPrepModal(false)} className="text-stone-400"><Icon name="x" size={18} /></button>
+                </div>
+                <div className="space-y-3">
+                  <input type="text" placeholder="Gericht / Sauce" value={newMpName} onChange={e => setNewMpName(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold block mb-1">500 g Blöcke</label>
+                      <input type="number" min="0" value={newMp500} onChange={e => setNewMp500(e.target.value)} className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm font-semibold" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold block mb-1">250 g Blöcke</label>
+                      <input type="number" min="0" value={newMp250} onChange={e => setNewMp250(e.target.value)} className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm font-semibold" />
+                    </div>
+                  </div>
+                  <input type="number" placeholder="kcal / 100g" value={newMpKcal} onChange={e => setNewMpKcal(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs" />
+                  <input type="text" placeholder="Frische Beilage beim Auftauen (z.B. Pasta, Reis)" value={newMpNeeds} onChange={e => setNewMpNeeds(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs" />
+                </div>
+                <button onClick={handleCreateNewMealPrep} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">
+                  Speichern
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: NEUER VORRAT (INKLUSIVE MHD-AUSWAHL BEI FRISCHEPRODUKTEN) */}
+          {showNewPantryItemModal && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-stone-900">Vorrat hinzufügen</h3>
+                  <button onClick={() => setShowNewPantryItemModal(false)} className="text-stone-400"><Icon name="x" size={18} /></button>
+                </div>
+                <div className="space-y-3">
+                  <select
+                    value={newPantryCategory}
+                    onChange={e => {
+                      const cat = e.target.value;
+                      setNewPantryCategory(cat);
+                      if (cat === 'fridge') setNewPantryExpiryDate(getFutureDateStr(3));
+                    }}
+                    className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
+                  >
+                    <option value="pantry">Vorratsschrank</option>
+                    <option value="fridge">Kühlschrank (Frisch mit MHD)</option>
+                    <option value="freezer_items">Tiefkühler (TK-Vorrat)</option>
+                    <option value="sauces">Öle & Essige</option>
+                    <option value="spices">Gewürzschrank</option>
+                  </select>
+
+                  <input type="text" placeholder="Bezeichnung (z.B. Rinderhackfleisch, Passata)" value={newPantryName} onChange={e => setNewPantryName(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs" />
+
+                  {newPantryCategory !== 'spices' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="number" min="0" value={newPantryAmount} onChange={e => setNewPantryAmount(e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold" />
+                      <select value={newPantryUnitType} onChange={e => { const u = e.target.value; setNewPantryUnitType(u); setNewPantryAmount(u === 'g' || u === 'ml' ? 500 : 1); }} className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white">
+                        <option value="Flasche">Flasche</option>
+                        <option value="Dosen">Dose / Glas</option>
+                        <option value="Stück">Stück</option>
+                        <option value="g">Gramm (g)</option>
+                        <option value="ml">Milliliter (ml)</option>
+                        <option value="Tube">Tube</option>
+                        <option value="Packung">Packung</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {newPantryCategory === 'fridge' && (
+                    <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 space-y-2">
+                      <label className="text-[11px] font-semibold text-amber-950 block">Haltbar bis (MHD):</label>
+                      <div className="grid grid-cols-4 gap-1">
+                        {[
+                          { label: 'Morgen', d: 1 },
+                          { label: '+2 Tage', d: 2 },
+                          { label: '+3 Tage', d: 3 },
+                          { label: '+7 Tage', d: 7 }
+                        ].map(b => (
+                          <button
+                            key={b.d}
+                            type="button"
+                            onClick={() => setNewPantryExpiryDate(getFutureDateStr(b.d))}
+                            className="py-1 bg-white border border-amber-300 rounded text-[10px] font-semibold text-amber-900 hover:bg-amber-100"
+                          >
+                            {b.label}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="date"
+                        value={newPantryExpiryDate}
+                        onChange={e => setNewPantryExpiryDate(e.target.value)}
+                        className="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold"
+                      />
+                    </div>
+                  )}
+                </div>
+                <button onClick={handleAddPantryItem} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">
+                  Speichern
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: HEUTE GEKOCHT */}
+          {cookedModalRecipe && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-stone-900">Gekocht: {cookedModalRecipe.title}</h3>
+                  <button onClick={() => setCookedModalRecipe(null)} className="text-stone-400"><Icon name="x" size={18} /></button>
+                </div>
+                <div className="bg-stone-50 border border-stone-200 rounded-xl p-3.5 space-y-2.5">
+                  <p className="text-xs font-semibold text-stone-800">Reste in Silikonformen eingefroren?</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-white border border-stone-200 rounded-lg p-2 flex items-center justify-between">
+                      <span className="text-xs font-medium">+ 500 g</span>
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => setFreezeLeftovers500(Math.max(0, freezeLeftovers500 - 1))} className="w-6 h-6 rounded bg-stone-100 text-xs">-</button>
+                        <span className="text-xs font-semibold">{freezeLeftovers500}</span>
+                        <button onClick={() => setFreezeLeftovers500(freezeLeftovers500 + 1)} className="w-6 h-6 rounded bg-stone-900 text-white text-xs">+</button>
+                      </div>
+                    </div>
+                    <div className="bg-white border border-stone-200 rounded-lg p-2 flex items-center justify-between">
+                      <span className="text-xs font-medium">+ 250 g</span>
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => setFreezeLeftovers250(Math.max(0, freezeLeftovers250 - 1))} className="w-6 h-6 rounded bg-stone-100 text-xs">-</button>
+                        <span className="text-xs font-semibold">{freezeLeftovers250}</span>
+                        <button onClick={() => setFreezeLeftovers250(freezeLeftovers250 + 1)} className="w-6 h-6 rounded bg-stone-900 text-white text-xs">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button onClick={handleConfirmCooked} className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold">
+                  Bestätigen
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: GEMINI KI SPRACH-ASSISTENT */}
+          {voiceOverlay && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-stone-900">Gemini Sprach-Assistent</h3>
+                    <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">KI aktiv</span>
+                  </div>
+                  <button onClick={() => { stopListening(); setVoiceOverlay(false); }} className="text-stone-400"><Icon name="x" size={18} /></button>
+                </div>
+
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  Sprich ganz natürlich, z. B.: <em>„Ich hab 500g frisches Hackfleisch für den Kühlschrank, läuft übermorgen ab, und zwei Flaschen Mutti Passata“</em>
+                </p>
+
+                <button
+                  onClick={isListening ? stopListening : startListening}
+                  className={`w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                    isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-100 text-stone-900'
+                  }`}
+                >
+                  <Icon name="mic" size={16} />
+                  <span>{isListening ? 'Höre zu... (Tippen zum Pausieren)' : 'Mikrofon fortsetzen'}</span>
+                </button>
+
+                <textarea
+                  rows={3}
+                  placeholder="Erkannter Text erscheint hier..."
+                  value={voiceText}
+                  onChange={e => setVoiceText(e.target.value)}
+                  className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs"
+                />
+
+                <button
+                  disabled={isProcessingVoice || !voiceText.trim()}
+                  onClick={() => executeVoiceCommand(voiceText)}
+                  className="w-full py-2.5 bg-stone-900 disabled:bg-stone-400 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2"
+                >
+                  {isProcessingVoice ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Gemini verarbeitet Befehl...</span>
+                    </>
+                  ) : (
+                    <span>Mit Gemini ausführen</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* BOTTOM NAVIGATION */}
           <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-stone-200 grid grid-cols-5 py-2 z-30">
             {[
               { id: 'home', label: 'Start', icon: 'home' },
@@ -1455,7 +2199,11 @@ Wichtige Regeln:
               { id: 'recipes', label: 'Rezepte', icon: 'book-open' },
               { id: 'shopping', label: `Einkauf (${shoppingList.length})`, icon: 'shopping-cart' }
             ].map(item => (
-              <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center gap-1 py-1 text-[11px] font-medium ${activeTab === item.id ? 'text-stone-900' : 'text-stone-400'}`}>
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex flex-col items-center gap-1 py-1 text-[11px] font-medium ${activeTab === item.id ? 'text-stone-900' : 'text-stone-400'}`}
+              >
                 <Icon name={item.icon} size={18} />
                 <span>{item.label}</span>
               </button>
