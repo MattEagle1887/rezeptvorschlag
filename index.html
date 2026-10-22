@@ -373,25 +373,25 @@
       }, []);
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v25');
+        const saved = localStorage.getItem('kueche_pantry_v26');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v25');
+        const saved = localStorage.getItem('kueche_mealprep_v26');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v25');
+        const saved = localStorage.getItem('kueche_recipes_v26');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v25');
+        const saved = localStorage.getItem('kueche_shopping_v26');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
       const [mealPlan, setMealPlan] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealplan_v25');
+        const saved = localStorage.getItem('kueche_mealplan_v26');
         return saved ? JSON.parse(saved) : [];
       });
 
@@ -452,11 +452,11 @@
       }, [firebaseUrl]);
 
       useEffect(() => {
-        localStorage.setItem('kueche_pantry_v25', JSON.stringify(pantry));
-        localStorage.setItem('kueche_mealprep_v25', JSON.stringify(mealPrep));
-        localStorage.setItem('kueche_recipes_v25', JSON.stringify(recipes));
-        localStorage.setItem('kueche_shopping_v25', JSON.stringify(shoppingList));
-        localStorage.setItem('kueche_mealplan_v25', JSON.stringify(mealPlan));
+        localStorage.setItem('kueche_pantry_v26', JSON.stringify(pantry));
+        localStorage.setItem('kueche_mealprep_v26', JSON.stringify(mealPrep));
+        localStorage.setItem('kueche_recipes_v26', JSON.stringify(recipes));
+        localStorage.setItem('kueche_shopping_v26', JSON.stringify(shoppingList));
+        localStorage.setItem('kueche_mealplan_v26', JSON.stringify(mealPlan));
         if (firebaseUrl && !isApplyingRemote.current) {
           pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
         }
@@ -926,7 +926,7 @@
         }, 600);
       };
 
-      // GEMINI VISION API (Mit Fallback auf v1beta und kompatiblem Modellnamen)
+      // ROBUUSTER GEMINI API AUFRUF (mit automatischem Fallback auf v1)
       const handleFileSelected = async (e, scanType = 'pantry') => {
         const file = e.target.files[0];
         if (!file) return;
@@ -943,8 +943,7 @@
             ? `Analysiere diese abfotografierte Kochbuchseite und antworte NUR mit reinem JSON: {"title": "Name des Gerichts", "prepTime": 30, "kcalPer100g": 180, "ingredients": [{"name": "Zutat", "amount": "Menge"}], "steps": ["Schritt 1", "Schritt 2"]}`
             : `Erkenne das fotografierte Lebensmittel oder den Kassenbon auf dem Bild. Antworte NUR mit reinem JSON: {"items": [{"name": "Genauer Produktname (z.B. Mutti Passata)", "amount": 1, "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDays": 5}]}`;
 
-          // Robuster Endpunkt mit aktuellem Gemini Flash Modell
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(activeKey)}`, {
+          let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(activeKey)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -956,6 +955,22 @@
               }]
             })
           });
+
+          // Automatischer Fallback auf v1 Endpunkt bei Bedarf
+          if (!response.ok) {
+            response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(activeKey)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [
+                    { text: prompt },
+                    { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
+                  ]
+                }]
+              })
+            });
+          }
 
           const result = await response.json();
           if (!response.ok || result.error) {
@@ -1138,7 +1153,7 @@
           {isAnalyzingPhoto && (
             <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center p-6 text-white space-y-3">
               <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm font-semibold">Gemini Flash-Modell analysiert dein Foto...</p>
+              <p className="text-sm font-semibold">Gemini Flash analysiert dein Foto...</p>
             </div>
           )}
 
