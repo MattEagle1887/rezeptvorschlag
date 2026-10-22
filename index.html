@@ -41,42 +41,43 @@
     };
 
     const INITIAL_PANTRY = [
+      // Kühlschrank / Frisch
       { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDays: 5, amount: 500, unitType: 'g', lowThreshold: 200 },
       { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDays: 9, amount: 3, unitType: 'Stück', lowThreshold: 1 },
       { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDays: 20, amount: 200, unitType: 'g', lowThreshold: 50 },
       { id: 'p4', name: 'Butter', category: 'fridge', status: 'in_stock', expiryDays: 14, amount: 250, unitType: 'g', lowThreshold: 50 },
       { id: 'p5', name: 'Frischer Rosmarin & Thymian (Terrasse)', category: 'fridge', status: 'low', expiryDays: 3, amount: 1, unitType: 'Topf', lowThreshold: 1 },
       
-      // Pastasorten
+      // Vorratsschrank (Pasta, Tomaten, Reis, Fonds)
       { id: 'p6a', name: 'Tagliatelle', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
       { id: 'p6b', name: 'Rigatoni', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
       { id: 'p6c', name: 'Spaghetti', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 800, unitType: 'g', lowThreshold: 300 },
       { id: 'p6d', name: 'Penne', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 400, unitType: 'g', lowThreshold: 200 },
-
       { id: 'p7', name: 'Dosentomaten (San Marzano)', category: 'pantry', status: 'in_stock', amount: 4, unitType: 'Dosen', lowThreshold: 2 },
       { id: 'p8', name: 'Risottoreis / Basmati', category: 'pantry', status: 'in_stock', group: 'Reis', amount: 800, unitType: 'g', lowThreshold: 250 },
       { id: 'p9', name: 'Zwiebeln & Knoblauch', category: 'pantry', status: 'in_stock', amount: 6, unitType: 'Stück', lowThreshold: 2 },
       { id: 'p10', name: 'Apfelmus (Glas)', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
       { id: 'p10b', name: 'Ketchup', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-      
-      // Fonds & Brühen
       { id: 'p11a', name: 'Rinderfond', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
       { id: 'p11b', name: 'Gemüsebrühe', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 1, unitType: 'Gläser', lowThreshold: 1 },
+      { id: 'p12', name: 'Olivenöl Extra Vergine', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+      { id: 'p13', name: 'Tomatenmark', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Tubem', lowThreshold: 1 },
 
-      // Essige, Saucen & Gewürze
-      { id: 's_soja1', name: 'Sojasauce (helle)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-      { id: 's_soja2', name: 'Sojasauce (dunkle)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-      { id: 's_essig1', name: 'Weißweinessig', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-      { id: 's_essig2', name: 'Balsamico-Essig', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-      { id: 'sp_1', name: 'Piment (ganz / gemahlen)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Dose', lowThreshold: 1 },
-      { id: 'sp_2', name: 'Wacholderbeeren', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Dose', lowThreshold: 1 },
-      { id: 'sp_3', name: 'Nelken', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Dose', lowThreshold: 1 },
-      { id: 'sp_4', name: 'Muskatnuss (ganz)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Stück', lowThreshold: 1 },
-      { id: 'sp_5', name: 'Tonkabohne', category: 'spices', status: 'in_stock', amount: 2, unitType: 'Stück', lowThreshold: 1 },
+      // Saucen & Essige (Mit Mengen)
+      { id: 's_soja1', name: 'Sojasauce (helle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+      { id: 's_soja2', name: 'Sojasauce (dunkle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+      { id: 's_essig1', name: 'Weißweinessig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+      { id: 's_essig2', name: 'Balsamico-Essig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
 
-      { id: 'p12', name: 'Olivenöl Extra Vergine', category: 'basics', status: 'in_stock', usesSinceOpen: 19, maxUses: 20 },
-      { id: 'p13', name: 'Tomatenmark', category: 'basics', status: 'in_stock', usesSinceOpen: 5, maxUses: 10 },
-      
+      // Gewürze & Kräuter (Ohne Einheiten, reiner Da-Status)
+      { id: 'sp_1', name: 'Piment', category: 'spices', status: 'in_stock' },
+      { id: 'sp_2', name: 'Wacholderbeeren', category: 'spices', status: 'in_stock' },
+      { id: 'sp_3', name: 'Nelken', category: 'spices', status: 'in_stock' },
+      { id: 'sp_4', name: 'Muskatnuss', category: 'spices', status: 'in_stock' },
+      { id: 'sp_5', name: 'Tonkabohne', category: 'spices', status: 'in_stock' },
+      { id: 'sp_6', name: 'Getrocknete Kräuter (Thymian, Oregano, Rosmarin)', category: 'spices', status: 'in_stock' },
+
+      // TK-Vorräte
       { id: 'p14', name: 'Hähnchenbrustfilet (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 800, unitType: 'g', lowThreshold: 300 },
       { id: 'p15', name: 'Hackfleisch-Reserve (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 1000, unitType: 'g', lowThreshold: 250 },
       { id: 'p16', name: 'Merguez-Würstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 6, unitType: 'Stück', lowThreshold: 2 },
@@ -292,28 +293,28 @@
       const [activeTab, setActiveTab] = useState('home');
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v10');
+        const saved = localStorage.getItem('kueche_pantry_v11');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v10');
+        const saved = localStorage.getItem('kueche_mealprep_v11');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v10');
+        const saved = localStorage.getItem('kueche_recipes_v11');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v10');
+        const saved = localStorage.getItem('kueche_shopping_v11');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry_v10', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep_v10', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes_v10', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping_v10', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_pantry_v11', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v11', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v11', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v11', JSON.stringify(shoppingList)); }, [shoppingList]);
 
       const [filterEffort, setFilterEffort] = useState('all');
       const [filterCalories, setFilterCalories] = useState('all');
@@ -533,8 +534,8 @@
           name: newPantryName.trim(),
           category: pantrySubTab,
           status: 'in_stock',
-          amount: amt,
-          unitType: newPantryUnitType,
+          amount: pantrySubTab === 'spices' ? undefined : amt,
+          unitType: pantrySubTab === 'spices' ? undefined : newPantryUnitType,
           lowThreshold: defaultLow,
           ...(lowerName.includes('pasta') || lowerName.includes('tagliatelle') || lowerName.includes('rigatoni') || lowerName.includes('spaghetti') || lowerName.includes('penne') ? { group: 'Pasta' } : {}),
           ...(lowerName.includes('fond') || lowerName.includes('brühe') ? { group: 'Fond' } : {}),
@@ -544,7 +545,7 @@
         setPantry(prev => [newItem, ...prev]);
         setNewPantryName('');
         setShowNewPantryItemModal(false);
-        showToast(`${newItem.name} (${amt} ${newPantryUnitType}) hinzugefügt!`);
+        showToast(`${newItem.name} hinzugefügt!`);
       };
 
       const handleConfirmCooked = () => {
@@ -670,10 +671,8 @@
         }));
       };
 
-      // Bring! App Export via URL-Scheme
       const exportToBring = () => {
         const text = shoppingList.map(s => s.name).join('\n');
-        // Bring! App Deep Link
         window.location.href = `bring://share?text=${encodeURIComponent(text)}`;
         showToast('Bring! App wird geöffnet...');
       };
@@ -700,7 +699,7 @@
         if (text.includes('haben wir') || text.includes('ist noch') || text.includes('gibt es') || text.includes('haben wir noch')) {
           const queryItem = pantry.find(p => text.includes(p.name.toLowerCase().split(' ')[0]));
           if (queryItem) {
-            showToast(`${queryItem.name}: ${queryItem.amount} ${queryItem.unitType} auf Lager (${queryItem.status === 'empty' ? 'Leer!' : 'Verfügbar'})`);
+            showToast(`${queryItem.name}: ${queryItem.amount !== undefined ? queryItem.amount + ' ' + queryItem.unitType : 'Vorhanden'} (${queryItem.status === 'empty' ? 'Leer!' : 'Verfügbar'})`);
           } else {
             showToast(`Keinen genauen Treffer für diese Zutat im System gefunden.`);
           }
@@ -712,7 +711,7 @@
         const numMatch = text.match(/(\d+)/);
         const foundPantryItem = pantry.find(p => text.includes(p.name.toLowerCase().split(' ')[0]));
 
-        if (foundPantryItem && numMatch) {
+        if (foundPantryItem && numMatch && foundPantryItem.amount !== undefined) {
           const newVal = Number(numMatch[1]);
           updatePantryAmount(foundPantryItem.id, newVal);
           showToast(`${foundPantryItem.name} auf ${newVal} ${foundPantryItem.unitType} gesetzt!`);
@@ -742,7 +741,7 @@
           <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Dashboard & Bring!-Export</p>
+              <p className="text-xs text-stone-500">Dashboard & Vorratsschrank</p>
             </div>
             <button
               onClick={() => setVoiceOverlay(true)}
@@ -798,7 +797,7 @@
 
           {/* MAIN CONTENT */}
           <main className="flex-1 px-4 pt-4">
-            {/* TAB HOME: DASHBOARD */}
+            {/* TAB HOME: DASHBOARD MIT VORRATSSCHRANK */}
             {activeTab === 'home' && (
               <div className="space-y-4">
                 <div className="bg-stone-900 text-white rounded-2xl p-5 space-y-3 shadow-sm">
@@ -822,7 +821,7 @@
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 px-1">Schnell-Zusatz nach dem Einkauf</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 px-1">Vorräte & Einkäufe einpflegen</span>
                   <div className="grid grid-cols-2 gap-2.5">
                     <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('mealprep'); }}
@@ -830,7 +829,7 @@
                     >
                       <div className="flex items-center justify-between">
                         <Icon name="snowflake" size={18} className="text-stone-700" />
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK-MealPrep</span>
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK Meal</span>
                       </div>
                       <span className="text-sm font-semibold text-stone-900 block">Gefrierfach (Saucen)</span>
                       <span className="text-[11px] text-stone-500 block">500g / 250g Blöcke</span>
@@ -842,10 +841,22 @@
                     >
                       <div className="flex items-center justify-between">
                         <Icon name="archive" size={18} className="text-stone-700" />
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK-Vorrat</span>
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK Vorrat</span>
                       </div>
                       <span className="text-sm font-semibold text-stone-900 block">TK (Fischstäbchen...)</span>
                       <span className="text-[11px] text-stone-500 block">Stück & Gramm</span>
+                    </button>
+
+                    <button
+                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('pantry'); }}
+                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Icon name="box" size={18} className="text-stone-700" />
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Schrank</span>
+                      </div>
+                      <span className="text-sm font-semibold text-stone-900 block">Vorratsschrank</span>
+                      <span className="text-[11px] text-stone-500 block">Pasta, Tomaten, Reis</span>
                     </button>
 
                     <button
@@ -861,6 +872,18 @@
                     </button>
 
                     <button
+                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('sauces'); }}
+                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Icon name="droplet" size={18} className="text-stone-700" />
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Saucen</span>
+                      </div>
+                      <span className="text-sm font-semibold text-stone-900 block">Sojasauce & Essige</span>
+                      <span className="text-[11px] text-stone-500 block">Flüssige Würzmittel</span>
+                    </button>
+
+                    <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('spices'); }}
                       className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
                     >
@@ -868,8 +891,8 @@
                         <Icon name="tag" size={18} className="text-stone-700" />
                         <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Gewürze</span>
                       </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Gewürze & Saucen</span>
-                      <span className="text-[11px] text-stone-500 block">Piment, Sojasauce, Essige</span>
+                      <span className="text-sm font-semibold text-stone-900 block">Gewürzschrank</span>
+                      <span className="text-[11px] text-stone-500 block">Piment, Nelken, Muskat</span>
                     </button>
                   </div>
                 </div>
@@ -887,7 +910,7 @@
                     className="bg-white border border-stone-200 rounded-xl p-3 text-xs font-semibold text-stone-800 flex items-center justify-center gap-2 hover:bg-stone-50"
                   >
                     <Icon name="shopping-cart" size={16} />
-                    <span>Einkaufsliste ({shoppingList.length})</span>
+                    <span>Einkauf ({shoppingList.length})</span>
                   </button>
                 </div>
               </div>
@@ -1060,16 +1083,17 @@
               </div>
             )}
 
-            {/* TAB: VORRÄTE & TK */}
+            {/* TAB: VORRÄTE & TK (MIT 6 SYMMETRISCHEN REITERN) */}
             {activeTab === 'pantry' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-5 gap-1 bg-stone-200/70 p-1 rounded-xl text-[11px] font-medium">
+                <div className="grid grid-cols-6 gap-0.5 bg-stone-200/70 p-1 rounded-xl text-[10px] font-medium">
                   {[
                     { id: 'mealprep', label: 'TK Meal' },
                     { id: 'freezer_items', label: 'TK Vorrat' },
                     { id: 'fridge', label: 'Frisch' },
                     { id: 'pantry', label: 'Schrank' },
-                    { id: 'spices', label: 'Gewürze & Co' }
+                    { id: 'sauces', label: 'Saucen' },
+                    { id: 'spices', label: 'Gewürze' }
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -1185,7 +1209,7 @@
                           Bestandsliste
                         </span>
                         <span className="text-[11px] text-stone-500">
-                          {pantrySubTab === 'spices' ? 'Gewürze, Kräuter & Essige/Saucen' : 'Vorräte verwalten'}
+                          {pantrySubTab === 'spices' ? 'Gewürzschrank (ohne Mengeneinheit)' : 'Vorräte verwalten'}
                         </span>
                       </div>
                       <button
@@ -1198,7 +1222,7 @@
                     </div>
 
                     {pantry
-                      .filter(p => p.category === pantrySubTab || (pantrySubTab === 'pantry' && (p.category === 'basics' || p.category === 'pantry')))
+                      .filter(p => p.category === pantrySubTab)
                       .map(item => (
                         <div key={item.id} className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-2.5">
                           <div className="flex items-start justify-between gap-2">
@@ -1248,6 +1272,7 @@
                             </div>
                           </div>
 
+                          {/* Für Gewürze ohne Mengeneinheit wird hier nichts angezeigt, für den Rest die Menge */}
                           {item.amount !== undefined && (
                             <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
                               <span className="text-xs text-stone-500">Restbestand:</span>
@@ -1708,37 +1733,39 @@
                     onChange={e => setNewPantryName(e.target.value)}
                     className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
                   />
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[11px] text-stone-500 block mb-1">Menge / Anzahl</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newPantryAmount}
-                        onChange={e => setNewPantryAmount(e.target.value)}
-                        className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
-                      />
+                  {pantrySubTab !== 'spices' && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[11px] text-stone-500 block mb-1">Menge / Anzahl</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={newPantryAmount}
+                          onChange={e => setNewPantryAmount(e.target.value)}
+                          className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-stone-500 block mb-1">Einheit</label>
+                        <select
+                          value={newPantryUnitType}
+                          onChange={e => {
+                            const u = e.target.value;
+                            setNewPantryUnitType(u);
+                            if (u === 'g' || u === 'ml') setNewPantryAmount(250);
+                            else setNewPantryAmount(1);
+                          }}
+                          className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
+                        >
+                          <option value="Dose">Dose / Glas</option>
+                          <option value="Flasche">Flasche</option>
+                          <option value="Stück">Stück</option>
+                          <option value="g">Gramm (g)</option>
+                          <option value="Packung">Packung</option>
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-[11px] text-stone-500 block mb-1">Einheit</label>
-                      <select
-                        value={newPantryUnitType}
-                        onChange={e => {
-                          const u = e.target.value;
-                          setNewPantryUnitType(u);
-                          if (u === 'g' || u === 'ml') setNewPantryAmount(250);
-                          else setNewPantryAmount(1);
-                        }}
-                        className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
-                      >
-                        <option value="Dose">Dose / Glas</option>
-                        <option value="Flasche">Flasche</option>
-                        <option value="Stück">Stück</option>
-                        <option value="g">Gramm (g)</option>
-                        <option value="Packung">Packung</option>
-                      </select>
-                    </div>
-                  </div>
+                  )}
                 </div>
                 <button
                   onClick={handleAddPantryItem}
@@ -1836,7 +1863,7 @@
             </div>
           )}
 
-          {/* BOTTOM NAVIGATION (MIT DASHBOARD & WÜRFLER GETRENNT) */}
+          {/* BOTTOM NAVIGATION */}
           <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-stone-200 grid grid-cols-5 py-2 z-30">
             {[
               { id: 'home', label: 'Start', icon: 'home' },
