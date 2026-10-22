@@ -41,29 +41,37 @@
       return <i data-lucide={name} style={{ width: size, height: size }} className={`inline-block ${className}`}></i>;
     };
 
-    // --- START-DATEN ---
+    // --- START-DATEN (Mit genauen Stück- & Grammangaben für angebrochene Packungen) ---
     const INITIAL_PANTRY = [
-      { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDays: 5, unit: '500g Packung' },
-      { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDays: 9, unit: '3 Stück' },
-      { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDays: 20, unit: 'ca. 200g' },
-      { id: 'p4', name: 'Butter', category: 'fridge', status: 'in_stock', expiryDays: 14, unit: '1 Block' },
-      { id: 'p5', name: 'Frischer Rosmarin & Thymian', category: 'fridge', status: 'low', expiryDays: 2, unit: 'Bund' },
-      { id: 'p6', name: 'Spaghetti & Penne', category: 'pantry', status: 'in_stock', group: 'Pasta', unit: '3 Packungen' },
-      { id: 'p7', name: 'Dosentomaten (San Marzano)', category: 'pantry', status: 'in_stock', count: 4, minCount: 2, unit: 'Dosen' },
-      { id: 'p8', name: 'Risottoreis / Basmati', category: 'pantry', status: 'in_stock', group: 'Reis', unit: '1 kg' },
-      { id: 'p9', name: 'Zwiebeln & Knoblauch', category: 'pantry', status: 'in_stock', unit: 'Vorratskorb' },
-      { id: 'p10', name: 'Apfelmus (Glas)', category: 'pantry', status: 'in_stock', unit: '2 Gläser' },
+      // Kühlschrank / Frisch
+      { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDays: 5, amount: 500, unitType: 'g', step: 100, lowThreshold: 200 },
+      { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDays: 9, amount: 3, unitType: 'Stück', step: 1, lowThreshold: 1 },
+      { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDays: 20, amount: 200, unitType: 'g', step: 50, lowThreshold: 50 },
+      { id: 'p4', name: 'Butter', category: 'fridge', status: 'in_stock', expiryDays: 14, amount: 250, unitType: 'g', step: 50, lowThreshold: 50 },
+      { id: 'p5', name: 'Frischer Rosmarin & Thymian', category: 'fridge', status: 'low', expiryDays: 2, amount: 1, unitType: 'Bund', step: 1, lowThreshold: 1 },
+      
+      // Vorratsschrank
+      { id: 'p6', name: 'Spaghetti & Penne', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 1200, unitType: 'g', step: 100, lowThreshold: 400 },
+      { id: 'p7', name: 'Dosentomaten (San Marzano)', category: 'pantry', status: 'in_stock', amount: 4, unitType: 'Dosen', step: 1, lowThreshold: 2 },
+      { id: 'p8', name: 'Risottoreis / Basmati', category: 'pantry', status: 'in_stock', group: 'Reis', amount: 800, unitType: 'g', step: 100, lowThreshold: 250 },
+      { id: 'p9', name: 'Zwiebeln & Knoblauch', category: 'pantry', status: 'in_stock', amount: 6, unitType: 'Stück', step: 1, lowThreshold: 2 },
+      { id: 'p10', name: 'Apfelmus (Glas)', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Gläser', step: 1, lowThreshold: 1 },
+      
+      // Basics mit Mitdenk-Zähler
       { id: 'p11', name: 'Olivenöl Extra Vergine', category: 'basics', status: 'in_stock', usesSinceOpen: 19, maxUses: 20 },
       { id: 'p12', name: 'Rinderfond / Gemüsebrühe', category: 'basics', status: 'in_stock', usesSinceOpen: 8, maxUses: 15 },
       { id: 'p13', name: 'Tomatenmark', category: 'basics', status: 'in_stock', usesSinceOpen: 5, maxUses: 10 },
-      { id: 'p14', name: 'Hähnchenbrustfilet (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', unit: '2x 400g' },
-      { id: 'p15', name: 'Hackfleisch-Reserve (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', unit: '2x 500g' },
-      { id: 'p16', name: 'Merguez-Würstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', unit: '1 Packung' },
-      { id: 'p17', name: 'Nürnberger Rostbratwürstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', unit: '1 Packung' },
-      { id: 'p18', name: 'Fischstäbchen', category: 'freezer_items', status: 'in_stock', subType: 'kid', unit: '1 Packung' },
-      { id: 'p19', name: 'Kartoffelpuffer', category: 'freezer_items', status: 'in_stock', subType: 'kid', unit: '1 Beutel' },
-      { id: 'p20', name: 'Pommes Frites', category: 'freezer_items', status: 'in_stock', subType: 'kid', unit: '1 Beutel' },
-      { id: 'p21', name: 'TK-Erbsen & Brokkoli', category: 'freezer_items', status: 'in_stock', subType: 'veggie', unit: 'je 1 Paket' }
+      
+      // TK-Vorräte (Jetzt mit exakter Stückzahl oder Gramm statt pauschal "Packung")
+      { id: 'p14', name: 'Hähnchenbrustfilet (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 800, unitType: 'g', step: 100, lowThreshold: 300 },
+      { id: 'p15', name: 'Hackfleisch-Reserve (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 1000, unitType: 'g', step: 250, lowThreshold: 250 },
+      { id: 'p16', name: 'Merguez-Würstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 6, unitType: 'Stück', step: 1, lowThreshold: 2 },
+      { id: 'p17', name: 'Nürnberger Rostbratwürstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 12, unitType: 'Stück', step: 2, lowThreshold: 6 },
+      { id: 'p18', name: 'Fischstäbchen', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 6, unitType: 'Stück', step: 1, lowThreshold: 5 },
+      { id: 'p19', name: 'Kartoffelpuffer', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 5, unitType: 'Stück', step: 1, lowThreshold: 3 },
+      { id: 'p20', name: 'Pommes Frites', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 300, unitType: 'g', step: 50, lowThreshold: 200 },
+      { id: 'p21', name: 'TK-Erbsen', category: 'freezer_items', status: 'in_stock', subType: 'veggie', amount: 350, unitType: 'g', step: 50, lowThreshold: 100 },
+      { id: 'p22', name: 'TK-Brokkoli', category: 'freezer_items', status: 'in_stock', subType: 'veggie', amount: 400, unitType: 'g', step: 50, lowThreshold: 150 }
     ];
 
     const INITIAL_MEAL_PREP = [
@@ -173,9 +181,9 @@
         lastCookedDaysAgo: 9,
         prepTime: 20,
         ingredients: [
-          { name: 'Fischstäbchen', amount: '6–8 Stück', essential: true },
-          { name: 'Pommes Frites', amount: '1 Portion', essential: true },
-          { name: 'TK-Erbsen & Brokkoli', amount: '1 Handvoll Erbsen', essential: true }
+          { name: 'Fischstäbchen', amount: '5–6 Stück', essential: true },
+          { name: 'Pommes Frites', amount: 'ca. 200 g', essential: true },
+          { name: 'TK-Erbsen', amount: 'ca. 100 g', essential: true }
         ],
         steps: [
           'Pommes und Fischstäbchen im Ofen oder der Heißluftfritteuse knusprig backen.',
@@ -207,30 +215,30 @@
     function App() {
       const [activeTab, setActiveTab] = useState('decide');
 
-      // LocalStorage Anbindung (speichert auf dem Handy!)
+      // LocalStorage mit Versions-Schlüssel v2, damit die neuen Stück-/Gramm-Felder sauber geladen werden
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry');
+        const saved = localStorage.getItem('kueche_pantry_v2');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep');
+        const saved = localStorage.getItem('kueche_mealprep_v2');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes');
+        const saved = localStorage.getItem('kueche_recipes_v2');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping');
+        const saved = localStorage.getItem('kueche_shopping_v2');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_pantry_v2', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v2', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v2', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v2', JSON.stringify(shoppingList)); }, [shoppingList]);
 
       // Filter States
       const [filterEffort, setFilterEffort] = useState('all');
@@ -239,13 +247,14 @@
       const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
 
       // Sub-Views & Modals
-      const [pantrySubTab, setPantrySubTab] = useState('mealprep');
+      const [pantrySubTab, setPantrySubTab] = useState('freezer_items');
       const [selectedRecipeId, setSelectedRecipeId] = useState(null);
       const [isEditingRecipe, setIsEditingRecipe] = useState(false);
       const [newIngredientName, setNewIngredientName] = useState('');
       const [newIngredientAmount, setNewIngredientAmount] = useState('');
       const [newStepText, setNewStepText] = useState('');
 
+      // Modal: Neues Meal-Prep
       const [showAddMealPrepModal, setShowAddMealPrepModal] = useState(false);
       const [newMpName, setNewMpName] = useState('');
       const [newMp500, setNewMp500] = useState(1);
@@ -253,10 +262,16 @@
       const [newMpNeeds, setNewMpNeeds] = useState('');
       const [newMpCreateRecipe, setNewMpCreateRecipe] = useState(true);
 
+      // Modal: Neuer Vorrat (mit genauer Menge + Einheit)
       const [showNewPantryItemModal, setShowNewPantryItemModal] = useState(false);
       const [newPantryName, setNewPantryName] = useState('');
-      const [newPantryUnit, setNewPantryUnit] = useState('');
+      const [newPantryAmount, setNewPantryAmount] = useState(6);
+      const [newPantryUnitType, setNewPantryUnitType] = useState('Stück');
       const [newPantryExpiry, setNewPantryExpiry] = useState(5);
+
+      // Modal: Exakte Zahl direkt eintippen (z. B. nach kurzem Wiegen der Pommes-Tüte)
+      const [editingAmountItem, setEditingAmountItem] = useState(null);
+      const [editingAmountValue, setEditingAmountValue] = useState('');
 
       const [cookedModalRecipe, setCookedModalRecipe] = useState(null);
       const [freezeLeftovers500, setFreezeLeftovers500] = useState(0);
@@ -272,7 +287,31 @@
         setTimeout(() => setToastMsg(null), 3500);
       };
 
-      // Rezept-Verfügbarkeit prüfen
+      // Menge eines Vorrats anpassen (+ / - oder direkter Wert)
+      const updatePantryAmount = (itemId, newAmountVal) => {
+        const cleanAmount = Math.max(0, Number(newAmountVal));
+        setPantry(prev => prev.map(item => {
+          if (item.id !== itemId) return item;
+          const threshold = item.lowThreshold || (item.unitType === 'g' ? 150 : 2);
+          let nextStatus = 'in_stock';
+          if (cleanAmount === 0) nextStatus = 'empty';
+          else if (cleanAmount <= threshold) nextStatus = 'low';
+
+          if (nextStatus === 'empty' && item.status !== 'empty') {
+            setShoppingList(sl => {
+              if (sl.some(s => s.name === item.name)) return sl;
+              return [...sl, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht (0 ' + item.unitType + ')', done: false }];
+            });
+            showToast(`${item.name} ist leer → Einkaufsliste`);
+          } else if (nextStatus === 'low' && item.status === 'in_stock') {
+            showToast(`Hinweis: Nur noch ${cleanAmount} ${item.unitType} ${item.name} übrig`);
+          }
+
+          return { ...item, amount: cleanAmount, status: nextStatus };
+        }));
+      };
+
+      // Rezept-Verfügbarkeit prüfen (inkl. Restmengen-Anzeige)
       const checkRecipeAvailability = (recipe) => {
         const missing = [];
         const fromFreezerMeat = [];
@@ -289,11 +328,11 @@
             p.name.toLowerCase().includes(ing.name.toLowerCase()) ||
             ing.name.toLowerCase().includes(p.name.toLowerCase())
           );
-          if (!found || found.status === 'empty') {
+          if (!found || found.status === 'empty' || (found.amount !== undefined && found.amount <= 0)) {
             if (ing.essential) missing.push(ing.name);
           } else {
             if (found.category === 'freezer_items' && found.subType === 'meat') {
-              fromFreezerMeat.push(found.name);
+              fromFreezerMeat.push(`${found.name} (${found.amount} ${found.unitType})`);
             }
             if (found.category === 'fridge' && found.expiryDays <= 2) {
               urgentFridgeItems.push(found.name);
@@ -390,21 +429,26 @@
 
       const handleAddPantryItem = () => {
         if (!newPantryName.trim()) return;
+        const amt = Number(newPantryAmount) || 1;
+        const defaultStep = newPantryUnitType === 'g' || newPantryUnitType === 'ml' ? 50 : 1;
+        const defaultLow = newPantryUnitType === 'g' || newPantryUnitType === 'ml' ? 150 : 2;
+
         const newItem = {
           id: 'p_' + Date.now(),
           name: newPantryName.trim(),
           category: pantrySubTab,
           status: 'in_stock',
-          unit: newPantryUnit.trim() || '1 Packung',
+          amount: amt,
+          unitType: newPantryUnitType,
+          step: defaultStep,
+          lowThreshold: defaultLow,
           ...(pantrySubTab === 'fridge' ? { expiryDays: Number(newPantryExpiry) || 5 } : {}),
-          ...(pantrySubTab === 'freezer_items' ? { subType: 'meat' } : {}),
-          ...(pantrySubTab === 'basics' ? { usesSinceOpen: 0, maxUses: 20 } : {})
+          ...(pantrySubTab === 'freezer_items' ? { subType: 'kid' } : {})
         };
         setPantry(prev => [newItem, ...prev]);
         setNewPantryName('');
-        setNewPantryUnit('');
         setShowNewPantryItemModal(false);
-        showToast(`${newItem.name} hinzugefügt!`);
+        showToast(`${newItem.name} (${amt} ${newPantryUnitType}) hinzugefügt!`);
       };
 
       const handleConfirmCooked = () => {
@@ -462,932 +506,4 @@
           if (r.id !== recipeId) return r;
           const removed = r.ingredients[ingIndex];
           const nextIngs = r.ingredients.filter((_, idx) => idx !== ingIndex);
-          if (removed) showToast(`"${removed.name}" gelöscht`);
-          return { ...r, ingredients: nextIngs };
-        }));
-      };
-
-      const addIngredientToRecipe = (recipeId) => {
-        if (!newIngredientName.trim()) return;
-        setRecipes(prev => prev.map(r => {
-          if (r.id !== recipeId) return r;
-          return {
-            ...r,
-            ingredients: [
-              ...r.ingredients,
-              { name: newIngredientName.trim(), amount: newIngredientAmount.trim() || 'Nach Bedarf', essential: true }
-            ]
-          };
-        }));
-        setNewIngredientName('');
-        setNewIngredientAmount('');
-        showToast('Zutat hinzugefügt');
-      };
-
-      const deleteStepFromRecipe = (recipeId, stepIndex) => {
-        setRecipes(prev => prev.map(r => {
-          if (r.id !== recipeId) return r;
-          return { ...r, steps: r.steps.filter((_, idx) => idx !== stepIndex) };
-        }));
-      };
-
-      const addStepToRecipe = (recipeId) => {
-        if (!newStepText.trim()) return;
-        setRecipes(prev => prev.map(r => {
-          if (r.id !== recipeId) return r;
-          const cleanSteps = r.isDraft ? [] : r.steps;
-          return {
-            ...r,
-            isDraft: false,
-            steps: [...cleanSteps, newStepText.trim()]
-          };
-        }));
-        setNewStepText('');
-        showToast('Zubereitungsschritt gespeichert');
-      };
-
-      // Echte Web-Speech-API + Sprachbefehle
-      const startListening = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-          showToast('Bitte nutze das Textfeld unten oder Chrome/Safari für Sprache.');
-          return;
-        }
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'de-DE';
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          setVoiceText(transcript);
-        };
-        recognition.start();
-        showToast('Höre zu...');
-      };
-
-      const executeVoiceCommand = (cmdText) => {
-        const text = cmdText.toLowerCase();
-        if (text.includes('eingefroren') || text.includes('silikonform')) {
-          const newId = 'mp_' + Date.now();
-          const dishName = cmdText.split('eingefroren')[0].replace(/ich habe|gerade|heute/gi, '').trim() || 'Neues Gericht';
-          setMealPrep(prev => [{
-            id: newId,
-            name: dishName,
-            blocks500: text.includes('zweimal 500') || text.includes('2x 500') ? 2 : 1,
-            blocks250: text.includes('250') ? 1 : 0,
-            needsFresh: [],
-            prepTime: 20,
-            season: 'all'
-          }, ...prev]);
-          showToast(`Im TK angelegt: ${dishName}`);
-        } else if (selectedRecipe && (text.includes('lösche') || text.includes('entferne') || text.includes('ohne'))) {
-          setRecipes(prev => prev.map(r => {
-            if (r.id !== selectedRecipe.id) return r;
-            const filtered = r.ingredients.filter(ing => !text.includes(ing.name.toLowerCase().split(' ')[0]));
-            return { ...r, ingredients: filtered };
-          }));
-          showToast(`Rezept "${selectedRecipe.title}" per Sprache angepasst!`);
-        } else {
-          showToast(`Verarbeitet: "${cmdText}"`);
-        }
-        setVoiceText('');
-        setVoiceOverlay(false);
-      };
-
-      return (
-        <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col max-w-md mx-auto border-x border-stone-200 shadow-sm relative pb-24">
-          {/* HEADER */}
-          <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Synchronisiert · lokal gespeichert</p>
-            </div>
-            <button
-              onClick={() => setVoiceOverlay(true)}
-              className="flex items-center gap-2 bg-stone-900 text-white px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-stone-800 transition"
-            >
-              <Icon name="mic" size={14} />
-              <span>Sprachbefehl</span>
-            </button>
-          </header>
-
-          {/* TOAST */}
-          {toastMsg && (
-            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2">
-              <Icon name="check" size={14} className="text-emerald-400" />
-              <span>{toastMsg}</span>
-            </div>
-          )}
-
-          {/* OLIVENÖL WARNUNG */}
-          {oliveOilAlert && (
-            <div className="mx-4 mt-3 bg-amber-50 border border-amber-300 rounded-xl p-4 flex flex-col gap-3">
-              <div className="flex items-start gap-3">
-                <Icon name="alert-circle" size={18} className="text-amber-700 shrink-0 mt-0.5" />
-                <div className="text-xs text-amber-900">
-                  <p className="font-semibold">Mitdenk-Zähler: Olivenöl Extra Vergine</p>
-                  <p className="mt-0.5 text-amber-800">Du hast jetzt 20x mit dieser Flasche gekocht. Wird sie langsam knapp?</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: 'Olivenöl Extra Vergine', reason: '20x genutzt', done: false }]);
-                    setOliveOilAlert(false);
-                    showToast('Olivenöl auf die Einkaufsliste gesetzt');
-                  }}
-                  className="flex-1 bg-amber-800 text-white text-xs font-medium py-2 rounded-lg"
-                >
-                  Ja, auf Einkaufsliste
-                </button>
-                <button
-                  onClick={() => {
-                    setPantry(prev => prev.map(p => p.id === 'p11' ? { ...p, usesSinceOpen: 10 } : p));
-                    setOliveOilAlert(false);
-                    showToast('Zähler um 10 Einsätze zurückgesetzt');
-                  }}
-                  className="flex-1 bg-white border border-amber-300 text-amber-900 text-xs font-medium py-2 rounded-lg"
-                >
-                  Noch genug drin
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* MAIN CONTENT */}
-          <main className="flex-1 px-4 pt-4">
-            {/* TAB 1: HEUTE KOCHEN */}
-            {activeTab === 'decide' && (
-              <div className="space-y-4">
-                <div className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus</span>
-                    <span className="text-xs text-stone-500">{filteredSuggestions.length} passende Gerichte</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      onClick={() => { setFilterMode('normal'); setCurrentSuggestionIndex(0); }}
-                      className={`py-2 px-2 rounded-lg text-xs font-medium border transition ${
-                        filterMode === 'normal' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
-                      }`}
-                    >
-                      Alle Rezepte
-                    </button>
-                    <button
-                      onClick={() => { setFilterMode('mealprep'); setCurrentSuggestionIndex(0); }}
-                      className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${
-                        filterMode === 'mealprep' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
-                      }`}
-                    >
-                      <Icon name="snowflake" size={13} />
-                      <span>TK Meal-Prep</span>
-                    </button>
-                    <button
-                      onClick={() => { setFilterMode('kid'); setCurrentSuggestionIndex(0); }}
-                      className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${
-                        filterMode === 'kid' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
-                      }`}
-                    >
-                      <Icon name="baby" size={14} />
-                      <span>Kind / Fasten</span>
-                    </button>
-                  </div>
-
-                  {filterMode === 'normal' && (
-                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-stone-100">
-                      <select
-                        value={filterEffort}
-                        onChange={(e) => { setFilterEffort(e.target.value); setCurrentSuggestionIndex(0); }}
-                        className="bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2 text-xs text-stone-700"
-                      >
-                        <option value="all">Zeit: Egal</option>
-                        <option value="quick">Schnell (&lt; 30 Min)</option>
-                        <option value="elaborate">Aufwendig / Wochenende</option>
-                      </select>
-                      <select
-                        value={filterShopping}
-                        onChange={(e) => { setFilterShopping(e.target.value); setCurrentSuggestionIndex(0); }}
-                        className="bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2 text-xs text-stone-700"
-                      >
-                        <option value="all_here">Nur was im Haus ist</option>
-                        <option value="shop_1_2">Max. 1–2 Zutaten kaufen</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {activeSuggestion ? (
-                  <div className="bg-white border border-stone-200 rounded-xl p-5 space-y-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                          <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-700">
-                            {activeSuggestion.prepTime} Min.
-                          </span>
-                          {activeSuggestion.lastCookedDaysAgo > 90 ? (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-100 text-amber-900">
-                              Seit 6 Monaten nicht gekocht!
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-stone-500">
-                              Vor {activeSuggestion.lastCookedDaysAgo} Tagen gekocht
-                            </span>
-                          )}
-                          {activeSuggestion.isDraft && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-stone-200 text-stone-700">
-                              Kopf-Rezept
-                            </span>
-                          )}
-                        </div>
-                        <h2 className="text-xl font-semibold text-stone-900">{activeSuggestion.title}</h2>
-                      </div>
-                      <button
-                        onClick={() => setCurrentSuggestionIndex(prev => prev + 1)}
-                        className="p-2.5 rounded-lg border border-stone-200 hover:bg-stone-50 text-stone-700 shrink-0"
-                      >
-                        <Icon name="refresh-cw" size={18} />
-                      </button>
-                    </div>
-
-                    {activeSuggestion.fromFreezerMeat.length > 0 && (
-                      <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-stone-700">
-                        <Icon name="snowflake" size={15} className="text-stone-500 shrink-0" />
-                        <span>
-                          <strong>Im TK vorrätig:</strong> {activeSuggestion.fromFreezerMeat.join(', ')} (rechtzeitig auftauen).
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zutaten-Check</p>
-                      <div className="divide-y divide-stone-100 border border-stone-100 rounded-lg overflow-hidden">
-                        {activeSuggestion.ingredients.map((ing, i) => {
-                          const isMissing = activeSuggestion.missing.includes(ing.name);
-                          return (
-                            <div key={i} className="px-3 py-2 flex items-center justify-between text-xs bg-white">
-                              <span className="font-medium text-stone-800">{ing.name}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-stone-500">{ing.amount}</span>
-                                <span className={`w-2 h-2 rounded-full ${isMissing ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-2">
-                      <button
-                        onClick={() => {
-                          setSelectedRecipeId(activeSuggestion.id);
-                          setActiveTab('recipes');
-                        }}
-                        className="py-2.5 px-3 rounded-lg border border-stone-300 text-stone-800 text-xs font-medium hover:bg-stone-50 flex items-center justify-center gap-1.5"
-                      >
-                        <Icon name="book-open" size={15} />
-                        <span>Rezept & Anpassen</span>
-                      </button>
-                      <button
-                        onClick={() => setCookedModalRecipe(activeSuggestion)}
-                        className="py-2.5 px-3 rounded-lg bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 flex items-center justify-center gap-1.5"
-                      >
-                        <Icon name="check" size={15} />
-                        <span>Heute gekocht!</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white border border-stone-200 rounded-xl p-8 text-center space-y-2">
-                    <p className="text-sm font-medium text-stone-800">Keine passenden Rezepte für diesen Filter.</p>
-                    <button
-                      onClick={() => { setFilterEffort('all'); setFilterShopping('shop_1_2'); setFilterMode('normal'); }}
-                      className="text-xs font-medium text-stone-900 underline"
-                    >
-                      Filter lockern
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 2: VORRÄTE & TK */}
-            {activeTab === 'pantry' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-4 gap-1 bg-stone-200/70 p-1 rounded-xl text-xs font-medium">
-                  {[
-                    { id: 'mealprep', label: 'TK: Meal-Prep' },
-                    { id: 'freezer_items', label: 'TK: Vorrat' },
-                    { id: 'fridge', label: 'Frisch/MHD' },
-                    { id: 'pantry', label: 'Schrank' }
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setPantrySubTab(tab.id)}
-                      className={`py-2 px-1 rounded-lg text-center transition ${
-                        pantrySubTab === tab.id ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {pantrySubTab === 'mealprep' && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-semibold text-stone-900">Vorgekochtes in Silikonformen</h3>
-                        <p className="text-xs text-stone-500">500g- und 250g-Blöcke verwalten</p>
-                      </div>
-                      <button
-                        onClick={() => setShowAddMealPrepModal(true)}
-                        className="flex items-center gap-1.5 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium"
-                      >
-                        <Icon name="plus" size={14} />
-                        <span>Neues Meal-Prep</span>
-                      </button>
-                    </div>
-
-                    {mealPrep.map(mp => {
-                      const totalGrams = mp.blocks500 * 500 + mp.blocks250 * 250;
-                      return (
-                        <div key={mp.id} className="bg-white border border-stone-200 rounded-xl p-4 space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-semibold text-sm text-stone-900">{mp.name}</h4>
-                              {mp.needsFresh.length > 0 && (
-                                <p className="text-[11px] text-stone-500 mt-0.5">
-                                  Dazu frisch: {mp.needsFresh.join(', ')}
-                                </p>
-                              )}
-                            </div>
-                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${
-                              totalGrams > 0 ? 'bg-stone-100 text-stone-900' : 'bg-red-50 text-red-700'
-                            }`}>
-                              Gesamt: {totalGrams} g
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2.5 pt-1">
-                            <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
-                              <div>
-                                <span className="text-xs font-semibold text-stone-800 block">500 g Form</span>
-                                <span className="text-[11px] text-stone-500">{mp.blocks500} Stück</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => updateMealPrepBlocks(mp.id, -1, 0, '-500g entnommen')}
-                                  className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center text-stone-700"
-                                >
-                                  <Icon name="minus" size={13} />
-                                </button>
-                                <button
-                                  onClick={() => updateMealPrepBlocks(mp.id, 1, 0, '+500g eingefroren')}
-                                  className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center"
-                                >
-                                  <Icon name="plus" size={13} />
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
-                              <div>
-                                <span className="text-xs font-semibold text-stone-800 block">250 g Form</span>
-                                <span className="text-[11px] text-stone-500">{mp.blocks250} Stück</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => updateMealPrepBlocks(mp.id, 0, -1, '-250g entnommen')}
-                                  className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center text-stone-700"
-                                >
-                                  <Icon name="minus" size={13} />
-                                </button>
-                                <button
-                                  onClick={() => updateMealPrepBlocks(mp.id, 0, 1, '+250g eingefroren')}
-                                  className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center"
-                                >
-                                  <Icon name="plus" size={13} />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {mp.blocks500 >= 1 && mp.blocks250 >= 1 && (
-                            <button
-                              onClick={() => updateMealPrepBlocks(mp.id, -1, -1, '750g (1x 500g + 1x 250g) aufgetaut')}
-                              className="w-full py-1.5 px-3 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 text-[11px] font-medium text-stone-700 flex items-center justify-center gap-1.5"
-                            >
-                              <span>Kombi-Entnahme: 750 g (1× 500g + 1× 250g) auftauen</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {pantrySubTab !== 'mealprep' && (
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Bestandsliste</span>
-                      <button
-                        onClick={() => setShowNewPantryItemModal(true)}
-                        className="flex items-center gap-1 bg-stone-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
-                      >
-                        <Icon name="plus" size={13} />
-                        <span>Eintrag hinzufügen</span>
-                      </button>
-                    </div>
-
-                    {pantry
-                      .filter(p => p.category === pantrySubTab || (pantrySubTab === 'pantry' && p.category === 'basics'))
-                      .map(item => (
-                        <div key={item.id} className="bg-white border border-stone-200 rounded-xl p-3.5 flex items-center justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-stone-900">{item.name}</span>
-                              {item.expiryDays !== undefined && (
-                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                                  item.expiryDays <= 2 ? 'bg-amber-100 text-amber-900' : 'bg-emerald-50 text-emerald-800'
-                                }`}>
-                                  Noch {item.expiryDays} Tage
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-stone-500 mt-0.5">
-                              {item.unit || (item.usesSinceOpen !== undefined ? `${item.usesSinceOpen}/${item.maxUses} Einsätze` : '')}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {['in_stock', 'low', 'empty'].map(st => (
-                              <button
-                                key={st}
-                                onClick={() => {
-                                  setPantry(prev => prev.map(p => p.id === item.id ? { ...p, status: st } : p));
-                                  if (st === 'empty') {
-                                    setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Leer', done: false }]);
-                                    showToast(`${item.name} auf Einkaufsliste gesetzt`);
-                                  }
-                                }}
-                                className={`px-2 py-1 rounded text-[11px] font-medium border ${
-                                  item.status === st
-                                    ? st === 'in_stock' ? 'bg-stone-900 text-white border-stone-900'
-                                      : st === 'low' ? 'bg-amber-600 text-white border-amber-600'
-                                      : 'bg-red-600 text-white border-red-600'
-                                    : 'bg-stone-50 text-stone-500 border-stone-200'
-                                }`}
-                              >
-                                {st === 'in_stock' ? 'Da' : st === 'low' ? 'Knapp' : 'Leer'}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 3: REZEPTE & EDITOR */}
-            {activeTab === 'recipes' && (
-              <div className="space-y-4">
-                {selectedRecipe ? (
-                  <div className="bg-white border border-stone-200 rounded-xl p-4 space-y-4">
-                    <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                      <button
-                        onClick={() => { setSelectedRecipeId(null); setIsEditingRecipe(false); }}
-                        className="text-xs font-medium text-stone-600 hover:text-stone-900"
-                      >
-                        ← Zurück zur Übersicht
-                      </button>
-                      <button
-                        onClick={() => setIsEditingRecipe(!isEditingRecipe)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                          isEditingRecipe
-                            ? 'bg-stone-900 text-white border-stone-900'
-                            : 'bg-stone-50 text-stone-800 border-stone-200'
-                        }`}
-                      >
-                        <Icon name="edit-3" size={13} />
-                        <span>{isEditingRecipe ? 'Bearbeitung fertig' : 'Rezept bearbeiten'}</span>
-                      </button>
-                    </div>
-
-                    <div>
-                      <h2 className="text-lg font-semibold text-stone-900">{selectedRecipe.title}</h2>
-                      <p className="text-xs text-stone-500 mt-0.5">
-                        Zubereitungszeit: {selectedRecipe.prepTime} Min.
-                      </p>
-                    </div>
-
-                    {/* ZUTATEN */}
-                    <div className="space-y-2">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">
-                        Zutaten {isEditingRecipe && '(Antippen zum Löschen)'}
-                      </h3>
-                      <div className="divide-y divide-stone-100 border border-stone-200 rounded-lg overflow-hidden">
-                        {selectedRecipe.ingredients.map((ing, idx) => (
-                          <div key={idx} className="px-3 py-2.5 flex items-center justify-between text-xs bg-white">
-                            <div>
-                              <span className="font-medium text-stone-900">{ing.name}</span>
-                              <span className="text-stone-500 ml-2">({ing.amount})</span>
-                            </div>
-                            {isEditingRecipe && (
-                              <button
-                                onClick={() => deleteIngredientFromRecipe(selectedRecipe.id, idx)}
-                                className="text-red-600 hover:bg-red-50 p-1.5 rounded-md transition flex items-center gap-1 text-[11px] font-medium"
-                              >
-                                <Icon name="trash-2" size={14} />
-                                <span>Löschen</span>
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-
-                      {isEditingRecipe && (
-                        <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 space-y-2">
-                          <p className="text-[11px] font-semibold text-stone-700">Zutat zum Rezept hinzufügen</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            <input
-                              type="text"
-                              placeholder="Zutat (z.B. Butter)"
-                              value={newIngredientName}
-                              onChange={e => setNewIngredientName(e.target.value)}
-                              className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Menge (z.B. 40 g)"
-                              value={newIngredientAmount}
-                              onChange={e => setNewIngredientAmount(e.target.value)}
-                              className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs"
-                            />
-                          </div>
-                          <button
-                            onClick={() => addIngredientToRecipe(selectedRecipe.id)}
-                            className="w-full py-2 bg-stone-900 text-white rounded-lg text-xs font-medium"
-                          >
-                            + Zutat einfügen
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ZUBEREITUNG */}
-                    <div className="space-y-2">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zubereitung</h3>
-                      <ol className="space-y-2">
-                        {selectedRecipe.steps.map((step, idx) => (
-                          <li key={idx} className="bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs text-stone-800 flex items-start justify-between gap-2">
-                            <span><strong>{idx + 1}.</strong> {step}</span>
-                            {isEditingRecipe && (
-                              <button
-                                onClick={() => deleteStepFromRecipe(selectedRecipe.id, idx)}
-                                className="text-red-500 p-1 shrink-0"
-                              >
-                                <Icon name="trash-2" size={14} />
-                              </button>
-                            )}
-                          </li>
-                        ))}
-                      </ol>
-
-                      {isEditingRecipe && (
-                        <div className="flex gap-2 pt-1">
-                          <input
-                            type="text"
-                            placeholder="Neuen Schritt eintippen oder diktieren..."
-                            value={newStepText}
-                            onChange={e => setNewStepText(e.target.value)}
-                            className="flex-1 bg-white border border-stone-300 rounded-lg px-3 py-2 text-xs"
-                          />
-                          <button
-                            onClick={() => addStepToRecipe(selectedRecipe.id)}
-                            className="bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium shrink-0"
-                          >
-                            + Schritt
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-stone-900">Eure Rezepte ({recipes.length})</h3>
-                      <button
-                        onClick={() => {
-                          const title = prompt('Name des neuen Gerichts (z.B. Chili con Carne):');
-                          if (!title) return;
-                          const newRec = {
-                            id: 'r_' + Date.now(),
-                            title,
-                            effort: 'quick',
-                            season: 'all',
-                            isKidFriendly: false,
-                            isMealPrep: false,
-                            isDraft: true,
-                            lastCookedDaysAgo: 99,
-                            prepTime: 30,
-                            ingredients: [],
-                            steps: ['Noch kein Rezepttext hinterlegt. Beim Kochen ergänzen!']
-                          };
-                          setRecipes(prev => [newRec, ...prev]);
-                          setSelectedRecipeId(newRec.id);
-                          setIsEditingRecipe(true);
-                        }}
-                        className="flex items-center gap-1 bg-stone-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
-                      >
-                        <Icon name="plus" size={14} />
-                        <span>Neues Gericht</span>
-                      </button>
-                    </div>
-
-                    {recipes.map(r => (
-                      <div
-                        key={r.id}
-                        onClick={() => setSelectedRecipeId(r.id)}
-                        className="bg-white border border-stone-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:border-stone-400 transition"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-semibold text-stone-900">{r.title}</h4>
-                            {r.isDraft && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-600 font-medium">
-                                Kopf-Rezept
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-stone-500 mt-0.5">
-                            {r.ingredients.length} Zutaten · Vor {r.lastCookedDaysAgo} Tagen gekocht
-                          </p>
-                        </div>
-                        <Icon name="chevron-right" size={18} className="text-stone-400" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 4: EINKAUF */}
-            {activeTab === 'shopping' && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-stone-900">Einkaufsliste</h3>
-                <div className="bg-white border border-stone-200 rounded-xl divide-y divide-stone-100">
-                  {shoppingList.map(item => (
-                    <div key={item.id} className="p-3.5 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-stone-900">{item.name}</p>
-                        <p className="text-xs text-stone-500">{item.reason}</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setShoppingList(prev => prev.filter(s => s.id !== item.id));
-                          showToast(`${item.name} abgehakt!`);
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-stone-900 text-white text-xs font-medium"
-                      >
-                        Gekauft
-                      </button>
-                    </div>
-                  ))}
-                  {shoppingList.length === 0 && (
-                    <p className="p-6 text-center text-xs text-stone-500">Alles auf Lager – nichts einzukaufen.</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </main>
-
-          {/* MODAL: NEUES MEAL-PREP */}
-          {showAddMealPrepModal && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-stone-900">Neues Meal-Prep einfrieren</h3>
-                  <button onClick={() => setShowAddMealPrepModal(false)} className="text-stone-400">
-                    <Icon name="x" size={18} />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-medium text-stone-700 block mb-1">Gericht / Sauce</label>
-                    <input
-                      type="text"
-                      placeholder="z.B. Chili con Carne, Hühnerfrikassee..."
-                      value={newMpName}
-                      onChange={e => setNewMpName(e.target.value)}
-                      className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-stone-50 border border-stone-200 rounded-lg p-3">
-                      <label className="text-xs font-semibold text-stone-800 block mb-1">500 g Formen</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newMp500}
-                        onChange={e => setNewMp500(e.target.value)}
-                        className="w-full bg-white border border-stone-300 rounded px-2 py-1.5 text-sm font-semibold"
-                      />
-                    </div>
-                    <div className="bg-stone-50 border border-stone-200 rounded-lg p-3">
-                      <label className="text-xs font-semibold text-stone-800 block mb-1">250 g Formen</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newMp250}
-                        onChange={e => setNewMp250(e.target.value)}
-                        className="w-full bg-white border border-stone-300 rounded px-2 py-1.5 text-sm font-semibold"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-stone-700 block mb-1">
-                      Was braucht man beim Auftauen frisch dazu? (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="z.B. Reis, Pasta, Kartoffeln"
-                      value={newMpNeeds}
-                      onChange={e => setNewMpNeeds(e.target.value)}
-                      className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleCreateNewMealPrep}
-                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
-                >
-                  Im Tiefkühler speichern
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* MODAL: NEUER VORRAT */}
-          {showNewPantryItemModal && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-stone-900">Vorrat hinzufügen</h3>
-                  <button onClick={() => setShowNewPantryItemModal(false)} className="text-stone-400">
-                    <Icon name="x" size={18} />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Bezeichnung (z.B. Merguez, Sahne...)"
-                    value={newPantryName}
-                    onChange={e => setNewPantryName(e.target.value)}
-                    className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Menge / Einheit (z.B. 2 Packungen)"
-                    value={newPantryUnit}
-                    onChange={e => setNewPantryUnit(e.target.value)}
-                    className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
-                  />
-                  {pantrySubTab === 'fridge' && (
-                    <div>
-                      <label className="text-xs text-stone-600 block mb-1">Haltbar noch (Tage):</label>
-                      <input
-                        type="number"
-                        value={newPantryExpiry}
-                        onChange={e => setNewPantryExpiry(e.target.value)}
-                        className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
-                      />
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={handleAddPantryItem}
-                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
-                >
-                  Speichern
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* MODAL: HEUTE GEKOCHT + RESTE EINFRIEREN */}
-          {cookedModalRecipe && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-stone-900">Heute gekocht: {cookedModalRecipe.title}</h3>
-                  <button onClick={() => setCookedModalRecipe(null)} className="text-stone-400">
-                    <Icon name="x" size={18} />
-                  </button>
-                </div>
-
-                <div className="bg-stone-50 border border-stone-200 rounded-xl p-3.5 space-y-2.5">
-                  <p className="text-xs font-semibold text-stone-800">
-                    Reste in Silikonformen eingefroren?
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white border border-stone-200 rounded-lg p-2 flex items-center justify-between">
-                      <span className="text-xs font-medium">+ 500 g</span>
-                      <div className="flex items-center gap-1.5">
-                        <button onClick={() => setFreezeLeftovers500(Math.max(0, freezeLeftovers500 - 1))} className="w-6 h-6 rounded bg-stone-100 text-xs">-</button>
-                        <span className="text-xs font-semibold">{freezeLeftovers500}</span>
-                        <button onClick={() => setFreezeLeftovers500(freezeLeftovers500 + 1)} className="w-6 h-6 rounded bg-stone-900 text-white text-xs">+</button>
-                      </div>
-                    </div>
-                    <div className="bg-white border border-stone-200 rounded-lg p-2 flex items-center justify-between">
-                      <span className="text-xs font-medium">+ 250 g</span>
-                      <div className="flex items-center gap-1.5">
-                        <button onClick={() => setFreezeLeftovers250(Math.max(0, freezeLeftovers250 - 1))} className="w-6 h-6 rounded bg-stone-100 text-xs">-</button>
-                        <span className="text-xs font-semibold">{freezeLeftovers250}</span>
-                        <button onClick={() => setFreezeLeftovers250(freezeLeftovers250 + 1)} className="w-6 h-6 rounded bg-stone-900 text-white text-xs">+</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleConfirmCooked}
-                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
-                >
-                  Bestätigen & Historie aktualisieren
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* MODAL: SPRACHBEFEHL */}
-          {voiceOverlay && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-stone-900">Sprach-Assistent</h3>
-                  <button onClick={() => setVoiceOverlay(false)} className="text-stone-400">
-                    <Icon name="x" size={18} />
-                  </button>
-                </div>
-
-                <button
-                  onClick={startListening}
-                  className="w-full py-3 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-xl text-xs font-semibold flex items-center justify-center gap-2"
-                >
-                  <Icon name="mic" size={16} />
-                  <span>Mikrofon starten (Sprechen)</span>
-                </button>
-
-                <input
-                  type="text"
-                  placeholder="Oder Befehl hier eintippen..."
-                  value={voiceText}
-                  onChange={e => setVoiceText(e.target.value)}
-                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
-                />
-
-                <button
-                  onClick={() => executeVoiceCommand(voiceText)}
-                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
-                >
-                  Ausführen
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* BOTTOM NAVIGATION */}
-          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-stone-200 grid grid-cols-4 py-2 z-30">
-            {[
-              { id: 'decide', label: 'Heute kochen', icon: 'utensils' },
-              { id: 'pantry', label: 'Vorräte & TK', icon: 'archive' },
-              { id: 'recipes', label: 'Rezepte', icon: 'book-open' },
-              { id: 'shopping', label: `Einkauf (${shoppingList.length})`, icon: 'shopping-cart' }
-            ].map(item => {
-              const active = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex flex-col items-center gap-1 py-1 text-[11px] font-medium ${
-                    active ? 'text-stone-900' : 'text-stone-400'
-                  }`}
-                >
-                  <Icon name={item.icon} size={18} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
-</body>
-</html>
+          if (removed)
