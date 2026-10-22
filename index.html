@@ -288,28 +288,35 @@
       const [activeTab, setActiveTab] = useState('home');
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v13');
+        const saved = localStorage.getItem('kueche_pantry_v15');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v13');
+        const saved = localStorage.getItem('kueche_mealprep_v15');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v13');
+        const saved = localStorage.getItem('kueche_recipes_v15');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v13');
+        const saved = localStorage.getItem('kueche_shopping_v15');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry_v13', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep_v13', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes_v13', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping_v13', JSON.stringify(shoppingList)); }, [shoppingList]);
+      // NEU: Kochplan / Wochenplan (gemerkte Rezepte für die nächsten Tage)
+      const [mealPlan, setMealPlan] = useState(() => {
+        const saved = localStorage.getItem('kueche_mealplan_v15');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      useEffect(() => { localStorage.setItem('kueche_pantry_v15', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v15', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v15', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v15', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_mealplan_v15', JSON.stringify(mealPlan)); }, [mealPlan]);
 
       const [filterEffort, setFilterEffort] = useState('all');
       const [filterCalories, setFilterCalories] = useState('all');
@@ -439,6 +446,7 @@
             return { ...r, ...avail };
           })
           .filter(r => {
+            if (filterShopping === 'any_plan') return true; // Neuer Filter: Alle Rezepte für den Großeinkauf/Wochenplan
             if (filterMode === 'kid') return r.isKidFriendly;
             if (filterMode === 'mealprep') return r.isMealPrep;
             if (filterEffort !== 'all' && r.effort !== filterEffort) return false;
@@ -666,28 +674,63 @@
         }));
       };
 
+      // Kochplan-Logik: Rezept vormerken & fehlende Zutaten auf Einkaufsliste packen
+      const addToMealPlan = (recipe) => {
+        if (mealPlan.some(m => m.id === recipe.id)) {
+          showToast('Rezept ist bereits im Kochplan!');
+          return;
+        }
+        setMealPlan(prev => [...prev, recipe]);
+
+        // Fehlende Zutaten automatisch auf die Einkaufsliste setzen
+        const avail = checkRecipeAvailability(recipe);
+        const newShoppingItems = avail.missing.map(ingName => ({
+          id: 's_' + Date.now() + '_' + Math.random(),
+          name: ingName,
+          reason: `Für Wochenplan: ${recipe.title}`,
+          done: false
+        }));
+
+        if (newShoppingItems.length > 0) {
+          setShoppingList(prev => [...prev, ...newShoppingItems]);
+          showToast(`"${recipe.title}" gemerkt! ${newShoppingItems.length} fehlende Zutat(en) auf Einkaufsliste.`);
+        } else {
+          showToast(`"${recipe.title}" gemerkt! Alles dafür ist bereits im Haus.`);
+        }
+      };
+
+      const removeFromMealPlan = (recipeId) => {
+        setMealPlan(prev => prev.filter(m => m.id !== recipeId));
+        showToast('Aus dem Kochplan entfernt');
+      };
+
       const exportToBring = () => {
         const text = shoppingList.map(s => s.name).join('\n');
         window.location.href = `bring://share?list=Zuhause&text=${encodeURIComponent(text)}`;
         showToast('Bring! App wird geöffnet (Liste: Zuhause)...');
       };
 
-      // Foto-Scan Simulation für Vorräte
-      const handlePhotoScan = () => {
-        showToast('Kamera-Scan aktiv: Lese Etiketten aus...');
+      const handleGlobalPhotoScan = () => {
+        showToast('Kamera aktiv: Erkenne Vorräte...');
         setTimeout(() => {
-          const scannedItem = {
+          const scannedItems = [
+            { name: 'Dosentomaten', target: 'pantry' },
+            { name: 'Bio-Zitronen', target: 'fridge' },
+            { name: 'Hähnchenbrust', target: 'freezer_items' }
+          ];
+          const chosen = scannedItems[Math.floor(Math.random() * scannedItems.length)];
+
+          const newItem = {
             id: 'p_' + Date.now(),
-            name: 'Bio-Tomatenmark (Scan)',
-            category: pantrySubTab,
+            name: `${chosen.name} (Scan)`,
+            category: chosen.target,
             status: 'in_stock',
             amount: 2,
-            unitType: 'Tube',
+            unitType: chosen.target === 'freezer_items' ? 'g' : 'Stück',
             lowThreshold: 1
           };
-          setPantry(prev => [scannedItem, ...prev]);
-          setShowNewPantryItemModal(false);
-          showToast('Foto erfolgreich gescannt & hinzugefügt!');
+          setPantry(prev => [newItem, ...prev]);
+          showToast(`Erkannt & sortiert: ${newItem.name} → ${chosen.target === 'pantry' ? 'Schrank' : chosen.target === 'fridge' ? 'Kühlschrank' : 'TK'}`);
         }, 1500);
       };
 
@@ -743,19 +786,17 @@
           }, ...prev]);
           showToast(`Im TK angelegt: ${dishName}`);
         } else {
-          // Neuer Vorrat per Spracheingabe aus dem Modal heraus
           const newItem = {
             id: 'p_' + Date.now(),
             name: cmdText,
-            category: pantrySubTab,
+            category: 'pantry',
             status: 'in_stock',
-            amount: pantrySubTab === 'spices' ? undefined : 1,
-            unitType: pantrySubTab === 'spices' ? undefined : 'Stück',
+            amount: 1,
+            unitType: 'Stück',
             lowThreshold: 1
           };
           setPantry(prev => [newItem, ...prev]);
-          setShowNewPantryItemModal(false);
-          showToast(`Per Sprache hinzugefügt: ${cmdText}`);
+          showToast(`Per Sprache in Schrank einsortiert: ${cmdText}`);
         }
         setVoiceText('');
         setVoiceOverlay(false);
@@ -767,15 +808,24 @@
           <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Foto- & Sprach-Scanner aktiv</p>
+              <p className="text-xs text-stone-500">Wochenplan & Großeinkauf</p>
             </div>
-            <button
-              onClick={() => setVoiceOverlay(true)}
-              className="flex items-center gap-2 bg-stone-900 text-white px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-stone-800 transition"
-            >
-              <Icon name="mic" size={14} />
-              <span>Sprachbefehl</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleGlobalPhotoScan}
+                className="p-2.5 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-lg transition"
+                title="Foto-Scan"
+              >
+                <Icon name="camera" size={16} />
+              </button>
+              <button
+                onClick={() => setVoiceOverlay(true)}
+                className="flex items-center gap-1.5 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-stone-800 transition"
+              >
+                <Icon name="mic" size={14} />
+                <span>Sprache</span>
+              </button>
+            </div>
           </header>
 
           {/* TOAST */}
@@ -823,7 +873,7 @@
 
           {/* MAIN CONTENT */}
           <main className="flex-1 px-4 pt-4">
-            {/* TAB HOME: DASHBOARD */}
+            {/* TAB HOME: DASHBOARD & WOCHENPLAN */}
             {activeTab === 'home' && (
               <div className="space-y-4">
                 <div className="bg-stone-900 text-white rounded-2xl p-5 space-y-3 shadow-sm">
@@ -835,15 +885,46 @@
                   </div>
                   <h2 className="text-xl font-semibold">Ab in die Küche!</h2>
                   <p className="text-xs text-stone-300 leading-relaxed">
-                    Der Rezept-Würfler gleicht deine Vorräte, den Tiefkühler und den Pasta-Joker in Echtzeit ab.
+                    Wähle Rezepte für die nächsten Tage im Voraus aus – fehlende Zutaten landen direkt auf deiner Einkaufsliste.
                   </p>
                   <button
                     onClick={() => setActiveTab('decide')}
                     className="w-full py-2.5 bg-white text-stone-900 rounded-xl text-xs font-semibold hover:bg-stone-100 transition flex items-center justify-center gap-2"
                   >
                     <Icon name="utensils" size={15} />
-                    <span>Rezept-Würfler starten</span>
+                    <span>Rezept-Würfler & Planer starten</span>
                   </button>
+                </div>
+
+                {/* AKTUELLER KOCHPLAN (FÜR DIE NÄCHSTEN TAGE) */}
+                <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">Dein Kochplan ({mealPlan.length})</h3>
+                    {mealPlan.length > 0 && (
+                      <span className="text-[11px] text-emerald-700 font-medium">Zutaten auf Einkaufsliste</span>
+                    )}
+                  </div>
+                  {mealPlan.length > 0 ? (
+                    <div className="space-y-2">
+                      {mealPlan.map(meal => (
+                        <div key={meal.id} className="bg-stone-50 border border-stone-200 rounded-xl p-3 flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-semibold text-stone-900">{meal.title}</h4>
+                            <p className="text-[11px] text-stone-500">Zubereitung: {meal.prepTime} Min.</p>
+                          </div>
+                          <button
+                            onClick={() => removeFromMealPlan(meal.id)}
+                            className="text-stone-400 hover:text-red-600 p-1.5"
+                            title="Aus Plan entfernen"
+                          >
+                            <Icon name="trash-2" size={15} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-stone-400 py-2">Noch keine Gerichte für die nächsten Tage ausgewählt. Nutze den Würfler, um Gerichte für den Wocheneinkauf vorzumerken!</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -942,13 +1023,13 @@
               </div>
             )}
 
-            {/* TAB: WÜRFLER */}
+            {/* TAB: WÜRFLER & PLANER */}
             {activeTab === 'decide' && (
               <div className="space-y-4">
                 <div className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Filter</span>
-                    <span className="text-xs text-stone-500">{filteredSuggestions.length} passende Gerichte</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Wochenplan-Filter</span>
+                    <span className="text-xs text-stone-500">{filteredSuggestions.length} Gerichte</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
                     <button
@@ -998,6 +1079,7 @@
                       >
                         <option value="all_here">Nur was da</option>
                         <option value="shop_1_2">Max. 1-2 fehlen</option>
+                        <option value="any_plan">📅 Wochenplan / Großeinkauf</option>
                       </select>
                     </div>
                   )}
@@ -1013,7 +1095,7 @@
                           </span>
                           {activeSuggestion.kcalPer100g !== undefined && (
                             <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">
-                              ~{activeSuggestion.kcalPer100g} kcal / 100g (inkl. Beilage)
+                              ~{activeSuggestion.kcalPer100g} kcal / 100g
                             </span>
                           )}
                           {activeSuggestion.isKidFriendly && (
@@ -1041,7 +1123,7 @@
                       <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-stone-700">
                         <Icon name="snowflake" size={15} className="text-stone-500 shrink-0" />
                         <span>
-                          <strong>Im TK vorrätig:</strong> {activeSuggestion.fromFreezerMeat.join(', ')} (rechtzeitig auftauen).
+                          <strong>Im TK vorrätig:</strong> {activeSuggestion.fromFreezerMeat.join(', ')}.
                         </span>
                       </div>
                     )}
@@ -1075,24 +1157,35 @@
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-2">
+                    {/* AKTIONEN: FÜR KOCHPLAN VORMERKEN ODER KOCHEN */}
+                    <div className="space-y-2 pt-2">
                       <button
-                        onClick={() => {
-                          setSelectedRecipeId(activeSuggestion.id);
-                          setActiveTab('recipes');
-                        }}
-                        className="py-2.5 px-3 rounded-lg border border-stone-300 text-stone-800 text-xs font-medium hover:bg-stone-50 flex items-center justify-center gap-1.5"
+                        onClick={() => addToMealPlan(activeSuggestion)}
+                        className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border border-stone-300 transition"
                       >
-                        <Icon name="book-open" size={15} />
-                        <span>Rezept & Anpassen</span>
+                        <Icon name="calendar-plus" size={15} />
+                        <span>Für den Wochenplan vormerken (Fehlendes auf Einkaufsliste)</span>
                       </button>
-                      <button
-                        onClick={() => setCookedModalRecipe(activeSuggestion)}
-                        className="py-2.5 px-3 rounded-lg bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 flex items-center justify-center gap-1.5"
-                      >
-                        <Icon name="check" size={15} />
-                        <span>Heute gekocht!</span>
-                      </button>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedRecipeId(activeSuggestion.id);
+                            setActiveTab('recipes');
+                          }}
+                          className="py-2.5 px-3 rounded-lg border border-stone-300 text-stone-800 text-xs font-medium hover:bg-stone-50 flex items-center justify-center gap-1.5"
+                        >
+                          <Icon name="book-open" size={15} />
+                          <span>Rezept ansehen</span>
+                        </button>
+                        <button
+                          onClick={() => setCookedModalRecipe(activeSuggestion)}
+                          className="py-2.5 px-3 rounded-lg bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 flex items-center justify-center gap-1.5"
+                        >
+                          <Icon name="check" size={15} />
+                          <span>Heute gekocht!</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -1592,7 +1685,7 @@
               </div>
             )}
 
-            {/* TAB 4: EINKAUF (MIT BRING! EXPORT) */}
+            {/* TAB 4: EINKAUF */}
             {activeTab === 'shopping' && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -1740,7 +1833,7 @@
             </div>
           )}
 
-          {/* MODAL: NEUER VORRAT (MIT FOTO-SCAN & SPRACH-BUTTONS) */}
+          {/* MODAL: NEUER VORRAT */}
           {showNewPantryItemModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
@@ -1751,7 +1844,6 @@
                   </button>
                 </div>
 
-                {/* SCHNELL-AKTIONEN: FOTO & SPRACHE */}
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={handlePhotoScan}
@@ -1770,12 +1862,6 @@
                     <Icon name="mic" size={15} />
                     <span>Diktieren</span>
                   </button>
-                </div>
-
-                <div className="relative flex py-1 items-center">
-                  <div className="flex-grow border-t border-stone-200"></div>
-                  <span className="flex-shrink mx-2 text-[10px] uppercase tracking-wider text-stone-400">Oder manuell</span>
-                  <div className="flex-grow border-t border-stone-200"></div>
                 </div>
 
                 <div className="space-y-3">
