@@ -373,25 +373,25 @@
       }, []);
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v31');
+        const saved = localStorage.getItem('kueche_pantry_v33');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v31');
+        const saved = localStorage.getItem('kueche_mealprep_v33');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v31');
+        const saved = localStorage.getItem('kueche_recipes_v33');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v31');
+        const saved = localStorage.getItem('kueche_shopping_v33');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
       const [mealPlan, setMealPlan] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealplan_v31');
+        const saved = localStorage.getItem('kueche_mealplan_v33');
         return saved ? JSON.parse(saved) : [];
       });
 
@@ -452,11 +452,11 @@
       }, [firebaseUrl]);
 
       useEffect(() => {
-        localStorage.setItem('kueche_pantry_v31', JSON.stringify(pantry));
-        localStorage.setItem('kueche_mealprep_v31', JSON.stringify(mealPrep));
-        localStorage.setItem('kueche_recipes_v31', JSON.stringify(recipes));
-        localStorage.setItem('kueche_shopping_v31', JSON.stringify(shoppingList));
-        localStorage.setItem('kueche_mealplan_v31', JSON.stringify(mealPlan));
+        localStorage.setItem('kueche_pantry_v33', JSON.stringify(pantry));
+        localStorage.setItem('kueche_mealprep_v33', JSON.stringify(mealPrep));
+        localStorage.setItem('kueche_recipes_v33', JSON.stringify(recipes));
+        localStorage.setItem('kueche_shopping_v33', JSON.stringify(shoppingList));
+        localStorage.setItem('kueche_mealplan_v33', JSON.stringify(mealPlan));
         if (firebaseUrl && !isApplyingRemote.current) {
           pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
         }
@@ -926,7 +926,7 @@
         }, 600);
       };
 
-      // DYNAMISCHER MODELL-CHECK (Fragt Google im Hintergrund nach dem passenden Modell, genau wie in deiner Pokédex-App!)
+      // VOLLSTÄNDIG DYNAMISCHER MODELL-FINDER (Fragt Google im Hintergrund nach dem aktiven Modell, exakt wie im Pokédex)
       const handleFileSelected = async (e, scanType = 'pantry') => {
         const file = e.target.files[0];
         if (!file) return;
@@ -936,7 +936,7 @@
 
         try {
           setIsAnalyzingPhoto(true);
-          showToast('Foto wird verkleinert & Modell wird ermittelt...');
+          showToast('Foto wird komprimiert & aktuelles Modell wird ermittelt...');
           const base64Data = await compressImageToBase64(file, 1024, 0.75);
 
           const prompt = scanType === 'recipe'
@@ -944,18 +944,17 @@
             : `Erkenne das fotografierte Lebensmittel oder den Kassenbon auf dem Bild. Antworte NUR mit reinem JSON: {"items": [{"name": "Genauer Produktname (z.B. Mutti Passata)", "amount": 1, "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDays": 5}]}`;
 
           let response = null;
-          let data = null;
 
-          // 1. Hole im Hintergrund die Liste der verfügbaren Modelle, genau wie beim Pokédex!
+          // 1. Hole die aktuelle Liste der erlaubten Modelle von Google
           try {
             const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(activeKey)}`);
             const listData = await listRes.json();
             if (listData && listData.models) {
-              // Finde das erste passende Flash-Modell, das Inhalte generieren kann
+              // Suche nach einem verfügbaren Flash-Modell
               const foundModel = listData.models.find(m => m.name.includes('flash') && m.supportedGenerationMethods?.includes('generateContent'));
               if (foundModel) {
-                const modelName = foundModel.name.replace('models/', '');
-                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(activeKey)}`, {
+                const modelPath = foundModel.name; // z.B. "models/gemini-1.5-flash"
+                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(activeKey)}`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -969,31 +968,33 @@
                 });
               }
             }
-          } catch (modelListErr) {
-            // Ignorieren und mit Fallback fortfahren
+          } catch (discoveryErr) {}
+
+          // 2. Automatischer Fallback falls die dynamische Erkennung fehlschlägt
+          if (!response || !response.ok) {
+            for (const fallbackModel of ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro-vision']) {
+              response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent?key=${encodeURIComponent(activeKey)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [
+                      { text: prompt },
+                      { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
+                    ]
+                  }]
+                })
+              });
+              if (response.ok) break;
+            }
           }
 
-          // 2. Fallback falls die automatische Erkennung fehlschlägt
           if (!response || !response.ok) {
-            response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(activeKey)}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [
-                    { text: prompt },
-                    { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
-                  ]
-                }]
-              })
-            });
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData?.error?.message || `HTTP ${response.status}`);
           }
 
           const result = await response.json();
-          if (!response.ok || result.error) {
-            throw new Error(result?.error?.message || `HTTP ${response.status}`);
-          }
-
           const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
           const jsonMatch = rawText.match(/\{[\s\S]*\}/);
           if (!jsonMatch) throw new Error('Kein Produkt im Bild erkannt');
@@ -1145,7 +1146,7 @@
         if (geminiKey.trim()) params.set('gemini', geminiKey.trim());
         const inviteLink = `${baseUrl}?${params.toString()}`;
         navigator.clipboard.writeText(inviteLink);
-        showToast('Einladungs-Link für deine Frau kopiert! Einfach per WhatsApp senden.');
+        showToast('Link kopiert! Einfach per WhatsApp senden.');
       };
 
       return (
@@ -1184,11 +1185,7 @@
                   syncStatus === 'syncing' ? 'bg-amber-400' :
                   syncStatus === 'error' ? 'bg-red-500' : 'bg-emerald-500'
                 }`} />
-                <p className="text-[11px] text-stone-500">
-                  {syncStatus === 'synced' ? 'Live mit deiner Frau verbunden' :
-                   syncStatus === 'syncing' ? 'Synchronisiere...' :
-                   syncStatus === 'error' ? 'Sync-Fehler (⚙️ prüfen)' : 'Bereit'}
-                </p>
+                <p className="text-[11px] text-stone-500">Live</p>
               </div>
             </div>
 
@@ -2291,7 +2288,7 @@
                     className="w-full py-2.5 bg-[#849b82] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     <Icon name="share-2" size={14} />
-                    <span>Einladungs-Link für deine Frau kopieren</span>
+                    <span>Link kopieren</span>
                   </button>
                 )}
 
