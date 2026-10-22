@@ -57,8 +57,9 @@
       { id: 'p8', name: 'Risottoreis / Basmati', category: 'pantry', status: 'in_stock', group: 'Reis', amount: 800, unitType: 'g', lowThreshold: 250 },
       { id: 'p9', name: 'Zwiebeln & Knoblauch', category: 'pantry', status: 'in_stock', amount: 6, unitType: 'Stück', lowThreshold: 2 },
       { id: 'p10', name: 'Apfelmus (Glas)', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
+      { id: 'p10b', name: 'Ketchup', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
       
-      // Fonds & Brühen (gehören zur Gruppe 'Fond')
+      // Fonds & Brühen
       { id: 'p11a', name: 'Rinderfond', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
       { id: 'p11b', name: 'Gemüsebrühe', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 1, unitType: 'Gläser', lowThreshold: 1 },
 
@@ -214,6 +215,48 @@
         steps: [
           'Kartoffelpuffer in der Pfanne goldbraun braten und mit Apfelmus servieren.'
         ]
+      },
+      {
+        id: 'r7',
+        title: 'Pasta mit Öl & Parmesan (Kinderspaß)',
+        effort: 'quick',
+        season: 'all',
+        calories: 'normal',
+        isKidFriendly: true,
+        isKidOnlyFastDay: true,
+        isMealPrep: false,
+        isDraft: false,
+        lastCookedDaysAgo: 3,
+        prepTime: 10,
+        ingredients: [
+          { name: 'Spaghetti', amount: '200 g (Jede Pasta geht)', essential: true, isPasta: true },
+          { name: 'Olivenöl Extra Vergine', amount: '2 EL', essential: true },
+          { name: 'Parmesan (am Stück)', amount: 'Viel geriebener Parmesan', essential: true }
+        ],
+        steps: [
+          'Nudeln weich kochen und abgießen.',
+          'Mit gutem Olivenöl und ordentlich Parmesan vermengen.'
+        ]
+      },
+      {
+        id: 'r8',
+        title: 'Nudeln mit Ketchup',
+        effort: 'quick',
+        season: 'all',
+        calories: 'normal',
+        isKidFriendly: true,
+        isKidOnlyFastDay: true,
+        isMealPrep: false,
+        isDraft: false,
+        lastCookedDaysAgo: 5,
+        prepTime: 10,
+        ingredients: [
+          { name: 'Penne', amount: '200 g (Jede Pasta geht)', essential: true, isPasta: true },
+          { name: 'Ketchup', amount: 'Nach Wunsch', essential: true }
+        ],
+        steps: [
+          'Nudeln kochen, abgießen und mit Ketchup servieren.'
+        ]
       }
     ];
 
@@ -221,28 +264,28 @@
       const [activeTab, setActiveTab] = useState('decide');
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v5');
+        const saved = localStorage.getItem('kueche_pantry_v6');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v5');
+        const saved = localStorage.getItem('kueche_mealprep_v6');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v5');
+        const saved = localStorage.getItem('kueche_recipes_v6');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v5');
+        const saved = localStorage.getItem('kueche_shopping_v6');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry_v5', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep_v5', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes_v5', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping_v5', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_pantry_v6', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v6', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v6', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v6', JSON.stringify(shoppingList)); }, [shoppingList]);
 
       const [filterEffort, setFilterEffort] = useState('all');
       const [filterCalories, setFilterCalories] = useState('all');
@@ -308,7 +351,6 @@
         }));
       };
 
-      // Erweiterte Verfügbarkeitsprüfung (Pasta-Joker + Fond-Joker)
       const checkRecipeAvailability = (recipe) => {
         const missing = [];
         const fromFreezerMeat = [];
@@ -323,29 +365,24 @@
             return;
           }
 
-          // 1. Pasta-Joker
           if (ing.isPasta) {
             const exactPasta = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.amount > 0);
-            if (exactPasta) {
-              notes.(`Mit ${exactPasta.name}`);
-              return;
-            }
+            if (exactPasta) return;
             const anyPasta = pantry.find(p => p.group === 'Pasta' && p.amount > 0);
             if (anyPasta) {
-              notes.push(`Joker greift: ${anyPasta.name} statt Wunsch-Sorte`);
+              notes.push(`Joker: ${anyPasta.name} im Haus`);
               return;
             }
             if (ing.essential) missing.push(ing.name);
             return;
           }
 
-          // 2. Fond/Brühe-Joker (z.B. Kalbsfond -> Rinderfond / Gemüsebrühe)
           if (ing.isFond) {
             const exactFond = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.amount > 0);
             if (exactFond) return;
             const anyFond = pantry.find(p => p.group === 'Fond' && p.amount > 0);
             if (anyFond) {
-              notes.push(`Joker greift: ${anyFond.name} statt ${ing.name}`);
+              notes.push(`Joker: ${anyFond.name} statt ${ing.name}`);
               return;
             }
             if (ing.essential) missing.push(ing.name);
@@ -380,7 +417,6 @@
           .filter(r => {
             if (filterMode === 'kid') return r.isKidOnlyFastDay || r.isKidFriendly;
             if (filterMode === 'mealprep') return r.isMealPrep;
-            if (r.isKidOnlyFastDay) return false;
             if (filterEffort !== 'all' && r.effort !== filterEffort) return false;
             if (filterCalories !== 'all' && r.calories !== filterCalories) return false;
             if (filterShopping === 'all_here' && r.missing.length > 0) return false;
@@ -579,7 +615,6 @@
         showToast('Zubereitungsschritt gespeichert');
       };
 
-      // Sprachbefehle (unterstützt jetzt auch Abfragen wie "haben wir noch Senf?")
       const startListening = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -599,7 +634,6 @@
       const executeVoiceCommand = (cmdText) => {
         const text = cmdText.toLowerCase();
 
-        // Bestandsabfrage (z.B. "haben wir noch senf?" oder "ist noch parmesan da?")
         if (text.includes('haben wir') || text.includes('ist noch') || text.includes('gibt es') || text.includes('haben wir noch')) {
           const queryItem = pantry.find(p => text.includes(p.name.toLowerCase().split(' ')[0]));
           if (queryItem) {
@@ -645,7 +679,7 @@
           <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Universal-Joker & Bestandsabfrage</p>
+              <p className="text-xs text-stone-500">Familien- & Kinderrezepte</p>
             </div>
             <button
               onClick={() => setVoiceOverlay(true)}
@@ -709,23 +743,14 @@
                     <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Filter</span>
                     <span className="text-xs text-stone-500">{filteredSuggestions.length} passende Gerichte</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-2 gap-1.5">
                     <button
                       onClick={() => { setFilterMode('normal'); setCurrentSuggestionIndex(0); }}
                       className={`py-2 px-2 rounded-lg text-xs font-medium border transition ${
                         filterMode === 'normal' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
                       }`}
                     >
-                      Alle Rezepte
-                    </button>
-                    <button
-                      onClick={() => { setFilterMode('mealprep'); setCurrentSuggestionIndex(0); }}
-                      className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${
-                        filterMode === 'mealprep' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
-                      }`}
-                    >
-                      <Icon name="snowflake" size={13} />
-                      <span>TK Meal-Prep</span>
+                      Hauptgerichte / Alle
                     </button>
                     <button
                       onClick={() => { setFilterMode('kid'); setCurrentSuggestionIndex(0); }}
@@ -734,7 +759,7 @@
                       }`}
                     >
                       <Icon name="baby" size={14} />
-                      <span>Kind / Fasten</span>
+                      <span>Kinder & Fastentag</span>
                     </button>
                   </div>
 
@@ -779,6 +804,11 @@
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-700">
                             {activeSuggestion.prepTime} Min.
                           </span>
+                          {activeSuggestion.isKidFriendly && (
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-800">
+                              👶 Kinder-Favorit
+                            </span>
+                          )}
                           <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${
                             activeSuggestion.calories === 'light' ? 'bg-emerald-100 text-emerald-900' :
                             activeSuggestion.calories === 'heavy' ? 'bg-red-100 text-red-900' : 'bg-stone-100 text-stone-700'
@@ -997,7 +1027,7 @@
                           Bestandsliste
                         </span>
                         <span className="text-[11px] text-stone-500">
-                          Fonds, Brühen, Nudeln & Vorräte
+                          Ketchup, Parmesan, Nudeln & Co.
                         </span>
                       </div>
                       <button
@@ -1138,6 +1168,11 @@
                       <h2 className="text-lg font-semibold text-stone-900">{selectedRecipe.title}</h2>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-stone-500">Zubereitung: {selectedRecipe.prepTime} Min.</span>
+                        {selectedRecipe.isKidFriendly && (
+                          <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-800">
+                            👶 Kinder-Rezept
+                          </span>
+                        )}
                         <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${
                           selectedRecipe.calories === 'light' ? 'bg-emerald-100 text-emerald-900' :
                           selectedRecipe.calories === 'heavy' ? 'bg-red-100 text-red-900' : 'bg-stone-100 text-stone-700'
@@ -1281,6 +1316,11 @@
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="text-sm font-semibold text-stone-900">{r.title}</h4>
+                            {r.isKidFriendly && (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-medium">
+                                👶 Kinder
+                              </span>
+                            )}
                             <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
                               r.calories === 'light' ? 'bg-emerald-100 text-emerald-900' :
                               r.calories === 'heavy' ? 'bg-red-100 text-red-900' : 'bg-stone-100 text-stone-700'
@@ -1449,7 +1489,7 @@
                 <div className="space-y-3">
                   <input
                     type="text"
-                    placeholder="Bezeichnung (z.B. Rinderfond, Rigatoni...)"
+                    placeholder="Bezeichnung (z.B. Ketchup, Parmesan...)"
                     value={newPantryName}
                     onChange={e => setNewPantryName(e.target.value)}
                     className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
@@ -1477,11 +1517,10 @@
                         }}
                         className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
                       >
-                        <option value="Gläser">Gläser</option>
-                        <option value="Dosen">Dosen</option>
-                        <option value="g">Gramm (g)</option>
+                        <option value="Flasche">Flasche</option>
                         <option value="Stück">Stück</option>
-                        <option value="ml">Milliliter (ml)</option>
+                        <option value="g">Gramm (g)</option>
+                        <option value="Gläser">Gläser</option>
                         <option value="Packung">Packung</option>
                       </select>
                     </div>
@@ -1565,7 +1604,7 @@
                 </div>
 
                 <p className="text-xs text-stone-500">
-                  Beispiele: <em>„Haben wir noch Senf?“</em>, <em>„Rigatoni noch 500 Gramm“</em> oder <em>„Chili eingefroren 2x 500g“</em>.
+                  Beispiele: <em>„Haben wir noch Ketchup?“</em>, <em>„Fischstäbchen noch 6“</em> oder <em>„Chili eingefroren 2x 500g“</em>.
                 </p>
 
                 <button
