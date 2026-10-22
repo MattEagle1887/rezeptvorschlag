@@ -361,6 +361,7 @@
       });
 
       const [showSettingsModal, setShowSettingsModal] = useState(false);
+      const [showResetConfirm, setShowResetConfirm] = useState(false);
       const [syncStatus, setSyncStatus] = useState('local');
       const lastSyncTimestamp = useRef(0);
       const isApplyingRemote = useRef(false);
@@ -372,30 +373,14 @@
         }
       }, []);
 
-      const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v35');
-        return saved ? JSON.parse(saved) : INITIAL_PANTRY;
-      });
-      const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v35');
-        return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
-      });
-      const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v35');
-        return saved ? JSON.parse(saved) : INITIAL_RECIPES;
-      });
-      const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v35');
-        return saved ? JSON.parse(saved) : [
-          { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
-        ];
-      });
-      const [mealPlan, setMealPlan] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealplan_v35');
-        return saved ? JSON.parse(saved) : [];
-      });
+      const [pantry, setPantry] = useState([]);
+      const [mealPrep, setMealPrep] = useState([]);
+      const [recipes, setRecipes] = useState([]);
+      const [shoppingList, setShoppingList] = useState([]);
+      const [mealPlan, setMealPlan] = useState([]);
+      const [isLoadedFromCloud, setIsLoadedFromCloud] = useState(false);
 
-      const pushToCloud = async (nextState) => {
+      const pushToCloud = async (stateObj) => {
         if (!firebaseUrl || isApplyingRemote.current) return;
         const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
         try {
@@ -405,7 +390,7 @@
           await fetch(`${cleanUrl}/kueche_shared.json`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...nextState, updatedAt: now })
+            body: JSON.stringify({ ...stateObj, updatedAt: now })
           });
           setSyncStatus('synced');
         } catch (err) {
@@ -414,10 +399,7 @@
       };
 
       const pullFromCloud = async () => {
-        if (!firebaseUrl) {
-          setSyncStatus('local');
-          return;
-        }
+        if (!firebaseUrl) return;
         const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
         try {
           const res = await fetch(`${cleanUrl}/kueche_shared.json`);
@@ -426,14 +408,20 @@
           if (data && data.updatedAt && data.updatedAt > lastSyncTimestamp.current) {
             isApplyingRemote.current = true;
             lastSyncTimestamp.current = data.updatedAt;
-            if (data.pantry) setPantry(data.pantry);
-            if (data.mealPrep) setMealPrep(data.mealPrep);
-            if (data.recipes) setRecipes(data.recipes);
-            if (data.shoppingList) setShoppingList(data.shoppingList);
-            if (data.mealPlan) setMealPlan(data.mealPlan);
+            setPantry(data.pantry || []);
+            setMealPrep(data.mealPrep || []);
+            setRecipes(data.recipes || []);
+            setShoppingList(data.shoppingList || []);
+            setMealPlan(data.mealPlan || []);
             setTimeout(() => { isApplyingRemote.current = false; }, 200);
           } else if (!data) {
-            pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
+            const initialObj = { pantry: INITIAL_PANTRY, mealPrep: INITIAL_MEAL_PREP, recipes: INITIAL_RECIPES, shoppingList: [], mealPlan: [] };
+            setPantry(initialObj.pantry);
+            setMealPrep(initialObj.mealPrep);
+            setRecipes(initialObj.recipes);
+            setShoppingList(initialObj.shoppingList);
+            setMealPlan(initialObj.mealPlan);
+            pushToCloud(initialObj);
           }
           setSyncStatus('synced');
         } catch (e) {
@@ -443,24 +431,104 @@
 
       useEffect(() => {
         if (!firebaseUrl) {
+          setPantry(INITIAL_PANTRY);
+          setMealPrep(INITIAL_MEAL_PREP);
+          setRecipes(INITIAL_RECIPES);
+          setShoppingList([]);
+          setMealPlan([]);
+          setIsLoadedFromCloud(true);
           setSyncStatus('local');
           return;
         }
-        pullFromCloud();
-        const interval = setInterval(pullFromCloud, 5000);
-        return () => clearInterval(interval);
+
+        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
+        fetch(`${cleanUrl}/kueche_shared.json`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.pantry) {
+              setPantry(data.pantry || []);
+              setMealPrep(data.mealPrep || []);
+              setRecipes(data.recipes || []);
+              setShoppingList(data.shoppingList || []);
+              setMealPlan(data.mealPlan || []);
+              if (data.updatedAt) lastSyncTimestamp.current = data.updatedAt;
+            } else {
+              const initialObj = {
+                pantry: INITIAL_PANTRY,
+                mealPrep: INITIAL_MEAL_PREP,
+                recipes: INITIAL_RECIPES,
+                shoppingList: [],
+                mealPlan: []
+              };
+              setPantry(initialObj.pantry);
+              setMealPrep(initialObj.mealPrep);
+              setRecipes(initialObj.recipes);
+              setShoppingList(initialObj.shoppingList);
+              setMealPlan(initialObj.mealPlan);
+              pushToCloud(initialObj);
+            }
+            setIsLoadedFromCloud(true);
+            setSyncStatus('synced');
+          })
+          .catch(() => {
+            setPantry(INITIAL_PANTRY);
+            setMealPrep(INITIAL_MEAL_PREP);
+            setRecipes(INITIAL_RECIPES);
+            setShoppingList([]);
+            setMealPlan([]);
+            setIsLoadedFromCloud(true);
+            setSyncStatus('error');
+          });
       }, [firebaseUrl]);
 
       useEffect(() => {
-        localStorage.setItem('kueche_pantry_v35', JSON.stringify(pantry));
-        localStorage.setItem('kueche_mealprep_v35', JSON.stringify(mealPrep));
-        localStorage.setItem('kueche_recipes_v35', JSON.stringify(recipes));
-        localStorage.setItem('kueche_shopping_v35', JSON.stringify(shoppingList));
-        localStorage.setItem('kueche_mealplan_v35', JSON.stringify(mealPlan));
-        if (firebaseUrl && !isApplyingRemote.current) {
-          pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
+        if (!firebaseUrl || !isLoadedFromCloud) return;
+        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
+        const interval = setInterval(async () => {
+          try {
+            const res = await fetch(`${cleanUrl}/kueche_shared.json`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data && data.updatedAt && data.updatedAt > lastSyncTimestamp.current) {
+              isApplyingRemote.current = true;
+              lastSyncTimestamp.current = data.updatedAt;
+              setPantry(data.pantry || []);
+              setMealPrep(data.mealPrep || []);
+              setRecipes(data.recipes || []);
+              setShoppingList(data.shoppingList || []);
+              setMealPlan(data.mealPlan || []);
+              setTimeout(() => { isApplyingRemote.current = false; }, 200);
+            }
+            setSyncStatus('synced');
+          } catch (e) {
+            setSyncStatus('error');
+          }
+        }, 4000);
+        return () => clearInterval(interval);
+      }, [firebaseUrl, isLoadedFromCloud]);
+
+      useEffect(() => {
+        if (!isLoadedFromCloud || isApplyingRemote.current) return;
+        const currentState = { pantry, mealPrep, recipes, shoppingList, mealPlan };
+        if (firebaseUrl) {
+          pushToCloud(currentState);
         }
       }, [pantry, mealPrep, recipes, shoppingList, mealPlan]);
+
+      const handleDatabaseReset = () => {
+        const emptyState = { pantry: [], mealPrep: [], recipes: [], shoppingList: [], mealPlan: [] };
+        setPantry([]);
+        setMealPrep([]);
+        setRecipes([]);
+        setShoppingList([]);
+        setMealPlan([]);
+        if (firebaseUrl) {
+          pushToCloud(emptyState);
+        }
+        setShowResetConfirm(false);
+        setShowSettingsModal(false);
+        showToast('Datenbank wurde komplett geleert!');
+      };
 
       const [filterEffort, setFilterEffort] = useState('all');
       const [filterCalories, setFilterCalories] = useState('all');
@@ -597,7 +665,7 @@
         const urgentFridgeItems = [];
         const notes = [];
 
-        recipe.ingredients.forEach((ing) => {
+        (recipe.ingredients || []).forEach((ing) => {
           if (ing.isFromMealPrep) {
             const mp = mealPrep.find(m => m.id === ing.isFromMealPrep);
             const totalGrams = mp ? (mp.blocks500 * 500 + mp.blocks250 * 250) : 0;
@@ -672,7 +740,7 @@
             if (a.urgentFridgeItems.length !== b.urgentFridgeItems.length) {
               return b.urgentFridgeItems.length - a.urgentFridgeItems.length;
             }
-            return b.lastCookedDaysAgo - a.lastCookedDaysAgo;
+            return (b.lastCookedDaysAgo || 0) - (a.lastCookedDaysAgo || 0);
           });
       }, [recipes, pantry, mealPrep, filterEffort, filterCalories, filterShopping, filterMode]);
 
@@ -756,15 +824,6 @@
         setRecipes(prev => prev.map(r =>
           r.id === cookedModalRecipe.id ? { ...r, lastCookedDaysAgo: 0 } : r
         ));
-
-        setPantry(prev => prev.map(p => {
-          if (p.id === 'p12') {
-            const nextUses = (p.usesSinceOpen || 0) + 1;
-            if (nextUses >= (p.maxUses || 20)) setOliveOilAlert(true);
-            return { ...p, usesSinceOpen: nextUses };
-          }
-          return p;
-        }));
 
         if (freezeLeftovers500 > 0 || freezeLeftovers250 > 0) {
           const existingMp = mealPrep.find(m =>
@@ -904,29 +963,20 @@
 
       const exportToBring = async () => {
         const itemsText = shoppingList.map(s => s.name).join('\n');
+        const bringUrl = `bring://share?list=${encodeURIComponent(bringListName)}&text=${encodeURIComponent(itemsText)}`;
+        
         try {
           if (navigator.clipboard) {
             await navigator.clipboard.writeText(itemsText);
           }
         } catch (e) {}
 
-        if (navigator.share) {
-          try {
-            await navigator.share({
-              title: bringListName || 'Zuhause',
-              text: itemsText
-            });
-            return;
-          } catch (err) {}
-        }
-
-        showToast(`In Zwischenablage kopiert! Öffne Bring! (${bringListName})...`);
+        showToast(`Öffne Bring! (${bringListName})...`);
         setTimeout(() => {
-          window.location.href = 'https://web.getbring.com';
-        }, 600);
+          window.location.href = bringUrl;
+        }, 300);
       };
 
-      // AUTOMATISCHER MODELL-FINDER (Fragt Google im Hintergrund direkt ab, welches Modell aktiv ist)
       const handleFileSelected = async (e, scanType = 'pantry') => {
         const file = e.target.files[0];
         if (!file) return;
@@ -945,14 +995,13 @@
 
           let response = null;
 
-          // 1. Hole live die Liste aller verfügbaren Modelle vom Key
           try {
             const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(activeKey)}`);
             const listData = await listRes.json();
             if (listData && listData.models) {
               const foundModel = listData.models.find(m => m.name.toLowerCase().includes('flash') && m.supportedGenerationMethods?.includes('generateContent'));
               if (foundModel) {
-                const modelPath = foundModel.name; // z.B. "models/gemini-1.5-flash"
+                const modelPath = foundModel.name;
                 response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${encodeURIComponent(activeKey)}`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -969,7 +1018,6 @@
             }
           } catch (modelDiscoveryErr) {}
 
-          // 2. Automatischer Fallback (probiert gemini-2.0-flash, gemini-1.5-flash etc.)
           if (!response || !response.ok) {
             for (const fallbackModel of ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']) {
               response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent?key=${encodeURIComponent(activeKey)}`, {
@@ -1032,7 +1080,6 @@
         }
       };
 
-      // SPRACHERKENNUNG STARTET JETZT SOFORT AUTOMATISCH OHNE EXTRA KLICK
       const startListening = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -1057,12 +1104,11 @@
         recognition.start();
       };
 
-      // Wenn das Sprach-Fenster aufgeht, startet das Mikrofon ab sofort sofort von selbst!
       useEffect(() => {
         if (voiceOverlay) {
           const timer = setTimeout(() => {
             startListening();
-          }, 300);
+          }, 250);
           return () => clearTimeout(timer);
         }
       }, [voiceOverlay]);
@@ -1544,8 +1590,8 @@
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zutaten-Check</p>
                       <div className="divide-y divide-stone-100 border border-stone-100 rounded-lg overflow-hidden">
-                        {activeSuggestion.ingredients.map((ing, i) => {
-                          const isMissing = activeSuggestion.missing.includes(ing.name);
+                        {(activeSuggestion.ingredients || []).map((ing, i) => {
+                          const isMissing = (activeSuggestion.missing || []).includes(ing.name);
                           const matchedPantry = pantry.find(p =>
                             p.name.toLowerCase().includes(ing.name.toLowerCase()) ||
                             ing.name.toLowerCase().includes(p.name.toLowerCase())
@@ -1655,7 +1701,7 @@
                     </div>
 
                     {mealPrep.map(mp => {
-                      const totalGrams = mp.blocks500 * 500 + mp.blocks250 * 250;
+                      const totalGrams = (mp.blocks500 || 0) * 500 + (mp.blocks250 || 0) * 250;
                       return (
                         <div key={mp.id} className="bg-white border border-stone-200 rounded-xl p-4 space-y-3">
                           <div className="flex items-start justify-between gap-2">
@@ -1701,7 +1747,7 @@
                             <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
                               <div>
                                 <span className="text-xs font-semibold text-stone-800 block">500 g Form</span>
-                                <span className="text-[11px] text-stone-500">{mp.blocks500} Stück</span>
+                                <span className="text-[11px] text-stone-500">{mp.blocks500 || 0} Stück</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <button
@@ -1722,7 +1768,7 @@
                             <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
                               <div>
                                 <span className="text-xs font-semibold text-stone-800 block">250 g Form</span>
-                                <span className="text-[11px] text-stone-500">{mp.blocks250} Stück</span>
+                                <span className="text-[11px] text-stone-500">{mp.blocks250 || 0} Stück</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <button
@@ -1741,7 +1787,7 @@
                             </div>
                           </div>
 
-                          {mp.blocks500 >= 1 && mp.blocks250 >= 1 && (
+                          {(mp.blocks500 || 0) >= 1 && (mp.blocks250 || 0) >= 1 && (
                             <button
                               onClick={() => updateMealPrepBlocks(mp.id, -1, -1, '750g (1x 500g + 1x 250g) aufgetaut')}
                               className="w-full py-1.5 px-3 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 text-[11px] font-medium text-stone-700 flex items-center justify-center gap-1.5"
@@ -1972,7 +2018,7 @@
                         Zutaten {isEditingRecipe && '(Antippen zum Löschen)'}
                       </h3>
                       <div className="divide-y divide-stone-100 border border-stone-200 rounded-lg overflow-hidden">
-                        {selectedRecipe.ingredients.map((ing, idx) => (
+                        {(selectedRecipe.ingredients || []).map((ing, idx) => (
                           <div key={idx} className="px-3 py-2.5 flex items-center justify-between text-xs bg-white">
                             <div>
                               <span className="font-medium text-stone-900">{ing.name}</span>
@@ -2024,7 +2070,7 @@
                     <div className="space-y-2">
                       <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zubereitung</h3>
                       <ol className="space-y-2">
-                        {selectedRecipe.steps.map((step, idx) => (
+                        {(selectedRecipe.steps || []).map((step, idx) => (
                           <li key={idx} className="bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs text-stone-800 flex items-start justify-between gap-2">
                             <span><strong>{idx + 1}.</strong> {step}</span>
                             {isEditingRecipe && (
@@ -2100,7 +2146,7 @@
                             </span>
                           </div>
                           <p className="text-xs text-stone-500 mt-0.5">
-                            {r.ingredients.length} Zutaten · Vor {r.lastCookedDaysAgo} Tagen gekocht
+                            {(r.ingredients || []).length} Zutaten · Vor {r.lastCookedDaysAgo || 0} Tagen gekocht
                           </p>
                         </div>
                         <Icon name="chevron-right" size={18} className="text-stone-400" />
@@ -2190,13 +2236,13 @@
             )}
           </main>
 
-          {/* MODAL: EINSTELLUNGEN */}
+          {/* MODAL: EINSTELLUNGEN (INKLUSIVE DATENBANK-RESET MIT DOPPELTER BESTÄTIGUNG) */}
           {showSettingsModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold text-stone-900">Sync mit deiner Frau & KI</h3>
-                  <button onClick={() => setShowSettingsModal(false)} className="text-stone-400">
+                  <h3 className="text-base font-semibold text-stone-900">Sync & Einstellungen</h3>
+                  <button onClick={() => { setShowSettingsModal(false); setShowResetConfirm(false); }} className="text-stone-400">
                     <Icon name="x" size={18} />
                   </button>
                 </div>
@@ -2302,10 +2348,43 @@
                   </button>
                 )}
 
+                {/* DATENBANK RESET BEREICH MIT DOPPELTER BESTÄTIGUNG */}
+                <div className="pt-3 border-t border-stone-200">
+                  {!showResetConfirm ? (
+                    <button
+                      onClick={() => setShowResetConfirm(true)}
+                      className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-medium transition"
+                    >
+                      🗑️ Datenbank komplett leeren (Finaler Start)
+                    </button>
+                  ) : (
+                    <div className="bg-red-50 border border-red-300 rounded-xl p-3 space-y-2">
+                      <p className="text-xs font-semibold text-red-900 text-center">
+                        Wirklich alles löschen? (Vorräte, Rezepte, Plan)
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleDatabaseReset}
+                          className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold"
+                        >
+                          Ja, alles leeren
+                        </button>
+                        <button
+                          onClick={() => setShowResetConfirm(false)}
+                          className="flex-1 py-2 bg-white border border-stone-300 text-stone-700 rounded-lg text-xs font-medium"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <button
                   onClick={() => {
                     pullFromCloud();
                     setShowSettingsModal(false);
+                    setShowResetConfirm(false);
                     showToast('Einstellungen aktiv!');
                   }}
                   className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
