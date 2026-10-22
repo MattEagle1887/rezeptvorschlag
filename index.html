@@ -41,7 +41,6 @@
     };
 
     const INITIAL_PANTRY = [
-      // Kühlschrank / Frisch
       { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDays: 5, amount: 500, unitType: 'g', lowThreshold: 200 },
       { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDays: 9, amount: 3, unitType: 'Stück', lowThreshold: 1 },
       { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDays: 20, amount: 200, unitType: 'g', lowThreshold: 50 },
@@ -64,19 +63,16 @@
       { id: 'p11a', name: 'Rinderfond', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
       { id: 'p11b', name: 'Gemüsebrühe', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 1, unitType: 'Gläser', lowThreshold: 1 },
 
-      // NEU: Essige, Saucen & flüssige Würzmittel
+      // Essige, Saucen & Gewürze
       { id: 's_soja1', name: 'Sojasauce (helle)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
       { id: 's_soja2', name: 'Sojasauce (dunkle)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
       { id: 's_essig1', name: 'Weißweinessig', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
       { id: 's_essig2', name: 'Balsamico-Essig', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-
-      // NEU: Gewürzschrank & Kräuter (Piment, Wacholder, Nelken, Muskat, Tonkabohne...)
       { id: 'sp_1', name: 'Piment (ganz / gemahlen)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Dose', lowThreshold: 1 },
       { id: 'sp_2', name: 'Wacholderbeeren', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Dose', lowThreshold: 1 },
       { id: 'sp_3', name: 'Nelken', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Dose', lowThreshold: 1 },
       { id: 'sp_4', name: 'Muskatnuss (ganz)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Stück', lowThreshold: 1 },
       { id: 'sp_5', name: 'Tonkabohne', category: 'spices', status: 'in_stock', amount: 2, unitType: 'Stück', lowThreshold: 1 },
-      { id: 'sp_6', name: 'Getrocknete Kräuter (Thymian, Oregano, Rosmarin)', category: 'spices', status: 'in_stock', amount: 1, unitType: 'Set', lowThreshold: 1 },
 
       { id: 'p12', name: 'Olivenöl Extra Vergine', category: 'basics', status: 'in_stock', usesSinceOpen: 19, maxUses: 20 },
       { id: 'p13', name: 'Tomatenmark', category: 'basics', status: 'in_stock', usesSinceOpen: 5, maxUses: 10 },
@@ -293,31 +289,31 @@
     ];
 
     function App() {
-      const [activeTab, setActiveTab] = useState('decide');
+      const [activeTab, setActiveTab] = useState('home');
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v9');
+        const saved = localStorage.getItem('kueche_pantry_v10');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v9');
+        const saved = localStorage.getItem('kueche_mealprep_v10');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v9');
+        const saved = localStorage.getItem('kueche_recipes_v10');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v9');
+        const saved = localStorage.getItem('kueche_shopping_v10');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry_v9', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep_v9', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes_v9', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping_v9', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_pantry_v10', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v10', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v10', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v10', JSON.stringify(shoppingList)); }, [shoppingList]);
 
       const [filterEffort, setFilterEffort] = useState('all');
       const [filterCalories, setFilterCalories] = useState('all');
@@ -366,7 +362,7 @@
         const cleanAmount = Math.max(0, Number(newAmountVal));
         setPantry(prev => prev.map(item => {
           if (item.id !== itemId) return item;
-          const threshold = item.lowThreshold || (item.unitType === 'g' ? 150 : 2);
+          const threshold = item.lowThreshold || (item.unitType === 'g' ? 150 : 1);
           let nextStatus = 'in_stock';
           if (cleanAmount === 0) nextStatus = 'empty';
           else if (cleanAmount <= threshold) nextStatus = 'low';
@@ -374,7 +370,7 @@
           if (nextStatus === 'empty' && item.status !== 'empty') {
             setShoppingList(sl => {
               if (sl.some(s => s.name === item.name)) return sl;
-              return [...sl, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht (0 ' + item.unitType + ')', done: false }];
+              return [...sl, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }];
             });
             showToast(`${item.name} ist leer → Einkaufsliste`);
           }
@@ -674,6 +670,14 @@
         }));
       };
 
+      // Bring! App Export via URL-Scheme
+      const exportToBring = () => {
+        const text = shoppingList.map(s => s.name).join('\n');
+        // Bring! App Deep Link
+        window.location.href = `bring://share?text=${encodeURIComponent(text)}`;
+        showToast('Bring! App wird geöffnet...');
+      };
+
       const startListening = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -738,7 +742,7 @@
           <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Mit Gewürzschrank, Essigen & Home-Button</p>
+              <p className="text-xs text-stone-500">Dashboard & Bring!-Export</p>
             </div>
             <button
               onClick={() => setVoiceOverlay(true)}
@@ -794,7 +798,102 @@
 
           {/* MAIN CONTENT */}
           <main className="flex-1 px-4 pt-4">
-            {/* TAB 1: HEUTE KOCHEN */}
+            {/* TAB HOME: DASHBOARD */}
+            {activeTab === 'home' && (
+              <div className="space-y-4">
+                <div className="bg-stone-900 text-white rounded-2xl p-5 space-y-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium uppercase tracking-wider text-stone-400">Was kochen wir heute?</span>
+                    <span className="text-xs bg-stone-800 text-stone-300 px-2.5 py-1 rounded-full">
+                      {recipes.length} Rezepte
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-semibold">Ab in die Küche!</h2>
+                  <p className="text-xs text-stone-300 leading-relaxed">
+                    Der Rezept-Würfler gleicht deine Vorräte, den Tiefkühler und den Pasta-Joker in Echtzeit ab.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('decide')}
+                    className="w-full py-2.5 bg-white text-stone-900 rounded-xl text-xs font-semibold hover:bg-stone-100 transition flex items-center justify-center gap-2"
+                  >
+                    <Icon name="utensils" size={15} />
+                    <span>Rezept-Würfler starten</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 px-1">Schnell-Zusatz nach dem Einkauf</span>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('mealprep'); }}
+                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Icon name="snowflake" size={18} className="text-stone-700" />
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK-MealPrep</span>
+                      </div>
+                      <span className="text-sm font-semibold text-stone-900 block">Gefrierfach (Saucen)</span>
+                      <span className="text-[11px] text-stone-500 block">500g / 250g Blöcke</span>
+                    </button>
+
+                    <button
+                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('freezer_items'); }}
+                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Icon name="archive" size={18} className="text-stone-700" />
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK-Vorrat</span>
+                      </div>
+                      <span className="text-sm font-semibold text-stone-900 block">TK (Fischstäbchen...)</span>
+                      <span className="text-[11px] text-stone-500 block">Stück & Gramm</span>
+                    </button>
+
+                    <button
+                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('fridge'); }}
+                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Icon name="clock" size={18} className="text-stone-700" />
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">MHD</span>
+                      </div>
+                      <span className="text-sm font-semibold text-stone-900 block">Kühlschrank</span>
+                      <span className="text-[11px] text-stone-500 block">Frisch & Verfallsdatum</span>
+                    </button>
+
+                    <button
+                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('spices'); }}
+                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Icon name="tag" size={18} className="text-stone-700" />
+                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Gewürze</span>
+                      </div>
+                      <span className="text-sm font-semibold text-stone-900 block">Gewürze & Saucen</span>
+                      <span className="text-[11px] text-stone-500 block">Piment, Sojasauce, Essige</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  <button
+                    onClick={() => setActiveTab('recipes')}
+                    className="bg-white border border-stone-200 rounded-xl p-3 text-xs font-semibold text-stone-800 flex items-center justify-center gap-2 hover:bg-stone-50"
+                  >
+                    <Icon name="book-open" size={16} />
+                    <span>Rezeptbuch ({recipes.length})</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('shopping')}
+                    className="bg-white border border-stone-200 rounded-xl p-3 text-xs font-semibold text-stone-800 flex items-center justify-center gap-2 hover:bg-stone-50"
+                  >
+                    <Icon name="shopping-cart" size={16} />
+                    <span>Einkaufsliste ({shoppingList.length})</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: WÜRFLER */}
             {activeTab === 'decide' && (
               <div className="space-y-4">
                 <div className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-3">
@@ -961,7 +1060,7 @@
               </div>
             )}
 
-            {/* TAB 2: VORRÄTE & TK */}
+            {/* TAB: VORRÄTE & TK */}
             {activeTab === 'pantry' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-5 gap-1 bg-stone-200/70 p-1 rounded-xl text-[11px] font-medium">
@@ -1131,7 +1230,7 @@
                                   onClick={() => {
                                     setPantry(prev => prev.map(p => p.id === item.id ? { ...p, status: st, ...(st === 'empty' && p.amount !== undefined ? { amount: 0 } : {}) } : p));
                                     if (st === 'empty') {
-                                      setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Leer', done: false }]);
+                                      setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }]);
                                       showToast(`${item.name} auf Einkaufsliste gesetzt`);
                                     }
                                   }}
@@ -1198,7 +1297,7 @@
               </div>
             )}
 
-            {/* TAB 3: REZEPTE & EDITOR */}
+            {/* TAB: REZEPTE & EDITOR */}
             {activeTab === 'recipes' && (
               <div className="space-y-4">
                 {selectedRecipe ? (
@@ -1443,10 +1542,22 @@
               </div>
             )}
 
-            {/* TAB 4: EINKAUF */}
+            {/* TAB 4: EINKAUF (MIT BRING! EXPORT) */}
             {activeTab === 'shopping' && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-stone-900">Einkaufsliste</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-stone-900">Einkaufsliste ({shoppingList.length})</h3>
+                  {shoppingList.length > 0 && (
+                    <button
+                      onClick={exportToBring}
+                      className="flex items-center gap-1.5 bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-800 transition shadow-sm"
+                    >
+                      <Icon name="share-2" size={13} />
+                      <span>An Bring! senden</span>
+                    </button>
+                  )}
+                </div>
+
                 <div className="bg-white border border-stone-200 rounded-xl divide-y divide-stone-100">
                   {shoppingList.map(item => (
                     <div key={item.id} className="p-3.5 flex items-center justify-between">
@@ -1725,13 +1836,14 @@
             </div>
           )}
 
-          {/* BOTTOM NAVIGATION (MIT KLASSISCHEM HOME-BUTTON) */}
+          {/* BOTTOM NAVIGATION (MIT DASHBOARD & WÜRFLER GETRENNT) */}
           <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-stone-200 grid grid-cols-5 py-2 z-30">
             {[
-              { id: 'decide', label: 'Start', icon: 'home' },
+              { id: 'home', label: 'Start', icon: 'home' },
+              { id: 'decide', label: 'Würfler', icon: 'utensils' },
               { id: 'pantry', label: 'Vorräte', icon: 'archive' },
               { id: 'recipes', label: 'Rezepte', icon: 'book-open' },
-              { id: 'shopping', label: 'Einkauf', icon: 'shopping-cart' }
+              { id: 'shopping', label: `Einkauf (${shoppingList.length})`, icon: 'shopping-cart' }
             ].map(item => {
               const active = activeTab === item.id;
               return (
@@ -1747,13 +1859,6 @@
                 </button>
               );
             })}
-            <button
-              onClick={() => setActiveTab('decide')}
-              className="flex flex-col items-center gap-1 py-1 text-[11px] font-medium text-stone-400"
-            >
-              <Icon name="utensils" size={18} />
-              <span>Würfler</span>
-            </button>
           </nav>
         </div>
       );
