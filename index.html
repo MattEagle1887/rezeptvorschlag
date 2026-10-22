@@ -85,10 +85,10 @@
     ];
 
     const INITIAL_MEAL_PREP = [
-      { id: 'mp1', name: 'Ragù alla Bolognese', blocks500: 3, blocks250: 2, needsFresh: ['Tagliatelle', 'Parmesan (am Stück)'], prepTime: 15, season: 'all' },
-      { id: 'mp2', name: 'Grünkohl (fertig geschmort)', blocks500: 2, blocks250: 1, needsFresh: ['Kartoffeln', 'Mettenden / Kassler'], prepTime: 20, season: 'winter' },
-      { id: 'mp3', name: 'Schmorkohl (Familienrezept)', blocks500: 2, blocks250: 0, needsFresh: ['Kartoffeln'], prepTime: 20, season: 'winter' },
-      { id: 'mp4', name: 'Currysauce (Basis)', blocks500: 1, blocks250: 2, needsFresh: ['Hähnchenbrustfilet (TK)', 'Risottoreis / Basmati'], prepTime: 20, season: 'all' }
+      { id: 'mp1', name: 'Ragù alla Bolognese', blocks500: 3, blocks250: 2, kcalPer100g: 210, needsFresh: ['Tagliatelle', 'Parmesan (am Stück)'], prepTime: 15, season: 'all' },
+      { id: 'mp2', name: 'Grünkohl (fertig geschmort)', blocks500: 2, blocks250: 1, kcalPer100g: 180, needsFresh: ['Kartoffeln', 'Mettenden / Kassler'], prepTime: 20, season: 'winter' },
+      { id: 'mp3', name: 'Schmorkohl (Familienrezept)', blocks500: 2, blocks250: 0, kcalPer100g: 130, needsFresh: ['Kartoffeln'], prepTime: 20, season: 'winter' },
+      { id: 'mp4', name: 'Currysauce (Basis)', blocks500: 1, blocks250: 2, kcalPer100g: 160, needsFresh: ['Hähnchenbrustfilet (TK)', 'Risottoreis / Basmati'], prepTime: 20, season: 'all' }
     ];
 
     const INITIAL_RECIPES = [
@@ -97,7 +97,8 @@
         title: 'Pasta al Limone',
         effort: 'quick',
         season: 'summer',
-        kcalPer100g: 140, // Unter 150 kcal
+        calories: 'light',
+        kcalPer100g: 140,
         isFamilyRecipe: true,
         isKidFriendly: true,
         isMealPrep: false,
@@ -122,7 +123,8 @@
         title: 'Klassisches Rindergulasch',
         effort: 'elaborate',
         season: 'winter',
-        kcalPer100g: 320, // Über 300 kcal
+        calories: 'heavy',
+        kcalPer100g: 320,
         isFamilyRecipe: true,
         isKidFriendly: false,
         isMealPrep: false,
@@ -145,7 +147,8 @@
         title: 'Ragù aus dem TK mit Tagliatelle',
         effort: 'quick',
         season: 'all',
-        kcalPer100g: 280, // Zwischen 150 und 300 kcal
+        calories: 'heavy',
+        kcalPer100g: 210,
         isFamilyRecipe: true,
         isKidFriendly: true,
         isMealPrep: true,
@@ -168,7 +171,8 @@
         title: 'Currysauce (TK) mit Hähnchen & Reis',
         effort: 'quick',
         season: 'all',
-        kcalPer100g: 160, // Zwischen 150 und 300 kcal
+        calories: 'normal',
+        kcalPer100g: 160,
         isFamilyRecipe: true,
         isKidFriendly: true,
         isMealPrep: true,
@@ -191,7 +195,8 @@
         title: 'Fischstäbchen mit Pommes & TK-Erbsen',
         effort: 'quick',
         season: 'all',
-        kcalPer100g: 340, // Über 300 kcal
+        calories: 'normal',
+        kcalPer100g: 340,
         isFamilyRecipe: false,
         isKidFriendly: true,
         isKidOnlyFastDay: true,
@@ -214,7 +219,8 @@
         title: 'Kartoffelpuffer mit Apfelmus',
         effort: 'quick',
         season: 'all',
-        kcalPer100g: 190, // Zwischen 150 und 300 kcal
+        calories: 'normal',
+        kcalPer100g: 190,
         isFamilyRecipe: false,
         isKidFriendly: true,
         isKidOnlyFastDay: true,
@@ -235,7 +241,8 @@
         title: 'Pasta mit Öl & Parmesan (Kinderspaß)',
         effort: 'quick',
         season: 'all',
-        kcalPer100g: 240, // Zwischen 150 und 300 kcal
+        calories: 'normal',
+        kcalPer100g: 240,
         isFamilyRecipe: true,
         isKidFriendly: true,
         isKidOnlyFastDay: true,
@@ -258,7 +265,8 @@
         title: 'Nudeln mit Ketchup',
         effort: 'quick',
         season: 'all',
-        kcalPer100g: 160, // Zwischen 150 und 300 kcal
+        calories: 'normal',
+        kcalPer100g: 160,
         isFamilyRecipe: false,
         isKidFriendly: true,
         isKidOnlyFastDay: true,
@@ -280,37 +288,37 @@
       const [activeTab, setActiveTab] = useState('home');
 
       const [pantry, setPantry] = useState(() => {
-        const saved = localStorage.getItem('kueche_pantry_v18');
+        const saved = localStorage.getItem('kueche_pantry_v19');
         return saved ? JSON.parse(saved) : INITIAL_PANTRY;
       });
       const [mealPrep, setMealPrep] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealprep_v18');
+        const saved = localStorage.getItem('kueche_mealprep_v19');
         return saved ? JSON.parse(saved) : INITIAL_MEAL_PREP;
       });
       const [recipes, setRecipes] = useState(() => {
-        const saved = localStorage.getItem('kueche_recipes_v18');
+        const saved = localStorage.getItem('kueche_recipes_v19');
         return saved ? JSON.parse(saved) : INITIAL_RECIPES;
       });
       const [shoppingList, setShoppingList] = useState(() => {
-        const saved = localStorage.getItem('kueche_shopping_v18');
+        const saved = localStorage.getItem('kueche_shopping_v19');
         return saved ? JSON.parse(saved) : [
           { id: 's1', name: 'Frischer Rosmarin & Thymian', reason: 'Wird knapp', done: false }
         ];
       });
       const [mealPlan, setMealPlan] = useState(() => {
-        const saved = localStorage.getItem('kueche_mealplan_v18');
+        const saved = localStorage.getItem('kueche_mealplan_v19');
         return saved ? JSON.parse(saved) : [];
       });
 
-      useEffect(() => { localStorage.setItem('kueche_pantry_v18', JSON.stringify(pantry)); }, [pantry]);
-      useEffect(() => { localStorage.setItem('kueche_mealprep_v18', JSON.stringify(mealPrep)); }, [mealPrep]);
-      useEffect(() => { localStorage.setItem('kueche_recipes_v18', JSON.stringify(recipes)); }, [recipes]);
-      useEffect(() => { localStorage.setItem('kueche_shopping_v18', JSON.stringify(shoppingList)); }, [shoppingList]);
-      useEffect(() => { localStorage.setItem('kueche_mealplan_v18', JSON.stringify(mealPlan)); }, [mealPlan]);
+      useEffect(() => { localStorage.setItem('kueche_pantry_v19', JSON.stringify(pantry)); }, [pantry]);
+      useEffect(() => { localStorage.setItem('kueche_mealprep_v19', JSON.stringify(mealPrep)); }, [mealPrep]);
+      useEffect(() => { localStorage.setItem('kueche_recipes_v19', JSON.stringify(recipes)); }, [recipes]);
+      useEffect(() => { localStorage.setItem('kueche_shopping_v19', JSON.stringify(shoppingList)); }, [shoppingList]);
+      useEffect(() => { localStorage.setItem('kueche_mealplan_v19', JSON.stringify(mealPlan)); }, [mealPlan]);
 
       const [filterEffort, setFilterEffort] = useState('all');
-      const [filterCalories, setFilterCalories] = useState('all'); // 'all', 'under150', '150to300', 'over300'
-      const [filterShopping, setFilterShopping] = useState('all_here'); // 'all_here', 'shop_3', 'any_plan'
+      const [filterCalories, setFilterCalories] = useState('all');
+      const [filterShopping, setFilterShopping] = useState('all_here');
       const [filterMode, setFilterMode] = useState('normal');
       const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
 
@@ -325,6 +333,7 @@
       const [newMpName, setNewMpName] = useState('');
       const [newMp500, setNewMp500] = useState(1);
       const [newMp250, setNewMp250] = useState(0);
+      const [newMpKcal, setNewMpKcal] = useState(170);
       const [newMpNeeds, setNewMpNeeds] = useState('');
       const [newMpCreateRecipe, setNewMpCreateRecipe] = useState(true);
 
@@ -370,6 +379,14 @@
 
           return { ...item, amount: cleanAmount, status: nextStatus };
         }));
+      };
+
+      const updateMealPrepKcal = (mpId, val) => {
+        setMealPrep(prev => prev.map(mp => {
+          if (mp.id !== mpId) return mp;
+          return { ...mp, kcalPer100g: Number(val) || 0 };
+        }));
+        showToast('Kalorien für Meal-Prep aktualisiert');
       };
 
       const checkRecipeAvailability = (recipe) => {
@@ -436,17 +453,15 @@
             return { ...r, ...avail };
           })
           .filter(r => {
-            if (filterShopping === 'any_plan') return true; // Großeinkauf / Wochenplan (alle Rezepte)
+            if (filterShopping === 'any_plan') return true;
             if (filterMode === 'kid') return r.isKidFriendly;
             if (filterMode === 'mealprep') return r.isMealPrep;
             if (filterEffort !== 'all' && r.effort !== filterEffort) return false;
 
-            // Kalorien-Filter nach festen Bereichen
             if (filterCalories === 'under150' && (r.kcalPer100g === undefined || r.kcalPer100g >= 150)) return false;
             if (filterCalories === '150to300' && (r.kcalPer100g === undefined || r.kcalPer100g < 150 || r.kcalPer100g > 300)) return false;
             if (filterCalories === 'over300' && (r.kcalPer100g === undefined || r.kcalPer100g <= 300)) return false;
 
-            // Verfügbarkeits-Filter
             if (filterShopping === 'all_here' && r.missing.length > 0) return false;
             if (filterShopping === 'shop_3' && r.missing.length > 3) return false;
 
@@ -482,6 +497,7 @@
           name: newMpName.trim(),
           blocks500: Number(newMp500) || 0,
           blocks250: Number(newMp250) || 0,
+          kcalPer100g: Number(newMpKcal) || 170,
           needsFresh: needsArray,
           prepTime: 20,
           season: 'all'
@@ -494,7 +510,8 @@
             title: `${newMpName.trim()} (aus dem TK)`,
             effort: 'quick',
             season: 'all',
-            kcalPer100g: 170,
+            calories: 'normal',
+            kcalPer100g: Number(newMpKcal) || 170,
             isFamilyRecipe: true,
             isKidFriendly: true,
             isMealPrep: true,
@@ -517,6 +534,7 @@
         setNewMpName('');
         setNewMp500(1);
         setNewMp250(0);
+        setNewMpKcal(170);
         setNewMpNeeds('');
         setShowAddMealPrepModal(false);
         showToast(`"${newEntry.name}" im TK hinterlegt!`);
@@ -579,6 +597,7 @@
               name: cookedModalRecipe.title,
               blocks500: freezeLeftovers500,
               blocks250: freezeLeftovers250,
+              kcalPer100g: cookedModalRecipe.kcalPer100g || 170,
               needsFresh: [],
               prepTime: 20,
               season: 'all'
@@ -776,6 +795,7 @@
             name: dishName,
             blocks500: text.includes('zweimal 500') || text.includes('2x 500') ? 2 : 1,
             blocks250: text.includes('250') ? 1 : 0,
+            kcalPer100g: 170,
             needsFresh: [],
             prepTime: 20,
             season: 'all'
@@ -805,7 +825,7 @@
             accept="image/*"
             capture="environment"
             id="globalCameraInput"
-            onChange={handleFileSelected}
+            onChange={fileSelected => handleFileSelected(fileSelected)}
             className="hidden"
           />
 
@@ -813,7 +833,7 @@
           <header className="bg-white border-b border-stone-200 px-5 py-4 sticky top-0 z-20 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <p className="text-xs text-stone-500">Dashboard & Auto-Sortierung</p>
+              <p className="text-xs text-stone-500">Meal-Prep kcal & Auto-Sortierung</p>
             </div>
             <div className="flex items-center gap-1.5">
               <button
@@ -1033,7 +1053,7 @@
               <div className="space-y-4">
                 <div className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Filter</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Wochenplan-Filter</span>
                     <span className="text-xs text-stone-500">{filteredSuggestions.length} Gerichte</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -1068,7 +1088,6 @@
                         <option value="elaborate">Aufwendig</option>
                       </select>
                       
-                      {/* NEUE EXAKTE KALORIEN-BEREICHE */}
                       <select
                         value={filterCalories}
                         onChange={(e) => { setFilterCalories(e.target.value); setCurrentSuggestionIndex(0); }}
@@ -1080,7 +1099,6 @@
                         <option value="over300">&gt; 300 kcal</option>
                       </select>
 
-                      {/* ANGEPASSTE FILTER-BEZEICHNUNGEN */}
                       <select
                         value={filterShopping}
                         onChange={(e) => { setFilterShopping(e.target.value); setCurrentSuggestionIndex(0); }}
@@ -1088,7 +1106,7 @@
                       >
                         <option value="all_here">Hab ich da</option>
                         <option value="shop_3">Max. 3 fehlen</option>
-                        <option value="any_plan">Großeinkauf</option>
+                        <option value="any_plan">Wochenplan Großeinkauf</option>
                       </select>
                     </div>
                   )}
@@ -1137,7 +1155,6 @@
                       </div>
                     )}
 
-                    {/* ZUTATEN-CHECK (SAUBER UNTEREINANDER AUSGERICHTET) */}
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zutaten-Check</p>
                       <div className="divide-y divide-stone-100 border border-stone-100 rounded-lg overflow-hidden">
@@ -1167,7 +1184,6 @@
                       </div>
                     </div>
 
-                    {/* SALBEIFARBENER WOCHENPLAN-BUTTON */}
                     <div className="space-y-2 pt-2">
                       <button
                         onClick={() => addToMealPlan(activeSuggestion)}
@@ -1212,7 +1228,7 @@
               </div>
             )}
 
-            {/* TAB: VORRÄTE & TK */}
+            {/* TAB: VORRÄTE & TK (MIT MEAL-PREP KCAL-ANZEIGE) */}
             {activeTab === 'pantry' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-6 gap-0.5 bg-stone-200/70 p-1 rounded-xl text-[10px] font-medium">
@@ -1259,8 +1275,13 @@
                           <div className="flex items-start justify-between">
                             <div>
                               <h4 className="font-semibold text-sm text-stone-900">{mp.name}</h4>
-                              {mp.needsFresh.length > 0 && (
-                                <p className="text-[11px] text-stone-500 mt-0.5">
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">
+                                  ~{mp.kcalPer100g || 170} kcal / 100g
+                                </span>
+                              </div>
+                              {mp.needsFresh && mp.needsFresh.length > 0 && (
+                                <p className="text-[11px] text-stone-500 mt-1">
                                   Dazu frisch: {mp.needsFresh.join(', ')}
                                 </p>
                               )}
@@ -1270,6 +1291,17 @@
                             }`}>
                               Gesamt: {totalGrams} g
                             </span>
+                          </div>
+
+                          {/* KLEINES INPUT ZUM DIREKTEN ANPASSEN DER KALORIEN */}
+                          <div className="flex items-center justify-between bg-stone-50 border border-stone-200 rounded-lg px-3 py-1.5 text-xs">
+                            <span className="text-stone-500">kcal / 100g anpassen:</span>
+                            <input
+                              type="number"
+                              value={mp.kcalPer100g || 170}
+                              onChange={(e) => updateMealPrepKcal(mp.id, e.target.value)}
+                              className="w-20 bg-white border border-stone-300 rounded px-2 py-0.5 text-xs font-semibold text-right"
+                            />
                           </div>
 
                           <div className="grid grid-cols-2 gap-2.5 pt-1">
@@ -1766,7 +1798,7 @@
             </div>
           )}
 
-          {/* MODAL: NEUES MEAL-PREP */}
+          {/* MODAL: NEUES MEAL-PREP (INKL. KCAL-EINGABE) */}
           {showAddMealPrepModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
@@ -1810,6 +1842,16 @@
                         className="w-full bg-white border border-stone-300 rounded px-2 py-1.5 text-sm font-semibold"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-stone-700 block mb-1">Ungefähre kcal / 100g</label>
+                    <input
+                      type="number"
+                      value={newMpKcal}
+                      onChange={e => setNewMpKcal(e.target.value)}
+                      className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
+                    />
                   </div>
 
                   <div>
