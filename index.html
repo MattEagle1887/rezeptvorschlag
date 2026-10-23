@@ -408,7 +408,7 @@
         }
       }, []);
 
-      // Erzeugt das funktionierende Cloud-Rezept-Objekt in Firebase für den Bring!-Import
+      // Erzeugt ein statisches, serverseitig lesbares Rezept-Objekt in Firebase (speziell für den Bring!-Parser)
       const buildBringParserPayload = (listItems) => {
         const cleanNames = (listItems || []).map(i => i.name.trim()).filter(Boolean);
         return {
@@ -1052,6 +1052,7 @@
           }
         } catch (err) {
           showToast(`Scan-Fehler: ${err.message}`);
+          setNewPantryExpiryDate(getFutureDateStr(3));
           setShowNewPantryItemModal(true);
         } finally {
           setIsAnalyzingPhoto(false);
@@ -1347,7 +1348,6 @@ Wichtige Regeln:
                   <p className="text-xs text-stone-300 leading-relaxed">
                     Wähle Rezepte für die nächsten Tage im Voraus aus – bald ablaufende Frische-Produkte werden im Würfler automatisch priorisiert.
                   </p>
-                  {/* NEU: AUFFÄLLIGER SALBEIGRÜNER WÜRFLER-BUTTON */}
                   <button
                     onClick={() => setActiveTab('decide')}
                     className="w-full py-2.5 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 shadow-sm"
@@ -1598,10 +1598,9 @@ Wichtige Regeln:
                           </p>
                         )}
                       </div>
-                      {/* NEU: AUFFÄLLIGER SALBEIGRÜNER WÜRFELN-BUTTON */}
                       <button
                         onClick={() => setCurrentSuggestionIndex(prev => prev + 1)}
-                        className="px-3 py-2 rounded-xl bg-[#849b82] hover:bg-[#738871] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition shrink-0"
+                        className="px-3 py-2.5 rounded-xl bg-[#849b82] hover:bg-[#738871] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition shrink-0"
                         title="Nächstes Rezept würfeln"
                       >
                         <Icon name="dices" size={16} />
@@ -1699,10 +1698,10 @@ Wichtige Regeln:
               </div>
             )}
 
-            {/* TAB: VORRÄTE & TK (REITER OBEN, SUCHLEISTE DIREKT UNTER DEN REITERN) */}
+            {/* TAB: VORRÄTE & TK (REITER OBEN, SUCHLEISTE DIREKT DARUNTER ÜBER DEN VORRÄTEN) */}
             {activeTab === 'pantry' && (
               <div className="space-y-3.5">
-                {/* 1. GRÖSSERE, GUT LESBARE REITER IM 3x2 RASTER */}
+                {/* 1. GRÖSSERE, GUT LESBARE REITER IM 3x2 RASTER OBEN */}
                 <div className="grid grid-cols-3 gap-1.5 bg-stone-200/70 p-1.5 rounded-xl">
                   {[
                     { id: 'mealprep', label: 'TK Meal', icon: 'snowflake' },
@@ -1727,7 +1726,7 @@ Wichtige Regeln:
                   ))}
                 </div>
 
-                {/* 2. SUCHFELD DIREKT UNTER DEN REITERN / ÜBER DEN VORRÄTEN */}
+                {/* 2. SUCHLEISTE DIREKT UNTER DEN REITERN / ÜBER DEN VORRÄTEN */}
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
                     <Icon name="search" size={15} />
@@ -1859,7 +1858,7 @@ Wichtige Regeln:
                           {pantrySearchQuery ? `Suchergebnisse (${displayedPantryItems.length})` : 'Bestandsliste (Alphabetisch A–Z)'}
                         </span>
                         <span className="text-[11px] text-stone-500">
-                          {pantrySubTab === 'fridge' ? 'Tippe auf das MHD-Datum zum Anpassen' : 'Gleiche Artikel werden automatisch addiert'}
+                          Tippe auf das MHD-Datum zum Anpassen
                         </span>
                       </div>
                       <button
@@ -2013,2048 +2012,10 @@ Wichtige Regeln:
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
                             isEditingRecipe
                               ? 'bg-stone-900 text-white border-stone-900'
-                              : 'bg-stone-50 text-stone-800 border-Mega, dass der Bring!-Import jetzt endlich sauber durchläuft! 
-
-Ich habe deine letzten drei Anpassungen direkt in den vollständigen Code eingebaut, ohne irgendetwas anderes anzufassen:
-
-1. **Suchleiste unter den Reitern:** Im Tab „Vorräte“ sitzen jetzt oben zuerst die 6 großen Reiter und **direkt darunter** (unmittelbar über der Bestandsliste) die Suchleiste.
-2. **Würfel-Buttons in Salbeigrün (`#849b82`):** Sowohl der große Start-Button auf dem Dashboard (*„Rezept-Würfler & Planer starten“*) als auch der Würfel-Button oben rechts in der Rezeptkarte im Würfler-Tab leuchten jetzt im selben Salbeigrün wie der Wochenplan-Button.
-3. **Haltbarkeitsdatum (MHD) bei jedem Vorrat:** Beim manuellen Anlegen eines Vorrats (`+ Neu`) ist das Datumsfeld inkl. Schnellwahl-Buttons (*Morgen*, *+2 Tage*, *+3 Tage*, *+7 Tage*, *Kein MHD*) jetzt **immer sichtbar** – egal ob Kühlschrank, Vorratsschrank oder TK. Wenn ein Artikel kein Datum braucht (z. B. Salz oder Nudeln), lässt du es einfach leer oder tippst auf „Kein MHD“.
-
----
-
-### So lädst du deine Frau in eure Datenbank ein (in 30 Sekunden erledigt):
-
-1. Tippe bei dir in der App oben rechts auf das **Zahnrad (⚙️)**.
-2. Scrolle im Einstellungs-Fenster nach unten und tippe auf den salbeigrünen Button **„Link kopieren“**.
-3. Schicke diesen kopierten Link (z. B. per WhatsApp) an deine Frau.
-4. **Auf dem Handy deiner Frau:** Sie muss diesen Link nur **ein einziges Mal antippen**. 
-   * Die App öffnet sich bei ihr im Browser, zieht sich im Hintergrund automatisch eure Firebase-Datenbank-URL und deinen Gemini-API-Key aus dem Link, speichert beides fest auf ihrem Handy ab und bereinigt danach die Adresszeile.
-   * **Tipp:** Danach kann deine Frau im Browser-Menü (oben rechts die drei Punkte `⋮`) einfach auf **„Zum Startbildschirm hinzufügen“** tippen – dann hat sie die App mit eigenem Icon auf dem Homescreen und ihr seid dauerhaft live synchronisiert!
-
----
-
-Hier ist dein finaler, vollständiger Code für die **`index.html`**:
-
-```html
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Küche & Vorrat</title>
-  <meta name="theme-color" content="#1c1917" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  
-  <!-- Tailwind CSS -->
-  <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-  
-  <!-- React & ReactDOM -->
-  <script crossorigin src="[https://unpkg.com/react@18/umd/react.production.min.js](https://unpkg.com/react@18/umd/react.production.min.js)"></script>
-  <script crossorigin src="[https://unpkg.com/react-dom@18/umd/react-dom.production.min.js](https://unpkg.com/react-dom@18/umd/react-dom.production.min.js)"></script>
-  
-  <!-- Babel für JSX im Browser -->
-  <script src="[https://unpkg.com/@babel/standalone/babel.min.js](https://unpkg.com/@babel/standalone/babel.min.js)"></script>
-  
-  <!-- Lucide Icons -->
-  <script src="[https://unpkg.com/lucide@latest](https://unpkg.com/lucide@latest)"></script>
-
-  <style>
-    body { -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  </style>
-</head>
-<body class="bg-stone-100 text-stone-900 select-none">
-  <div id="root"></div>
-
-  <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
-
-    const DEFAULT_GEMINI_KEY = "AQ.Ab8RN6K6PyMA1FeyY_xqg2fEUXTOVrLKBqxwzLU04F18trRKnQ";
-    const DEFAULT_FIREBASE_URL = "[https://kueche-vorrat-default-rtdb.europe-west1.firebasedatabase.app/](https://kueche-vorrat-default-rtdb.europe-west1.firebasedatabase.app/)";
-
-    const Icon = ({ name, size = 18, className = "" }) => {
-      const spanRef = useRef(null);
-      useEffect(() => {
-        if (spanRef.current && window.lucide) {
-          spanRef.current.innerHTML = `<i data-lucide="${name}"></i>`;
-          window.lucide.createIcons({
-            root: spanRef.current,
-            attrs: { width: size, height: size, class: `inline-block ${className}` }
-          });
-        }
-      }, [name, size, className]);
-      return <span ref={spanRef} className="inline-flex items-center justify-center shrink-0" />;
-    };
-
-    // Hilfsfunktionen für Haltbarkeitsdaten (MHD)
-    const getFutureDateStr = (daysToAdd) => {
-      const d = new Date();
-      d.setHours(12, 0, 0, 0);
-      d.setDate(d.getDate() + Number(daysToAdd));
-      return d.toISOString().split('T')[0];
-    };
-
-    const getDaysUntilExpiry = (item) => {
-      if (!item) return undefined;
-      if (item.expiryDate) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const target = new Date(item.expiryDate + 'T00:00:00');
-        return Math.round((target - today) / (1000 * 60 * 60 * 24));
-      }
-      if (item.expiryDays !== undefined && item.expiryDays !== null && item.expiryDays !== '') {
-        return Number(item.expiryDays);
-      }
-      return undefined;
-    };
-
-    const formatExpiryBadge = (days, expiryDateStr) => {
-      if (days === undefined) return null;
-      let dateHint = '';
-      if (expiryDateStr) {
-        const parts = expiryDateStr.split('-');
-        if (parts.length === 3) dateHint = ` (${parts[2]}.${parts[1]}.)`;
-      }
-      if (days < 0) return { text: `Abgelaufen seit ${Math.abs(days)} T.${dateHint}`, urgent: true, expired: true };
-      if (days === 0) return { text: `Läuft HEUTE ab!${dateHint}`, urgent: true, expired: false };
-      if (days === 1) return { text: `Nur noch 1 Tag (Morgen)${dateHint}`, urgent: true, expired: false };
-      if (days === 2) return { text: `Noch 2 Tage${dateHint}`, urgent: true, expired: false };
-      return { text: `Noch ${days} Tage${dateHint}`, urgent: false, expired: false };
-    };
-
-    // Vollständige Start-Daten (falls Firebase-Datenbank beim ersten Start leer ist)
-    const SEED_DATA = {
-      pantry: [
-        { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(1), amount: 500, unitType: 'g', lowThreshold: 200 },
-        { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(9), amount: 3, unitType: 'Stück', lowThreshold: 1 },
-        { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(20), amount: 200, unitType: 'g', lowThreshold: 50 },
-        { id: 'p4', name: 'Butter', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(14), amount: 250, unitType: 'g', lowThreshold: 50 },
-        { id: 'p5', name: 'Frischer Rosmarin & Thymian (Terrasse)', category: 'fridge', status: 'low', expiryDate: getFutureDateStr(3), amount: 1, unitType: 'Topf', lowThreshold: 1 },
-        
-        { id: 'p6a', name: 'Tagliatelle', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
-        { id: 'p6b', name: 'Rigatoni', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
-        { id: 'p6c', name: 'Spaghetti', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 800, unitType: 'g', lowThreshold: 300 },
-        { id: 'p6d', name: 'Penne', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 400, unitType: 'g', lowThreshold: 200 },
-        { id: 'p7', name: 'Dosentomaten (San Marzano)', category: 'pantry', status: 'in_stock', amount: 4, unitType: 'Dosen', lowThreshold: 2 },
-        { id: 'p7b', name: 'Mutti Passata', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 'p8', name: 'Risottoreis / Basmati', category: 'pantry', status: 'in_stock', group: 'Reis', amount: 800, unitType: 'g', lowThreshold: 250 },
-        { id: 'p9', name: 'Zwiebeln & Knoblauch', category: 'pantry', status: 'in_stock', amount: 6, unitType: 'Stück', lowThreshold: 2 },
-        { id: 'p10', name: 'Apfelmus (Glas)', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
-        { id: 'p10b', name: 'Ketchup', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 'p11a', name: 'Rinderfond', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
-        { id: 'p11b', name: 'Gemüsebrühe', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 1, unitType: 'Gläser', lowThreshold: 1 },
-        { id: 'p12', name: 'Olivenöl Extra Vergine', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1, usesSinceOpen: 19, maxUses: 20 },
-        { id: 'p13', name: 'Tomatenmark', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Tube', lowThreshold: 1 },
-
-        { id: 's_soja1', name: 'Sojasauce (helle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 's_soja2', name: 'Sojasauce (dunkle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 's_essig1', name: 'Weißweinessig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 's_essig2', name: 'Balsamico-Essig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-
-        { id: 'sp_1', name: 'Piment', category: 'spices', status: 'in_stock' },
-        { id: 'sp_2', name: 'Wacholderbeeren', category: 'spices', status: 'in_stock' },
-        { id: 'sp_3', name: 'Nelken', category: 'spices', status: 'in_stock' },
-        { id: 'sp_4', name: 'Muskatnuss', category: 'spices', status: 'in_stock' },
-        { id: 'sp_5', name: 'Tonkabohne', category: 'spices', status: 'in_stock' },
-        { id: 'sp_6', name: 'Getrocknete Kräuter', category: 'spices', status: 'in_stock' },
-
-        { id: 'p14', name: 'Hähnchenbrustfilet (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 800, unitType: 'g', lowThreshold: 300 },
-        { id: 'p15', name: 'Hackfleisch-Reserve (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 1000, unitType: 'g', lowThreshold: 250 },
-        { id: 'p16', name: 'Merguez-Würstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 6, unitType: 'Stück', lowThreshold: 2 },
-        { id: 'p17', name: 'Nürnberger Rostbratwürstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 12, unitType: 'Stück', lowThreshold: 6 },
-        { id: 'p18', name: 'Fischstäbchen', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 6, unitType: 'Stück', lowThreshold: 5 },
-        { id: 'p19', name: 'Kartoffelpuffer', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 5, unitType: 'Stück', lowThreshold: 3 },
-        { id: 'p20', name: 'Pommes Frites', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 300, unitType: 'g', lowThreshold: 200 },
-        { id: 'p21', name: 'TK-Erbsen', category: 'freezer_items', status: 'in_stock', subType: 'veggie', amount: 350, unitType: 'g', lowThreshold: 100 },
-        { id: 'p22', name: 'TK-Brokkoli', category: 'freezer_items', status: 'in_stock', subType: 'veggie', amount: 400, unitType: 'g', lowThreshold: 150 }
-      ],
-      mealPrep: [
-        { id: 'mp1', name: 'Ragù alla Bolognese', blocks500: 3, blocks250: 2, kcalPer100g: 210, needsFresh: ['Tagliatelle', 'Parmesan (am Stück)'], prepTime: 15, season: 'all' },
-        { id: 'mp2', name: 'Grünkohl (fertig geschmort)', blocks500: 2, blocks250: 1, kcalPer100g: 180, needsFresh: ['Kartoffeln', 'Mettenden / Kassler'], prepTime: 20, season: 'winter' },
-        { id: 'mp3', name: 'Schmorkohl (Familienrezept)', blocks500: 2, blocks250: 0, kcalPer100g: 130, needsFresh: ['Kartoffeln'], prepTime: 20, season: 'winter' },
-        { id: 'mp4', name: 'Currysauce (Basis)', blocks500: 1, blocks250: 2, kcalPer100g: 160, needsFresh: ['Hähnchenbrustfilet (TK)', 'Risottoreis / Basmati'], prepTime: 20, season: 'all' }
-      ],
-      recipes: [
-        {
-          id: 'r0', title: 'Schnelle Hackfleisch-Pasta (Frische-Retter)', effort: 'quick', season: 'all', kcalPer100g: 215,
-          isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 14, prepTime: 25,
-          ingredients: [
-            { name: 'Rinderhackfleisch (Frisch)', amount: '500 g', essential: true },
-            { name: 'Mutti Passata', amount: '1 Flasche', essential: true },
-            { name: 'Spaghetti', amount: '400 g', essential: true, isPasta: true },
-            { name: 'Parmesan (am Stück)', amount: '60 g', essential: true }
-          ],
-          steps: [
-            'Frisches Rinderhackfleisch krümelig und kräftig anbraten.',
-            'Mit Mutti Passata ablöschen und 15 Min. sämig einkochen.',
-            'Mit al dente gekochter Pasta und frisch geriebenem Parmesan servieren.'
-          ]
-        },
-        {
-          id: 'r1', title: 'Pasta al Limone', effort: 'quick', season: 'summer', kcalPer100g: 140,
-          isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 18, prepTime: 20,
-          ingredients: [
-            { name: 'Spaghetti', amount: '400 g Spaghetti', essential: true, isPasta: true },
-            { name: 'Zitronen (Bio)', amount: '2 Stück (Abrieb & Saft)', essential: true },
-            { name: 'Parmesan (am Stück)', amount: '80 g fein gerieben', essential: true },
-            { name: 'Butter', amount: '40 g (kalt)', essential: true },
-            { name: 'Olivenöl Extra Vergine', amount: '3 EL', essential: true }
-          ],
-          steps: [
-            'Spaghetti in reichlich (nur leicht gesalzenem) Wasser sehr al dente kochen.',
-            'Zitronenabrieb kurz mit Olivenöl erwärmen.',
-            'Tropfnasse Pasta direkt in die Pfanne geben. Nudelwasser, Butter, Zitronensaft und Parmesan kräftig unterschwenken.'
-          ]
-        },
-        {
-          id: 'r2', title: 'Klassisches Rindergulasch', effort: 'elaborate', season: 'winter', kcalPer100g: 320,
-          isFamilyRecipe: true, isKidFriendly: false, isMealPrep: false, isDraft: true, lastCookedDaysAgo: 185, prepTime: 150,
-          ingredients: [
-            { name: 'Rindergulasch', amount: 'Beim Kochen abwiegen', essential: true },
-            { name: 'Kalbsfond', amount: '1 Glas (oder Rinderfond als Joker)', essential: true, isFond: true },
-            { name: 'Zwiebeln & Knoblauch', amount: 'Große Menge', essential: true },
-            { name: 'Tomatenmark', amount: 'Nach Gefühl', essential: true },
-            { name: 'Wacholderbeeren', amount: '3-4 Stück', essential: false }
-          ],
-          steps: ['Kopf-Rezept (Entwurf): Beim nächsten Kochen die genauen Mengen ergänzen.']
-        },
-        {
-          id: 'r3', title: 'Ragù aus dem TK mit Tagliatelle', effort: 'quick', season: 'all', kcalPer100g: 210,
-          isFamilyRecipe: true, isKidFriendly: true, isMealPrep: true, mealPrepId: 'mp1', isDraft: false, lastCookedDaysAgo: 12, prepTime: 15,
-          ingredients: [
-            { name: 'Ragù alla Bolognese (TK)', amount: '500g oder 750g Block', essential: true, isFromMealPrep: 'mp1' },
-            { name: 'Tagliatelle', amount: '400 g (Alternativ: Jede andere Pasta)', essential: true, isPasta: true },
-            { name: 'Parmesan (am Stück)', amount: 'Zum Reiben', essential: true }
-          ],
-          steps: [
-            'Gewünschte Silikonform-Blöcke schonend im Topf mit einem Schuss Wasser erwärmen.',
-            'Tagliatelle al dente kochen und mit dem Ragù vermengen.'
-          ]
-        },
-        {
-          id: 'r4', title: 'Currysauce (TK) mit Hähnchen & Reis', effort: 'quick', season: 'all', kcalPer100g: 160,
-          isFamilyRecipe: true, isKidFriendly: true, isMealPrep: true, mealPrepId: 'mp4', isDraft: false, lastCookedDaysAgo: 34, prepTime: 25,
-          ingredients: [
-            { name: 'Currysauce (Basis) (TK)', amount: '500g Block', essential: true, isFromMealPrep: 'mp4' },
-            { name: 'Hähnchenbrustfilet (TK)', amount: '400 g', essential: true },
-            { name: 'Risottoreis / Basmati', amount: '250 g Basmatireis', essential: true }
-          ],
-          steps: [
-            'Hähnchenbrust in Streifen schneiden und scharf anbraten.',
-            'Gefrorene Currysauce dazugeben und köcheln lassen, während der Reis gart.'
-          ]
-        },
-        {
-          id: 'r5', title: 'Fischstäbchen mit Pommes & TK-Erbsen', effort: 'quick', season: 'all', kcalPer100g: 340,
-          isFamilyRecipe: false, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 9, prepTime: 20,
-          ingredients: [
-            { name: 'Fischstäbchen', amount: '5–6 Stück', essential: true },
-            { name: 'Pommes Frites', amount: 'ca. 200 g', essential: true },
-            { name: 'TK-Erbsen', amount: 'ca. 100 g', essential: true }
-          ],
-          steps: [
-            'Pommes und Fischstäbchen im Ofen oder der Heißluftfritteuse knusprig backen.',
-            'TK-Erbsen kurz in heißem Wasser ziehen lassen.'
-          ]
-        },
-        {
-          id: 'r6', title: 'Kartoffelpuffer mit Apfelmus', effort: 'quick', season: 'all', kcalPer100g: 190,
-          isFamilyRecipe: false, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 21, prepTime: 15,
-          ingredients: [
-            { name: 'Kartoffelpuffer', amount: '3–4 Stück (TK)', essential: true },
-            { name: 'Apfelmus (Glas)', amount: '1 Schälchen', essential: true }
-          ],
-          steps: ['Kartoffelpuffer in der Pfanne goldbraun braten und mit Apfelmus servieren.']
-        },
-        {
-          id: 'r7', title: 'Pasta mit Öl & Parmesan (Kinderspaß)', effort: 'quick', season: 'all', kcalPer100g: 240,
-          isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 3, prepTime: 10,
-          ingredients: [
-            { name: 'Spaghetti', amount: '200 g (Jede Pasta geht)', essential: true, isPasta: true },
-            { name: 'Olivenöl Extra Vergine', amount: '3 EL', essential: true },
-            { name: 'Parmesan (am Stück)', amount: 'Viel geriebener Parmesan', essential: true }
-          ],
-          steps: ['Nudeln weich kochen, abgießen und mit gutem Olivenöl und Parmesan vermengen.']
-        },
-        {
-          id: 'r8', title: 'Nudeln mit Ketchup', effort: 'quick', season: 'all', kcalPer100g: 160,
-          isFamilyRecipe: false, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 5, prepTime: 10,
-          ingredients: [
-            { name: 'Penne', amount: '200 g (Jede Pasta geht)', essential: true, isPasta: true },
-            { name: 'Ketchup', amount: 'Nach Wunsch', essential: true }
-          ],
-          steps: ['Nudeln kochen, abgießen und mit Ketchup servieren.']
-        }
-      ]
-    };
-
-    const compressImageToBase64 = (file, maxWidth = 1024, quality = 0.75) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
-        };
-        img.onerror = reject;
-        img.src = event.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-    // DYNAMISCHER GEMINI AUFRUF (Findet automatisch das neueste aktive Flash-Modell)
-    let cachedWorkingModel = null;
-
-    async function callGeminiWithAutoModel(apiKey, promptText, base64Image = null) {
-      const cleanKey = apiKey.trim();
-      let candidateModels = [];
-
-      if (cachedWorkingModel) candidateModels.push(cachedWorkingModel);
-
-      try {
-        const listRes = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models?key=$](https://generativelanguage.googleapis.com/v1beta/models?key=$){encodeURIComponent(cleanKey)}`);
-        const listData = await listRes.json();
-        if (listRes.ok && listData && Array.isArray(listData.models)) {
-          const validModels = listData.models
-            .filter(m =>
-              m.supportedGenerationMethods &&
-              m.supportedGenerationMethods.includes('generateContent') &&
-              !m.name.includes('embedding') &&
-              !m.name.includes('aqa') &&
-              !m.name.includes('imagen') &&
-              !m.name.includes('veo') &&
-              !m.name.includes('tts') &&
-              !m.name.includes('audio')
-            )
-            .map(m => m.name.replace(/^models\//, ''));
-
-          validModels.sort((a, b) => {
-            const aFlash = a.includes('flash') ? 1 : 0;
-            const bFlash = b.includes('flash') ? 1 : 0;
-            if (aFlash !== bFlash) return bFlash - aFlash;
-            return b.localeCompare(a, undefined, { numeric: true });
-          });
-
-          for (const vm of validModels) {
-            if (!candidateModels.includes(vm)) candidateModels.push(vm);
-          }
-        }
-      } catch (err) {}
-
-      const fallbacks = ['gemini-flash-latest', 'gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.0-flash'];
-      for (const fb of fallbacks) {
-        if (!candidateModels.includes(fb)) candidateModels.push(fb);
-      }
-
-      const parts = [{ text: promptText }];
-      if (base64Image) parts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Image } });
-
-      let lastErrorMsg = 'Kein passendes Gemini-Modell gefunden.';
-      for (const modelName of candidateModels) {
-        try {
-          const res = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelName}:generateContent?key=${encodeURIComponent(cleanKey)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts }] })
-          });
-          const data = await res.json();
-          if (res.ok && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-            cachedWorkingModel = modelName;
-            return { text: data.candidates[0].content.parts[0].text, usedModel: modelName };
-          } else {
-            lastErrorMsg = data?.error?.message || `HTTP ${res.status}`;
-          }
-        } catch (netErr) {
-          lastErrorMsg = netErr.message;
-        }
-      }
-      throw new Error(lastErrorMsg);
-    }
-
-    function App() {
-      const [activeTab, setActiveTab] = useState('home');
-
-      const [firebaseUrl, setFirebaseUrl] = useState(() => {
-        const params = new URLSearchParams(window.location.search);
-        const fromUrl = params.get('db');
-        if (fromUrl) {
-          localStorage.setItem('kueche_firebase_url', fromUrl);
-          return fromUrl;
-        }
-        return localStorage.getItem('kueche_firebase_url') || DEFAULT_FIREBASE_URL;
-      });
-
-      const [geminiKey, setGeminiKey] = useState(() => {
-        const params = new URLSearchParams(window.location.search);
-        const fromUrl = params.get('gemini');
-        if (fromUrl) {
-          localStorage.setItem('kueche_gemini_key', fromUrl);
-          return fromUrl;
-        }
-        return localStorage.getItem('kueche_gemini_key') || DEFAULT_GEMINI_KEY;
-      });
-
-      const [isEditingKey, setIsEditingKey] = useState(false);
-      const [tempKeyInput, setTempKeyInput] = useState('');
-      const [detectedModelInfo, setDetectedModelInfo] = useState('');
-
-      const [bringListName, setBringListName] = useState(() => localStorage.getItem('kueche_bring_list') || 'Zuhause');
-
-      const [showSettingsModal, setShowSettingsModal] = useState(false);
-      const [showResetConfirm, setShowResetConfirm] = useState(false);
-      const [showBringModal, setShowBringModal] = useState(false);
-      const [copiedBringIds, setCopiedBringIds] = useState([]);
-
-      const [syncStatus, setSyncStatus] = useState('local');
-      const lastSyncTimestamp = useRef(0);
-      const isApplyingRemote = useRef(false);
-
-      const [pantry, setPantry] = useState([]);
-      const [mealPrep, setMealPrep] = useState([]);
-      const [recipes, setRecipes] = useState([]);
-      const [shoppingList, setShoppingList] = useState([]);
-      const [mealPlan, setMealPlan] = useState([]);
-      const [isLoadedFromCloud, setIsLoadedFromCloud] = useState(false);
-
-      // Suchbegriffe für Vorräte & Rezepte
-      const [pantrySearchQuery, setPantrySearchQuery] = useState('');
-      const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
-
-      const [toastMsg, setToastMsg] = useState(null);
-      const showToast = (msg) => {
-        setToastMsg(msg);
-        setTimeout(() => setToastMsg(null), 5000);
-      };
-
-      useEffect(() => {
-        if (window.location.search.includes('db=') || window.location.search.includes('gemini=')) {
-          window.history.replaceState({}, document.title, window.location.pathname);
-          setTimeout(() => showToast('Sync & KI-Einstellungen übernommen!'), 500);
-        }
-      }, []);
-
-      // Erzeugt ein statisches, serverseitig lesbares Rezept-Objekt in Firebase (speziell für den Bring!-Parser)
-      const buildBringParserPayload = (listItems) => {
-        const cleanNames = (listItems || []).map(i => i.name.trim()).filter(Boolean);
-        return {
-          "@context": "[https://schema.org](https://schema.org)",
-          "@type": "Recipe",
-          "name": `Einkaufsliste (${bringListName})`,
-          "author": "Küche & Vorrat",
-          "yield": "1",
-          "recipeYield": "1",
-          "recipeIngredient": cleanNames,
-          "ingredients": cleanNames.map(n => ({ itemId: n, name: n, spec: "" })),
-          "items": cleanNames.map(n => ({ itemId: n, name: n, spec: "" }))
-        };
-      };
-
-      const pushToCloud = async (stateObj) => {
-        if (!firebaseUrl || isApplyingRemote.current) return;
-        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
-        try {
-          setSyncStatus('syncing');
-          const now = Date.now();
-          lastSyncTimestamp.current = now;
-          const currentShop = stateObj.shoppingList || [];
-
-          await Promise.all([
-            fetch(`${cleanUrl}/kueche_shared.json`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                isInitialized: true,
-                pantry: stateObj.pantry || [],
-                mealPrep: stateObj.mealPrep || [],
-                recipes: stateObj.recipes || [],
-                shoppingList: currentShop,
-                mealPlan: stateObj.mealPlan || [],
-                updatedAt: now
-              })
-            }),
-            fetch(`${cleanUrl}/bring_export.json`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(buildBringParserPayload(currentShop))
-            })
-          ]);
-          setSyncStatus('synced');
-        } catch (err) {
-          setSyncStatus('error');
-        }
-      };
-
-      const pullFromCloud = async () => {
-        if (!firebaseUrl) return;
-        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
-        try {
-          const res = await fetch(`${cleanUrl}/kueche_shared.json`);
-          if (!res.ok) return;
-          const data = await res.json();
-          if (data && data.updatedAt && data.updatedAt > lastSyncTimestamp.current) {
-            isApplyingRemote.current = true;
-            lastSyncTimestamp.current = data.updatedAt;
-            setPantry(data.pantry || []);
-            setMealPrep(data.mealPrep || []);
-            setRecipes(data.recipes || []);
-            setShoppingList(data.shoppingList || []);
-            setMealPlan(data.mealPlan || []);
-            setTimeout(() => { isApplyingRemote.current = false; }, 250);
-          }
-          setSyncStatus('synced');
-        } catch (e) {
-          setSyncStatus('error');
-        }
-      };
-
-      useEffect(() => {
-        if (!firebaseUrl) {
-          setPantry(SEED_DATA.pantry);
-          setMealPrep(SEED_DATA.mealPrep);
-          setRecipes(SEED_DATA.recipes);
-          setIsLoadedFromCloud(true);
-          return;
-        }
-
-        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
-        fetch(`${cleanUrl}/kueche_shared.json`)
-          .then(res => res.json())
-          .then(data => {
-            if (data && (data.isInitialized || data.pantry || data.updatedAt)) {
-              setPantry(data.pantry || []);
-              setMealPrep(data.mealPrep || []);
-              setRecipes(data.recipes || []);
-              setShoppingList(data.shoppingList || []);
-              setMealPlan(data.mealPlan || []);
-              if (data.updatedAt) lastSyncTimestamp.current = data.updatedAt;
-            } else {
-              setPantry(SEED_DATA.pantry);
-              setMealPrep(SEED_DATA.mealPrep);
-              setRecipes(SEED_DATA.recipes);
-              pushToCloud({ pantry: SEED_DATA.pantry, mealPrep: SEED_DATA.mealPrep, recipes: SEED_DATA.recipes, shoppingList: [], mealPlan: [] });
-            }
-            setIsLoadedFromCloud(true);
-            setSyncStatus('synced');
-          })
-          .catch(() => {
-            setPantry(SEED_DATA.pantry);
-            setMealPrep(SEED_DATA.mealPrep);
-            setRecipes(SEED_DATA.recipes);
-            setIsLoadedFromCloud(true);
-            setSyncStatus('error');
-          });
-      }, [firebaseUrl]);
-
-      useEffect(() => {
-        if (!firebaseUrl || !isLoadedFromCloud) return;
-        const interval = setInterval(pullFromCloud, 4000);
-        return () => clearInterval(interval);
-      }, [firebaseUrl, isLoadedFromCloud]);
-
-      useEffect(() => {
-        if (!isLoadedFromCloud || isApplyingRemote.current) return;
-        if (firebaseUrl) {
-          pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
-        }
-      }, [pantry, mealPrep, recipes, shoppingList, mealPlan]);
-
-      const handleDatabaseReset = async () => {
-        isApplyingRemote.current = true;
-        setPantry([]);
-        setMealPrep([]);
-        setRecipes([]);
-        setShoppingList([]);
-        setMealPlan([]);
-        if (firebaseUrl) {
-          const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
-          const now = Date.now();
-          lastSyncTimestamp.current = now;
-          await fetch(`${cleanUrl}/kueche_shared.json`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              isInitialized: true,
-              pantry: [], mealPrep: [], recipes: [], shoppingList: [], mealPlan: [],
-              updatedAt: now
-            })
-          });
-        }
-        setTimeout(() => { isApplyingRemote.current = false; }, 300);
-        setShowResetConfirm(false);
-        setShowSettingsModal(false);
-        showToast('Datenbank wurde komplett geleert!');
-      };
-
-      const [filterEffort, setFilterEffort] = useState('all');
-      const [filterCalories, setFilterCalories] = useState('all');
-      const [filterShopping, setFilterShopping] = useState('all_here');
-      const [filterMode, setFilterMode] = useState('normal');
-      const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
-
-      const [pantrySubTab, setPantrySubTab] = useState('pantry');
-      const [selectedRecipeId, setSelectedRecipeId] = useState(null);
-      const [isEditingRecipe, setIsEditingRecipe] = useState(false);
-      const [newIngredientName, setNewIngredientName] = useState('');
-      const [newIngredientAmount, setNewIngredientAmount] = useState('');
-      const [newStepText, setNewStepText] = useState('');
-
-      const [showAddMealPrepModal, setShowAddMealPrepModal] = useState(false);
-      const [newMpName, setNewMpName] = useState('');
-      const [newMp500, setNewMp500] = useState(1);
-      const [newMp250, setNewMp250] = useState(0);
-      const [newMpKcal, setNewMpKcal] = useState(170);
-      const [newMpNeeds, setNewMpNeeds] = useState('');
-      const [newMpCreateRecipe, setNewMpCreateRecipe] = useState(true);
-
-      const [editingMpKcalItem, setEditingMpKcalItem] = useState(null);
-      const [editingMpKcalVal, setEditingMpKcalVal] = useState('');
-
-      const [showNewPantryItemModal, setShowNewPantryItemModal] = useState(false);
-      const [newPantryName, setNewPantryName] = useState('');
-      const [newPantryAmount, setNewPantryAmount] = useState(1);
-      const [newPantryUnitType, setNewPantryUnitType] = useState('Flasche');
-      const [newPantryCategory, setNewPantryCategory] = useState('pantry');
-      const [newPantryExpiryDate, setNewPantryExpiryDate] = useState('');
-
-      const [editingExpiryItem, setEditingExpiryItem] = useState(null);
-      const [editingExpiryDateVal, setEditingExpiryDateVal] = useState('');
-
-      const [showNewRecipeModal, setShowNewRecipeModal] = useState(false);
-      const [newRecipeTitle, setNewRecipeTitle] = useState('');
-      const [newRecipeKcal, setNewRecipeKcal] = useState(180);
-      const [newRecipePrepTime, setNewRecipePrepTime] = useState(30);
-
-      const [editingAmountItem, setEditingAmountItem] = useState(null);
-      const [editingAmountValue, setEditingAmountValue] = useState('');
-
-      const [cookedModalRecipe, setCookedModalRecipe] = useState(null);
-      const [freezeLeftovers500, setFreezeLeftovers500] = useState(0);
-      const [freezeLeftovers250, setFreezeLeftovers250] = useState(0);
-      const [oliveOilAlert, setOliveOilAlert] = useState(false);
-
-      const [voiceOverlay, setVoiceOverlay] = useState(false);
-      const [voiceText, setVoiceText] = useState('');
-      const [isListening, setIsListening] = useState(false);
-      const [isProcessingVoice, setIsProcessingVoice] = useState(false);
-      const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
-      const [newShopItemName, setNewShopItemName] = useState('');
-      const recognitionRef = useRef(null);
-
-      // Bald ablaufende Artikel (<= 2 Tage)
-      const urgentExpiringItems = useMemo(() => {
-        return pantry
-          .filter(p => p.status !== 'empty' && (p.amount === undefined || p.amount > 0))
-          .map(p => ({ ...p, daysLeft: getDaysUntilExpiry(p) }))
-          .filter(p => p.daysLeft !== undefined && p.daysLeft <= 2)
-          .sort((a, b) => a.daysLeft - b.daysLeft);
-      }, [pantry]);
-
-      // Alphabetisch sortierte & durchsuchbare Vorratsliste
-      const displayedPantryItems = useMemo(() => {
-        const q = pantrySearchQuery.trim().toLowerCase();
-        return pantry
-          .filter(item => {
-            if (q) return item.name.toLowerCase().includes(q);
-            return item.category === pantrySubTab;
-          })
-          .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
-      }, [pantry, pantrySubTab, pantrySearchQuery]);
-
-      // Alphabetisch sortierte & durchsuchbare Meal-Prep-Liste
-      const displayedMealPrepItems = useMemo(() => {
-        const q = pantrySearchQuery.trim().toLowerCase();
-        return [...mealPrep]
-          .filter(mp => !q || mp.name.toLowerCase().includes(q))
-          .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
-      }, [mealPrep, pantrySearchQuery]);
-
-      // Alphabetisch sortierte & durchsuchbare Rezeptliste
-      const displayedRecipes = useMemo(() => {
-        const q = recipeSearchQuery.trim().toLowerCase();
-        return [...recipes]
-          .filter(r => {
-            if (!q) return true;
-            const titleMatch = r.title.toLowerCase().includes(q);
-            const ingMatch = (r.ingredients || []).some(ing => ing.name.toLowerCase().includes(q));
-            return titleMatch || ingMatch;
-          })
-          .sort((a, b) => a.title.localeCompare(b.title, 'de', { sensitivity: 'base' }));
-      }, [recipes, recipeSearchQuery]);
-
-      const updatePantryAmount = (itemId, newAmountVal) => {
-        const cleanAmount = Math.max(0, Number(newAmountVal));
-        setPantry(prev => prev.map(item => {
-          if (item.id !== itemId) return item;
-          const threshold = item.lowThreshold || (item.unitType === 'g' ? 150 : 1);
-          let nextStatus = 'in_stock';
-          if (cleanAmount === 0) nextStatus = 'empty';
-          else if (cleanAmount <= threshold) nextStatus = 'low';
-
-          if (nextStatus === 'empty' && item.status !== 'empty') {
-            setShoppingList(sl => {
-              if (sl.some(s => s.name.toLowerCase() === item.name.toLowerCase())) return sl;
-              return [...sl, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }];
-            });
-            showToast(`${item.name} ist leer → Einkaufsliste`);
-          }
-          return { ...item, amount: cleanAmount, status: nextStatus };
-        }));
-      };
-
-      const deletePantryItem = (itemId) => {
-        const itemToDelete = pantry.find(p => p.id === itemId);
-        setPantry(prev => prev.filter(p => p.id !== itemId));
-        if (itemToDelete) showToast(`"${itemToDelete.name}" gelöscht`);
-      };
-
-      const deleteMealPrepItem = (mpId) => {
-        const mpToDelete = mealPrep.find(m => m.id === mpId);
-        setMealPrep(prev => prev.filter(m => m.id !== mpId));
-        if (mpToDelete) showToast(`"${mpToDelete.name}" aus TK gelöscht`);
-      };
-
-      const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined) => {
-        const cleanName = name.trim();
-        if (!cleanName) return;
-        const lowerClean = cleanName.toLowerCase();
-        const targetCat = category || (pantrySubTab === 'mealprep' ? 'pantry' : pantrySubTab);
-
-        let resolvedExpiryDate = undefined;
-        if (typeof expiryInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expiryInput)) {
-          resolvedExpiryDate = expiryInput;
-        } else if (typeof expiryInput === 'number' && !isNaN(expiryInput)) {
-          resolvedExpiryDate = getFutureDateStr(expiryInput);
-        } else if (targetCat === 'fridge' && expiryInput !== '') {
-          resolvedExpiryDate = getFutureDateStr(5);
-        }
-
-        const existingIndex = pantry.findIndex(p => {
-          const pLower = p.name.toLowerCase();
-          return pLower === lowerClean || pLower.includes(lowerClean) || lowerClean.includes(pLower);
-        });
-
-        if (existingIndex !== -1) {
-          const matchedItem = pantry[existingIndex];
-          setPantry(prev => prev.map((item, idx) => {
-            if (idx !== existingIndex) return item;
-            if (item.category === 'spices') return { ...item, status: 'in_stock' };
-            const currentAmt = item.amount !== undefined ? Number(item.amount) : 0;
-            return {
-              ...item,
-              amount: currentAmt + Number(amountToAdd),
-              status: 'in_stock',
-              ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
-            };
-          }));
-          showToast(`"${matchedItem.name}" aufgestockt (+${amountToAdd} ${matchedItem.unitType || unit})!`);
-        } else {
-          const newItem = {
-            id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-            name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
-            category: targetCat,
-            status: 'in_stock',
-            amount: targetCat === 'spices' ? undefined : Number(amountToAdd),
-            unitType: targetCat === 'spices' ? undefined : unit,
-            lowThreshold: unit === 'g' || unit === 'ml' ? 150 : 1,
-            ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate } : {}),
-            ...(lowerClean.includes('tagliatelle') || lowerClean.includes('rigatoni') || lowerClean.includes('spaghetti') || lowerClean.includes('penne') || lowerClean.includes('pasta') ? { group: 'Pasta' } : {}),
-            ...(lowerClean.includes('fond') || lowerClean.includes('brühe') ? { group: 'Fond' } : {})
-          };
-          setPantry(prev => [newItem, ...prev]);
-          showToast(`Neu angelegt: ${newItem.name}`);
-        }
-      };
-
-      const checkRecipeAvailability = (recipe) => {
-        const missing = [];
-        const fromFreezerMeat = [];
-        const urgentFridgeItems = [];
-        const notes = [];
-        let minExpiryDays = 999;
-
-        (recipe.ingredients || []).forEach((ing) => {
-          if (ing.isFromMealPrep) {
-            const mp = mealPrep.find(m => m.id === ing.isFromMealPrep);
-            const totalGrams = mp ? ((mp.blocks500 || 0) * 500 + (mp.blocks250 || 0) * 250) : 0;
-            if (totalGrams === 0) missing.push(ing.name);
-            return;
-          }
-          if (ing.isPasta) {
-            const exactPasta = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.amount > 0);
-            if (exactPasta) return;
-            const anyPasta = pantry.find(p => p.group === 'Pasta' && p.amount > 0);
-            if (anyPasta) { notes.push(`Joker: ${anyPasta.name} im Haus`); return; }
-            if (ing.essential) missing.push(ing.name);
-            return;
-          }
-          if (ing.isFond) {
-            const exactFond = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.amount > 0);
-            if (exactFond) return;
-            const anyFond = pantry.find(p => p.group === 'Fond' && p.amount > 0);
-            if (anyFond) { notes.push(`Joker: ${anyFond.name} statt ${ing.name}`); return; }
-            if (ing.essential) missing.push(ing.name);
-            return;
-          }
-          const found = pantry.find(p =>
-            p.name.toLowerCase().includes(ing.name.toLowerCase()) ||
-            ing.name.toLowerCase().includes(p.name.toLowerCase())
-          );
-          if (!found || found.status === 'empty' || (found.amount !== undefined && found.amount <= 0)) {
-            if (ing.essential) missing.push(ing.name);
-          } else {
-            if (found.category === 'freezer_items' && found.subType === 'meat') {
-              fromFreezerMeat.push(`${found.name} (${found.amount} ${found.unitType})`);
-            }
-            const dLeft = getDaysUntilExpiry(found);
-            if (dLeft !== undefined && dLeft <= 2) {
-              urgentFridgeItems.push({ name: found.name, daysLeft: dLeft });
-              if (dLeft < minExpiryDays) minExpiryDays = dLeft;
-            }
-          }
-        });
-
-        return { missing, fromFreezerMeat, urgentFridgeItems, minExpiryDays, noteText: notes.join(' · ') };
-      };
-
-      const filteredSuggestions = useMemo(() => {
-        return recipes
-          .map(r => ({ ...r, ...checkRecipeAvailability(r) }))
-          .filter(r => {
-            if (filterMode === 'kid' && !r.isKidFriendly) return false;
-            if (filterEffort !== 'all' && r.effort !== filterEffort) return false;
-            if (filterCalories === 'under150' && (r.kcalPer100g === undefined || r.kcalPer100g >= 150)) return false;
-            if (filterCalories === '150to300' && (r.kcalPer100g === undefined || r.kcalPer100g < 150 || r.kcalPer100g > 300)) return false;
-            if (filterCalories === 'over300' && (r.kcalPer100g === undefined || r.kcalPer100g <= 300)) return false;
-            if (filterShopping === 'any_plan') return true;
-            if (filterShopping === 'all_here' && r.missing.length > 0) return false;
-            if (filterShopping === 'shop_3' && r.missing.length > 3) return false;
-            return true;
-          })
-          .sort((a, b) => {
-            if (a.urgentFridgeItems.length !== b.urgentFridgeItems.length) {
-              return b.urgentFridgeItems.length - a.urgentFridgeItems.length;
-            }
-            if (a.minExpiryDays !== b.minExpiryDays) {
-              return a.minExpiryDays - b.minExpiryDays;
-            }
-            return (b.lastCookedDaysAgo || 0) - (a.lastCookedDaysAgo || 0);
-          });
-      }, [recipes, pantry, mealPrep, filterEffort, filterCalories, filterShopping, filterMode]);
-
-      const activeSuggestion = filteredSuggestions[currentSuggestionIndex % Math.max(1, filteredSuggestions.length)];
-
-      const updateMealPrepBlocks = (mpId, delta500, delta250, label = '') => {
-        setMealPrep(prev => prev.map(mp => {
-          if (mp.id !== mpId) return mp;
-          if (label) showToast(`${mp.name}: ${label}`);
-          return {
-            ...mp,
-            blocks500: Math.max(0, (mp.blocks500 || 0) + delta500),
-            blocks250: Math.max(0, (mp.blocks250 || 0) + delta250)
-          };
-        }));
-      };
-
-      const handleCreateNewMealPrep = () => {
-        if (!newMpName.trim()) return;
-        const newId = 'mp_' + Date.now();
-        const needsArray = newMpNeeds.split(',').map(s => s.trim()).filter(Boolean);
-        const newEntry = {
-          id: newId, name: newMpName.trim(),
-          blocks500: Number(newMp500) || 0, blocks250: Number(newMp250) || 0,
-          kcalPer100g: Number(newMpKcal) || 170, needsFresh: needsArray, prepTime: 20, season: 'all'
-        };
-        setMealPrep(prev => [newEntry, ...prev]);
-
-        if (newMpCreateRecipe) {
-          const newRec = {
-            id: 'r_mp_' + Date.now(), title: `${newMpName.trim()} (aus dem TK)`,
-            effort: 'quick', season: 'all', kcalPer100g: Number(newMpKcal) || 170,
-            isFamilyRecipe: true, isKidFriendly: true, isMealPrep: true, mealPrepId: newId, isDraft: false, lastCookedDaysAgo: 30, prepTime: 20,
-            ingredients: [
-              { name: `${newMpName.trim()} (TK)`, amount: '500g oder 250g Block', essential: true, isFromMealPrep: newId },
-              ...needsArray.map(n => ({ name: n, amount: 'Nach Bedarf', essential: true }))
-            ],
-            steps: [
-              'Gewünschte Silikonform-Blöcke aus dem TK nehmen und schonend im Topf erwärmen.',
-              needsArray.length > 0 ? `Dazu frisch zubereiten: ${needsArray.join(', ')}.` : 'Direkt heiß servieren.'
-            ]
-          };
-          setRecipes(prev => [newRec, ...prev]);
-        }
-
-        setNewMpName(''); setNewMp500(1); setNewMp250(0); setNewMpKcal(170); setNewMpNeeds('');
-        setShowAddMealPrepModal(false);
-        showToast(`"${newEntry.name}" im TK hinterlegt!`);
-      };
-
-      const handleAddPantryItem = () => {
-        if (!newPantryName.trim()) return;
-        const expToSave = newPantryExpiryDate ? newPantryExpiryDate : '';
-        addOrUpdatePantryItem(newPantryName, Number(newPantryAmount) || 1, newPantryUnitType, newPantryCategory, expToSave);
-        setNewPantryName('');
-        setShowNewPantryItemModal(false);
-      };
-
-      const handleConfirmCooked = () => {
-        if (!cookedModalRecipe) return;
-        setRecipes(prev => prev.map(r => r.id === cookedModalRecipe.id ? { ...r, lastCookedDaysAgo: 0 } : r));
-
-        setPantry(prev => prev.map(p => {
-          if (p.id === 'p12') {
-            const nextUses = (p.usesSinceOpen || 0) + 1;
-            if (nextUses >= (p.maxUses || 20)) setOliveOilAlert(true);
-            return { ...p, usesSinceOpen: nextUses };
-          }
-          return p;
-        }));
-
-        if (freezeLeftovers500 > 0 || freezeLeftovers250 > 0) {
-          const existingMp = mealPrep.find(m =>
-            m.id === cookedModalRecipe.mealPrepId ||
-            m.name.toLowerCase().includes(cookedModalRecipe.title.toLowerCase()) ||
-            cookedModalRecipe.title.toLowerCase().includes(m.name.toLowerCase())
-          );
-          if (existingMp) {
-            updateMealPrepBlocks(existingMp.id, freezeLeftovers500, freezeLeftovers250);
-          } else {
-            setMealPrep(prev => [{
-              id: 'mp_' + Date.now(), name: cookedModalRecipe.title,
-              blocks500: freezeLeftovers500, blocks250: freezeLeftovers250,
-              kcalPer100g: cookedModalRecipe.kcalPer100g || 170, needsFresh: [], prepTime: 20, season: 'all'
-            }, ...prev]);
-          }
-          showToast(`Reste (${freezeLeftovers500 * 500 + freezeLeftovers250 * 250}g) im TK gespeichert!`);
-        } else {
-          showToast(`"${cookedModalRecipe.title}" als gekocht markiert!`);
-        }
-        setFreezeLeftovers500(0); setFreezeLeftovers250(0); setCookedModalRecipe(null);
-      };
-
-      const selectedRecipe = recipes.find(r => r.id === selectedRecipeId);
-
-      const deleteIngredientFromRecipe = (recipeId, ingIndex) => {
-        setRecipes(prev => prev.map(r => {
-          if (r.id !== recipeId) return r;
-          const removed = r.ingredients[ingIndex];
-          const nextIngs = r.ingredients.filter((_, idx) => idx !== ingIndex);
-          if (removed) showToast(`"${removed.name}" gelöscht`);
-          return { ...r, ingredients: nextIngs };
-        }));
-      };
-
-      const addIngredientToRecipe = (recipeId) => {
-        if (!newIngredientName.trim()) return;
-        setRecipes(prev => prev.map(r => {
-          if (r.id !== recipeId) return r;
-          return {
-            ...r,
-            ingredients: [
-              ...(r.ingredients || []),
-              { name: newIngredientName.trim(), amount: newIngredientAmount.trim() || 'Nach Bedarf', essential: true }
-            ]
-          };
-        }));
-        setNewIngredientName(''); setNewIngredientAmount('');
-        showToast('Zutat hinzugefügt');
-      };
-
-      const deleteStepFromRecipe = (recipeId, stepIndex) => {
-        setRecipes(prev => prev.map(r => {
-          if (r.id !== recipeId) return r;
-          return { ...r, steps: (r.steps || []).filter((_, idx) => idx !== stepIndex) };
-        }));
-      };
-
-      const addStepToRecipe = (recipeId) => {
-        if (!newStepText.trim()) return;
-        setRecipes(prev => prev.map(r => {
-          if (r.id !== recipeId) return r;
-          const cleanSteps = r.isDraft ? [] : (r.steps || []);
-          return { ...r, isDraft: false, steps: [...cleanSteps, newStepText.trim()] };
-        }));
-        setNewStepText('');
-        showToast('Zubereitungsschritt gespeichert');
-      };
-
-      const toggleRecipeFamily = (recipeId) => {
-        setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, isFamilyRecipe: !r.isFamilyRecipe } : r));
-      };
-
-      const toggleRecipeKid = (recipeId) => {
-        setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, isKidFriendly: !r.isKidFriendly } : r));
-      };
-
-      const updateRecipeKcal = (recipeId, val) => {
-        setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, kcalPer100g: Number(val) || 0 } : r));
-      };
-
-      const addToMealPlan = (recipe) => {
-        if (mealPlan.some(m => m.id === recipe.id)) {
-          showToast('Rezept ist bereits im Kochplan!');
-          return;
-        }
-        setMealPlan(prev => [...prev, recipe]);
-        const avail = checkRecipeAvailability(recipe);
-        const newShoppingItems = avail.missing
-          .filter(ingName => !shoppingList.some(s => s.name.toLowerCase() === ingName.toLowerCase()))
-          .map(ingName => ({ id: 's_' + Date.now() + '_' + Math.random(), name: ingName, reason: `Für Wochenplan: ${recipe.title}`, done: false }));
-
-        if (newShoppingItems.length > 0) {
-          setShoppingList(prev => [...prev, ...newShoppingItems]);
-          showToast(`"${recipe.title}" gemerkt & ${newShoppingItems.length} Zutat(en) auf Einkaufsliste!`);
-        } else {
-          showToast(`"${recipe.title}" im Wochenplan gemerkt!`);
-        }
-      };
-
-      const removeFromMealPlan = (recipeId) => {
-        setMealPlan(prev => prev.filter(m => m.id !== recipeId));
-        showToast('Aus dem Kochplan entfernt');
-      };
-
-      // OFFIZIELLER BRING!-EXPORT (Nutzt die statische Firebase-JSON-URL)
-      const triggerOfficialBringImport = async () => {
-        if (shoppingList.length === 0) return;
-        const cleanUrl = (firebaseUrl || DEFAULT_FIREBASE_URL).trim().replace(/\/$/, '');
-        try {
-          await fetch(`${cleanUrl}/bring_export.json`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildBringParserPayload(shoppingList))
-          });
-        } catch (e) {}
-
-        const staticJsonEndpoint = `${cleanUrl}/bring_export.json`;
-        const officialDeepLink = `[https://api.getbring.com/rest/bringrecipes/deeplink?url=$](https://api.getbring.com/rest/bringrecipes/deeplink?url=$){encodeURIComponent(staticJsonEndpoint)}&source=web&baseQuantity=1&requestedQuantity=1`;
-        window.open(officialDeepLink, '_blank');
-      };
-
-      // FOTO-SCAN MIT AUTOMATISCHER MODELL- & MHD-ERKENNUNG
-      const handleFileSelected = async (e, scanType = 'pantry') => {
-        const file = e.target.files[0];
-        if (!file) return;
-        e.target.value = '';
-
-        const activeKey = (geminiKey || DEFAULT_GEMINI_KEY).trim();
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        try {
-          setIsAnalyzingPhoto(true);
-          showToast('Foto wird von Gemini analysiert...');
-          const base64Data = await compressImageToBase64(file, 1024, 0.75);
-
-          const prompt = scanType === 'recipe'
-            ? `Analysiere diese abfotografierte Kochbuchseite und antworte NUR mit reinem JSON: {"title": "Name des Gerichts", "prepTime": 30, "kcalPer100g": 180, "ingredients": [{"name": "Zutat", "amount": "Menge"}], "steps": ["Schritt 1", "Schritt 2"]}`
-            : `Heute ist ${todayStr}. Erkenne das fotografierte Lebensmittel oder den Kassenbon. Falls ein Haltbarkeitsdatum (MHD) lesbar ist, gib es als YYYY-MM-DD in "expiryDate" an (sonst bei frischen Kühlschrank-Produkten geschätztes Datum in 2-5 Tagen). Antworte NUR mit reinem JSON: {"items": [{"name": "Genauer Produktname (z.B. Mutti Passata)", "amount": 1, "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDate": "YYYY-MM-DD"}]}`;
-
-          const { text: rawText, usedModel } = await callGeminiWithAutoModel(activeKey, prompt, base64Data);
-          setDetectedModelInfo(usedModel);
-
-          const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-          if (!jsonMatch) throw new Error('Kein JSON im KI-Text gefunden');
-          const parsed = JSON.parse(jsonMatch[0]);
-
-          if (scanType === 'recipe' && parsed.title) {
-            const newRec = {
-              id: 'r_' + Date.now(), title: parsed.title,
-              effort: (parsed.prepTime || 30) <= 30 ? 'quick' : 'elaborate',
-              season: 'all', kcalPer100g: Number(parsed.kcalPer100g) || 180,
-              isFamilyRecipe: true, isKidFriendly: false, isMealPrep: false, isDraft: false,
-              lastCookedDaysAgo: 99, prepTime: Number(parsed.prepTime) || 30,
-              ingredients: (parsed.ingredients || []).map(i => ({ name: i.name, amount: i.amount || 'Nach Bedarf', essential: true })),
-              steps: parsed.steps || ['Aus Kochbuch gescannt.']
-            };
-            setRecipes(prev => [newRec, ...prev]);
-            setSelectedRecipeId(newRec.id);
-            setActiveTab('recipes');
-            showToast(`Rezept "${newRec.title}" eingescannt!`);
-          } else if (parsed.items && parsed.items.length > 0) {
-            parsed.items.forEach(it => {
-              addOrUpdatePantryItem(it.name, it.amount || 1, it.unitType || 'Stück', it.category || 'pantry', it.expiryDate);
-            });
-          }
-        } catch (err) {
-          showToast(`Scan-Fehler: ${err.message}`);
-          setNewPantryExpiryDate(getFutureDateStr(3));
-          setShowNewPantryItemModal(true);
-        } finally {
-          setIsAnalyzingPhoto(false);
-        }
-      };
-
-      const testAvailableModels = async () => {
-        try {
-          showToast('Frage verfügbare Modelle bei Google ab...');
-          const activeKey = (geminiKey || DEFAULT_GEMINI_KEY).trim();
-          const res = await callGeminiWithAutoModel(activeKey, 'Antworte nur mit dem Wort OK');
-          setDetectedModelInfo(res.usedModel);
-          showToast(`Erfolgreich! Aktives Modell: ${res.usedModel}`);
-        } catch (err) {
-          showToast(`Test-Fehler: ${err.message}`);
-        }
-      };
-
-      // SPRACHERKENNUNG OHNE DOPPELTE SÄTZE (interimResults = false + continuous = false)
-      const startListening = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-          showToast('Spracherkennung wird von diesem Browser nicht unterstützt.');
-          return;
-        }
-        try {
-          if (recognitionRef.current) {
-            try { recognitionRef.current.abort(); } catch (e) {}
-          }
-          const recognition = new SpeechRecognition();
-          recognitionRef.current = recognition;
-          recognition.lang = 'de-DE';
-          recognition.continuous = false;
-          recognition.interimResults = false;
-          recognition.maxAlternatives = 1;
-
-          setIsListening(true);
-          recognition.onresult = (event) => {
-            const lastIdx = event.results.length - 1;
-            const singleCleanTranscript = event.results[lastIdx][0].transcript.trim();
-            setVoiceText(singleCleanTranscript);
-            try { recognition.stop(); } catch (e) {}
-          };
-          recognition.onend = () => setIsListening(false);
-          recognition.onerror = () => setIsListening(false);
-          recognition.start();
-        } catch (e) {
-          setIsListening(false);
-        }
-      };
-
-      const stopListening = () => {
-        if (recognitionRef.current) {
-          try { recognitionRef.current.stop(); } catch (e) {}
-        }
-        setIsListening(false);
-      };
-
-      const openVoiceAssistantAndStart = () => {
-        setVoiceText('');
-        setVoiceOverlay(true);
-        startListening();
-      };
-
-      // GEMINI KI SPRACH-INTERPRETER
-      const executeVoiceCommand = async (rawCmdText) => {
-        if (!rawCmdText || !rawCmdText.trim()) return;
-        stopListening();
-
-        const activeKey = (geminiKey || DEFAULT_GEMINI_KEY).trim();
-        const todayStr = new Date().toISOString().split('T')[0];
-        const existingNames = pantry.map(p => `${p.name} (${p.amount !== undefined ? p.amount + ' ' + p.unitType : 'Gewürz'}, ${p.category})`).join(', ');
-
-        try {
-          setIsProcessingVoice(true);
-          const voicePrompt = `Du bist der smarte Küchen-Assistent einer Vorrats-App.
-Heute ist ${todayStr}.
-Aktuell im Bestand vorhandene Artikel: [${existingNames}].
-Der Nutzer hat folgenden Sprachbefehl eingesprochen: "${rawCmdText.trim()}"
-
-Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSON in genau diesem Format:
-{
-  "actions": [
-    {
-      "type": "add_or_increment" | "set_exact" | "delete" | "mealprep_add" | "query",
-      "name": "Sauberer Produktname (Falls im Bestand vorhanden, nutze exakt den vorhandenen Namen!)",
-      "amount": 1,
-      "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube|Gläser",
-      "category": "pantry|fridge|freezer_items|sauces|spices",
-      "expiryDate": "YYYY-MM-DD (nur falls Kühlschrank/Frischware oder MHD genannt, sonst null)",
-      "blocks500": 1,
-      "blocks250": 0,
-      "answerText": "Antwort-Text falls der Nutzer eine Frage gestellt hat"
-    }
-  ]
-}
-Wichtige Regeln:
-- Entferne alle Befehlswörter ("füge hinzu", "packe in den Kühlschrank") aus dem Produktnamen!
-- Beispiel: "10g Pancetta" -> type: "add_or_increment", name: "Pancetta", amount: 10, unitType: "g", category: "fridge".`;
-
-          const { text: aiResponse } = await callGeminiWithAutoModel(activeKey, voicePrompt);
-          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-          if (!jsonMatch) throw new Error('Konnte Sprachbefehl nicht zuordnen');
-          const parsed = JSON.parse(jsonMatch[0]);
-
-          if (parsed.actions && Array.isArray(parsed.actions)) {
-            parsed.actions.forEach(act => {
-              if (act.type === 'query' && act.answerText) {
-                showToast(act.answerText);
-              } else if (act.type === 'delete') {
-                const found = pantry.find(p => p.name.toLowerCase().includes((act.name || '').toLowerCase()));
-                if (found) deletePantryItem(found.id);
-              } else if (act.type === 'set_exact') {
-                const found = pantry.find(p => p.name.toLowerCase().includes((act.name || '').toLowerCase()));
-                if (found) {
-                  updatePantryAmount(found.id, Number(act.amount) || 0);
-                  showToast(`${found.name} auf ${act.amount} ${found.unitType || ''} gesetzt!`);
-                } else {
-                  addOrUpdatePantryItem(act.name, Number(act.amount) || 1, act.unitType || 'Stück', act.category || 'pantry', act.expiryDate);
-                }
-              } else if (act.type === 'mealprep_add') {
-                setMealPrep(prev => [{
-                  id: 'mp_' + Date.now(), name: act.name || 'Neues Gericht',
-                  blocks500: Number(act.blocks500) || 1, blocks250: Number(act.blocks250) || 0,
-                  kcalPer100g: 170, needsFresh: [], prepTime: 20, season: 'all'
-                }, ...prev]);
-                showToast(`Im TK angelegt: ${act.name}`);
-              } else {
-                addOrUpdatePantryItem(
-                  act.name || rawCmdText,
-                  Number(act.amount) || 1,
-                  act.unitType || 'Stück',
-                  act.category || 'pantry',
-                  act.expiryDate || undefined
-                );
-              }
-            });
-          }
-          setVoiceText('');
-          setVoiceOverlay(false);
-        } catch (err) {
-          showToast(`Sprach-Fehler: ${err.message}`);
-        } finally {
-          setIsProcessingVoice(false);
-        }
-      };
-
-      const copyShareLink = () => {
-        const baseUrl = window.location.origin + window.location.pathname;
-        const params = new URLSearchParams();
-        if (firebaseUrl.trim()) params.set('db', firebaseUrl.trim());
-        if (geminiKey.trim()) params.set('gemini', geminiKey.trim());
-        navigator.clipboard.writeText(`${baseUrl}?${params.toString()}`);
-        showToast('Link kopiert!');
-      };
-
-      return (
-        <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col max-w-md mx-auto border-x border-stone-200 shadow-sm relative pb-24">
-          <input type="file" accept="image/*" capture="environment" id="globalCameraInput" onChange={e => handleFileSelected(e, 'pantry')} className="hidden" />
-          <input type="file" accept="image/*" capture="environment" id="cookbookCameraInput" onChange={e => handleFileSelected(e, 'recipe')} className="hidden" />
-
-          {isAnalyzingPhoto && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center p-6 text-white space-y-3 text-center">
-              <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm font-semibold">Gemini analysiert dein Foto & Haltbarkeit...</p>
-            </div>
-          )}
-
-          {/* HEADER */}
-          <header className="bg-white border-b border-stone-200 px-4 py-3.5 sticky top-0 z-20 flex items-center justify-between">
-            <div>
-              <h1 className="text-base font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className={`w-2 h-2 rounded-full ${
-                  syncStatus === 'synced' ? 'bg-emerald-500' :
-                  syncStatus === 'syncing' ? 'bg-amber-400' : 'bg-red-500'
-                }`} />
-                <p className="text-[11px] text-stone-500">Live</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => document.getElementById('globalCameraInput').click()}
-                className="flex items-center justify-center bg-stone-900 text-white w-9 h-9 rounded-lg hover:bg-stone-800 transition shadow-sm"
-                title="Vorrat per Foto scannen"
-              >
-                <Icon name="camera" size="{16}"/>
-              </button>
-              <button
-                onClick={openVoiceAssistantAndStart}
-                className="flex items-center gap-1.5 bg-stone-900 text-white px-3 h-9 rounded-lg text-xs font-medium hover:bg-stone-800 transition shadow-sm"
-              >
-                <Icon name="mic" size="{14}"/>
-                <span>Sprache</span>
-              </button>
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="flex items-center justify-center bg-stone-900 text-white w-9 h-9 rounded-lg hover:bg-stone-800 transition shadow-sm"
-                title="Sync & KI Einstellungen"
-              >
-                <Icon name="settings" size="{16}"/>
-              </button>
-            </div>
-          </header>
-
-          {/* TOAST */}
-          {toastMsg && (
-            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-start gap-2 w-[90vw] max-w-sm break-words">
-              <Icon className="text-emerald-400 mt-0.5" name="check" size="{15}"/>
-              <span className="leading-snug">{toastMsg}</span>
-            </div>
-          )}
-
-          {/* OLIVENÖL WARNUNG */}
-          {oliveOilAlert && (
-            <div className="mx-4 mt-3 bg-amber-50 border border-amber-300 rounded-xl p-4 flex flex-col gap-3">
-              <div className="flex items-start gap-3">
-                <Icon className="text-amber-700 mt-0.5" name="alert-circle" size="{18}"/>
-                <div className="text-xs text-amber-900">
-                  <p className="font-semibold">Mitdenk-Zähler: Olivenöl Extra Vergine</p>
-                  <p className="mt-0.5 text-amber-800">Du hast jetzt 20x mit dieser Flasche gekocht. Wird sie langsam knapp?</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: 'Olivenöl Extra Vergine', reason: '20x genutzt', done: false }]);
-                    setOliveOilAlert(false);
-                    showToast('Olivenöl auf die Einkaufsliste gesetzt');
-                  }}
-                  className="flex-1 bg-amber-800 text-white text-xs font-medium py-2 rounded-lg"
-                >
-                  Ja, auf Einkaufsliste
-                </button>
-                <button
-                  onClick={() => {
-                    setPantry(prev => prev.map(p => p.id === 'p12' ? { ...p, usesSinceOpen: 10 } : p));
-                    setOliveOilAlert(false);
-                    showToast('Zähler um 10 Einsätze zurückgesetzt');
-                  }}
-                  className="flex-1 bg-white border border-amber-300 text-amber-900 text-xs font-medium py-2 rounded-lg"
-                >
-                  Noch genug drin
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* MAIN CONTENT */}
-          <main className="flex-1 px-4 pt-4">
-            {/* TAB HOME: DASHBOARD */}
-            {activeTab === 'home' && (
-              <div className="space-y-4">
-                {urgentExpiringItems.length > 0 && (
-                  <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 space-y-2.5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-amber-950 font-semibold text-xs">
-                        <Icon className="text-amber-600" name="flame" size="{16}"/>
-                        <span>Frische-Alarm: Bald verbrauchen!</span>
-                      </div>
-                      <button
-                        onClick={() => { setActiveTab('decide'); setCurrentSuggestionIndex(0); }}
-                        className="text-[11px] font-semibold bg-amber-900 text-white px-2.5 py-1 rounded-lg"
-                      >
-                        Passende Rezepte →
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      {urgentExpiringItems.map(it => {
-                        const badge = formatExpiryBadge(it.daysLeft, it.expiryDate);
-                        return (
-                          <div key={it.id} className="flex items-center justify-between text-xs bg-white/80 px-2.5 py-1.5 rounded-lg border border-amber-200">
-                            <span className="font-medium text-stone-900">{it.name} ({it.amount} {it.unitType})</span>
-                            <span className={`text-[11px] font-semibold ${badge?.expired ? 'text-red-700' : 'text-amber-800'}`}>
-                              {badge?.text}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-stone-900 text-white rounded-2xl p-5 space-y-3 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-wider text-stone-400">Was kochen wir heute?</span>
-                    <span className="text-xs bg-stone-800 text-stone-300 px-2.5 py-1 rounded-full">
-                      {recipes.length} Rezepte
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-semibold">Ab in die Küche!</h2>
-                  <p className="text-xs text-stone-300 leading-relaxed">
-                    Wähle Rezepte für die nächsten Tage im Voraus aus – bald ablaufende Frische-Produkte werden im Würfler automatisch priorisiert.
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('decide')}
-                    className="w-full py-2.5 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 shadow-sm"
-                  >
-                    <Icon name="utensils" size="{15}"/>
-                    <span>Rezept-Würfler & Planer starten</span>
-                  </button>
-                </div>
-
-                {/* KOCHPLAN */}
-                <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">Euer Kochplan ({mealPlan.length})</h3>
-                    {mealPlan.length > 0 && (
-                      <span className="text-[11px] text-emerald-700 font-medium">Zutaten abgeglichen</span>
-                    )}
-                  </div>
-                  {mealPlan.length > 0 ? (
-                    <div className="space-y-2">
-                      {mealPlan.map(meal => (
-                        <div key={meal.id} className="bg-stone-50 border border-stone-200 rounded-xl p-3 flex items-center justify-between">
-                          <div
-                            onClick={() => { setSelectedRecipeId(meal.id); setActiveTab('recipes'); }}
-                            className="cursor-pointer"
-                          >
-                            <h4 className="text-sm font-semibold text-stone-900">{meal.title}</h4>
-                            <p className="text-[11px] text-stone-500">{meal.prepTime} Min. · ~{meal.kcalPer100g || 170} kcal/100g</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => {
-                                setCookedModalRecipe(meal);
-                                removeFromMealPlan(meal.id);
-                              }}
-                              className="text-emerald-700 hover:bg-emerald-50 p-1.5 rounded"
-                              title="Heute gekocht"
-                            >
-                              <Icon name="check" size="{15}"/>
-                            </button>
-                            <button
-                              onClick={() => removeFromMealPlan(meal.id)}
-                              className="text-stone-400 hover:text-red-600 p-1.5"
-                              title="Aus Plan entfernen"
-                            >
-                              <Icon name="trash-2" size="{15}"/>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-stone-400 py-2">Noch keine Gerichte für die nächsten Tage vorgemerkt.</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 px-1">Vorräte & Einkäufe einpflegen</span>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('mealprep'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <Icon className="text-stone-700" name="snowflake" size="{18}"/>
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK Meal</span>
-                      </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Gefrierfach (Saucen)</span>
-                      <span className="text-[11px] text-stone-500 block">500g / 250g Blöcke</span>
-                    </button>
-
-                    <button
-                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('freezer_items'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <Icon className="text-stone-700" name="archive" size="{18}"/>
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK Vorrat</span>
-                      </div>
-                      <span className="text-sm font-semibold text-stone-900 block">TK (Fischstäbchen...)</span>
-                      <span className="text-[11px] text-stone-500 block">Stück & Gramm</span>
-                    </button>
-
-                    <button
-                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('fridge'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <Icon className="text-stone-700" name="clock" size="{18}"/>
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">MHD</span>
-                      </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Kühlschrank</span>
-                      <span className="text-[11px] text-stone-500 block">Frisch & Verfallsdatum</span>
-                    </button>
-
-                    <button
-                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('pantry'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <Icon className="text-stone-700" name="box" size="{18}"/>
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Schrank</span>
-                      </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Vorratsschrank</span>
-                      <span className="text-[11px] text-stone-500 block">Pasta, Passata, Reis</span>
-                    </button>
-
-                    <button
-                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('sauces'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <Icon className="text-stone-700" name="droplet" size="{18}"/>
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Saucen</span>
-                      </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Sojasauce & Essige</span>
-                      <span className="text-[11px] text-stone-500 block">Flüssige Würzmittel</span>
-                    </button>
-
-                    <button
-                      onClick={() => { setActiveTab('pantry'); setPantrySubTab('spices'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <Icon className="text-stone-700" name="tag" size="{18}"/>
-                        <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Gewürze</span>
-                      </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Gewürzschrank</span>
-                      <span className="text-[11px] text-stone-500 block">Piment, Nelken, Muskat</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5 pt-1">
-                  <button
-                    onClick={() => setActiveTab('recipes')}
-                    className="bg-white border border-stone-200 rounded-xl p-3 text-xs font-semibold text-stone-800 flex items-center justify-center gap-2 hover:bg-stone-50"
-                  >
-                    <Icon name="book-open" size="{16}"/>
-                    <span>Rezeptbuch ({recipes.length})</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('shopping')}
-                    className="bg-white border border-stone-200 rounded-xl p-3 text-xs font-semibold text-stone-800 flex items-center justify-center gap-2 hover:bg-stone-50"
-                  >
-                    <Icon name="shopping-cart" size="{16}"/>
-                    <span>Einkauf ({shoppingList.length})</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: WÜRFLER */}
-            {activeTab === 'decide' && (
-              <div className="space-y-4">
-                <div className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Modus & Filter</span>
-                    <span className="text-xs text-stone-500">{filteredSuggestions.length} Gerichte</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => { setFilterMode('normal'); setCurrentSuggestionIndex(0); }}
-                      className={`py-2 px-2 rounded-lg text-xs font-medium border transition ${
-                        filterMode === 'normal' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
-                      }`}
-                    >
-                      Familie / Alle
-                    </button>
-                    <button
-                      onClick={() => { setFilterMode('kid'); setCurrentSuggestionIndex(0); }}
-                      className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${
-                        filterMode === 'kid' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
-                      }`}
-                    >
-                      <Icon name="baby" size="{14}"/>
-                      <span>Nur Kinder-Rezepte</span>
-                    </button>
-                  </div>
-
-                  {filterMode === 'normal' && (
-                    <div className="grid grid-cols-3 gap-2 pt-1 border-t border-stone-100">
-                      <select
-                        value={filterEffort}
-                        onChange={(e) => { setFilterEffort(e.target.value); setCurrentSuggestionIndex(0); }}
-                        className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-2 text-xs text-stone-700"
-                      >
-                        <option value="all">Zeit: Egal</option>
-                        <option value="quick">Schnell (&lt; 30 Min)</option>
-                        <option value="elaborate">Aufwendig</option>
-                      </select>
-                      
-                      <select
-                        value={filterCalories}
-                        onChange={(e) => { setFilterCalories(e.target.value); setCurrentSuggestionIndex(0); }}
-                        className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-2 text-xs text-stone-700"
-                      >
-                        <option value="all">kcal: Alle</option>
-                        <option value="under150">&lt; 150 kcal</option>
-                        <option value="150to300">150 - 300 kcal</option>
-                        <option value="over300">&gt; 300 kcal</option>
-                      </select>
-
-                      <select
-                        value={filterShopping}
-                        onChange={(e) => { setFilterShopping(e.target.value); setCurrentSuggestionIndex(0); }}
-                        className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-2 text-xs text-stone-700"
-                      >
-                        <option value="all_here">Hab ich da</option>
-                        <option value="shop_3">Max. 3 fehlen</option>
-                        <option value="any_plan">Wochenplan Großeinkauf</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {activeSuggestion ? (
-                  <div className="bg-white border border-stone-200 rounded-xl p-5 space-y-4">
-                    {activeSuggestion.urgentFridgeItems && activeSuggestion.urgentFridgeItems.length > 0 && (
-                      <div className="bg-amber-50 border border-amber-300 rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-xs text-amber-950 font-medium">
-                        <Icon className="text-amber-600" name="flame" size="{16}"/>
-                        <span>
-                          <strong>Priorisiert (MHD):</strong> Verbraucht <em>{activeSuggestion.urgentFridgeItems.map(u => `${u.name} (${u.daysLeft <= 0 ? 'heute!' : `noch ${u.daysLeft} T.`})`).join(', ')}</em>
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                          <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-stone-100 text-stone-700">
-                            {activeSuggestion.prepTime} Min.
-                          </span>
-                          {activeSuggestion.kcalPer100g !== undefined && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">
-                              ~{activeSuggestion.kcalPer100g} kcal / 100g
-                            </span>
-                          )}
-                          {activeSuggestion.isKidFriendly && (
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-800">
-                              👶 Kinder
-                            </span>
-                          )}
-                        </div>
-                        <h2 className="text-xl font-semibold text-stone-900">{activeSuggestion.title}</h2>
-                        {activeSuggestion.noteText && (
-                          <p className="text-xs text-emerald-700 mt-1 font-medium">
-                            💡 {activeSuggestion.noteText}
-                          </p>
-                        )}
-                      </div>
-                      {/* AUFFÄLLIGER WÜRFEL-BUTTON IN SALBEIGRÜN */}
-                      <button
-                        onClick={() => setCurrentSuggestionIndex(prev => prev + 1)}
-                        className="px-3 py-2.5 rounded-xl bg-[#849b82] hover:bg-[#738871] text-white shadow-sm shrink-0 flex items-center gap-1.5 text-xs font-semibold transition"
-                        title="Nächstes Rezept würfeln"
-                      >
-                        <Icon name="refresh-cw" size="{16}"/>
-                        <span>Würfeln</span>
-                      </button>
-                    </div>
-
-                    {activeSuggestion.fromFreezerMeat.length > 0 && (
-                      <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-stone-700">
-                        <Icon className="text-stone-500" name="snowflake" size="{15}"/>
-                        <span>
-                          <strong>Im TK vorrätig:</strong> {activeSuggestion.fromFreezerMeat.join(', ')}.
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zutaten-Check</p>
-                      <div className="divide-y divide-stone-100 border border-stone-100 rounded-lg overflow-hidden">
-                        {(activeSuggestion.ingredients || []).map((ing, i) => {
-                          const isMissing = (activeSuggestion.missing || []).includes(ing.name);
-                          const matchedPantry = pantry.find(p =>
-                            p.name.toLowerCase().includes(ing.name.toLowerCase()) ||
-                            ing.name.toLowerCase().includes(p.name.toLowerCase())
-                          );
-                          const matchedDays = getDaysUntilExpiry(matchedPantry);
-                          return (
-                            <div key={i} className="px-3 py-2.5 flex items-start justify-between gap-3 text-xs bg-white">
-                              <div className="flex flex-col text-left">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-medium text-stone-800">{ing.name}</span>
-                                  {matchedDays !== undefined && matchedDays <= 2 && (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">
-                                      🔥 {matchedDays <= 0 ? 'Heute fällig' : `Noch ${matchedDays} T.`}
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-[11px] text-stone-500 mt-0.5">Benötigt: {ing.amount}</span>
-                                {matchedPantry && matchedPantry.amount !== undefined && (
-                                  <span className="text-[11px] text-stone-400 mt-0.5">
-                                    Auf Lager: {matchedPantry.amount} {matchedPantry.unitType}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center pt-1 shrink-0">
-                                <span className={`w-2.5 h-2.5 rounded-full ${isMissing ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 pt-2">
-                      <button
-                        onClick={() => addToMealPlan(activeSuggestion)}
-                        className="w-full py-2.5 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
-                      >
-                        <Icon name="calendar-plus" size="{15}"/>
-                        <span>Für den Wochenplan vormerken</span>
-                      </button>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedRecipeId(activeSuggestion.id);
-                            setActiveTab('recipes');
-                          }}
-                          className="py-2.5 px-3 rounded-lg border border-stone-300 text-stone-800 text-xs font-medium hover:bg-stone-50 flex items-center justify-center gap-1.5"
-                        >
-                          <Icon name="book-open" size="{15}"/>
-                          <span>Rezept ansehen</span>
-                        </button>
-                        <button
-                          onClick={() => setCookedModalRecipe(activeSuggestion)}
-                          className="py-2.5 px-3 rounded-lg bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 flex items-center justify-center gap-1.5"
-                        >
-                          <Icon name="check" size="{15}"/>
-                          <span>Heute gekocht!</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white border border-stone-200 rounded-xl p-8 text-center space-y-2">
-                    <p className="text-sm font-medium text-stone-800">Keine passenden Rezepte für diesen Filter.</p>
-                    <button
-                      onClick={() => { setFilterEffort('all'); setFilterCalories('all'); setFilterShopping('any_plan'); setFilterMode('normal'); }}
-                      className="text-xs font-medium text-stone-900 underline"
-                    >
-                      Alle Rezepte zeigen (Wochenplan)
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB: VORRÄTE & TK (REITER OBEN, SUCHFELD DIREKT DARUNTER ÜBER DEN VORRÄTEN) */}
-            {activeTab === 'pantry' && (
-              <div className="space-y-3.5">
-                {/* 1. GRÖSSERE, GUT LESBARE REITER IM 3x2 RASTER OBEN */}
-                <div className="grid grid-cols-3 gap-1.5 bg-stone-200/70 p-1.5 rounded-xl">
-                  {[
-                    { id: 'mealprep', label: 'TK Meal', icon: 'snowflake' },
-                    { id: 'freezer_items', label: 'TK Vorrat', icon: 'archive' },
-                    { id: 'fridge', label: 'Frisch', icon: 'clock' },
-                    { id: 'pantry', label: 'Schrank', icon: 'box' },
-                    { id: 'sauces', label: 'Saucen', icon: 'droplet' },
-                    { id: 'spices', label: 'Gewürze', icon: 'tag' }
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => { setPantrySubTab(tab.id); setPantrySearchQuery(''); }}
-                      className={`py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
-                        pantrySubTab === tab.id && !pantrySearchQuery
-                          ? 'bg-white text-stone-900 shadow-sm'
-                          : 'text-stone-600 hover:text-stone-900'
-                      }`}
-                    >
-                      <Icon name="{tab.icon}" size="{13}"/>
-                      <span>{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* 2. SUCHLEISTE DIREKT UNTER DEN REITERN / ÜBER DEN VORRÄTEN */}
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
-                    <Icon name="search" size="{15}"/>
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Vorrat schnell suchen (z.B. Pancetta, Passata)..."
-                    value={pantrySearchQuery}
-                    onChange={e => setPantrySearchQuery(e.target.value)}
-                    className="w-full bg-white border border-stone-300 rounded-xl pl-9 pr-8 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-600 shadow-sm"
-                  />
-                  {pantrySearchQuery && (
-                    <button
-                      onClick={() => setPantrySearchQuery('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1"
-                    >
-                      <Icon name="x" size="{14}"/>
-                    </button>
-                  )}
-                </div>
-
-                {pantrySubTab === 'mealprep' && !pantrySearchQuery ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-semibold text-stone-900">Vorgekochtes in Silikonformen (A–Z)</h3>
-                        <p className="text-xs text-stone-500">500g- und 250g-Blöcke verwalten</p>
-                      </div>
-                      <button
-                        onClick={() => setShowAddMealPrepModal(true)}
-                        className="flex items-center gap-1.5 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium"
-                      >
-                        <Icon name="plus" size="{14}"/>
-                        <span>Neues Meal-Prep</span>
-                      </button>
-                    </div>
-
-                    {displayedMealPrepItems.map(mp => {
-                      const totalGrams = (mp.blocks500 || 0) * 500 + (mp.blocks250 || 0) * 250;
-                      return (
-                        <div key={mp.id} className="bg-white border border-stone-200 rounded-xl p-4 space-y-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-sm text-stone-900">{mp.name}</h4>
-                                <button
-                                  onClick={() => deleteMealPrepItem(mp.id)}
-                                  className="text-stone-400 hover:text-red-600 p-1"
-                                  title="Meal-Prep löschen"
-                                >
-                                  <Icon name="trash-2" size="{14}"/>
-                                </button>
-                              </div>
-                              {mp.needsFresh && mp.needsFresh.length > 0 && (
-                                <p className="text-[11px] text-stone-500 mt-1">
-                                  Dazu frisch: {mp.needsFresh.join(', ')}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="flex flex-col items-end shrink-0">
-                              <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${
-                                totalGrams > 0 ? 'bg-stone-100 text-stone-900' : 'bg-red-50 text-red-700'
-                              }`}>
-                                Gesamt: {totalGrams} g
-                              </span>
-                              <button
-                                onClick={() => {
-                                  setEditingMpKcalItem(mp);
-                                  setEditingMpKcalVal(String(mp.kcalPer100g || 170));
-                                }}
-                                className="mt-1 text-[11px] text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-200 font-medium flex items-center gap-1"
-                              >
-                                <span>~{mp.kcalPer100g || 170} kcal/100g</span>
-                                <Icon className="text-amber-700" name="edit-2" size="{10}"/>
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2.5 pt-1">
-                            <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
-                              <div>
-                                <span className="text-xs font-semibold text-stone-800 block">500 g Form</span>
-                                <span className="text-[11px] text-stone-500">{mp.blocks500 || 0} Stück</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button onClick={() => updateMealPrepBlocks(mp.id, -1, 0, '-500g entnommen')} className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center text-stone-700">
-                                  <Icon name="minus" size="{13}"/>
-                                </button>
-                                <button onClick={() => updateMealPrepBlocks(mp.id, 1, 0, '+500g eingefroren')} className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center">
-                                  <Icon name="plus" size="{13}"/>
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="bg-stone-50 border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
-                              <div>
-                                <span className="text-xs font-semibold text-stone-800 block">250 g Form</span>
-                                <span className="text-[11px] text-stone-500">{mp.blocks250 || 0} Stück</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button onClick={() => updateMealPrepBlocks(mp.id, 0, -1, '-250g entnommen')} className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center text-stone-700">
-                                  <Icon name="minus" size="{13}"/>
-                                </button>
-                                <button onClick={() => updateMealPrepBlocks(mp.id, 0, 1, '+250g eingefroren')} className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center">
-                                  <Icon name="plus" size="{13}"/>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {(mp.blocks500 || 0) >= 1 && (mp.blocks250 || 0) >= 1 && (
-                            <button
-                              onClick={() => updateMealPrepBlocks(mp.id, -1, -1, '750g (1x 500g + 1x 250g) aufgetaut')}
-                              className="w-full py-1.5 px-3 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 text-[11px] font-medium text-stone-700 flex items-center justify-center gap-1.5"
-                            >
-                              <span>Kombi-Entnahme: 750 g (1× 500g + 1× 250g) auftauen</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 block">
-                          {pantrySearchQuery ? `Suchergebnisse (${displayedPantryItems.length})` : 'Bestandsliste (Alphabetisch A–Z)'}
-                        </span>
-                        <span className="text-[11px] text-stone-500">
-                          {pantrySubTab === 'fridge' ? 'Tippe auf das MHD-Datum zum Anpassen' : 'Gleiche Artikel werden automatisch addiert'}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const targetCat = pantrySubTab === 'mealprep' ? 'pantry' : pantrySubTab;
-                          setNewPantryCategory(targetCat);
-                          setNewPantryExpiryDate(targetCat === 'fridge' ? getFutureDateStr(3) : '');
-                          setShowNewPantryItemModal(true);
-                        }}
-                        className="flex items-center gap-1 bg-stone-900 text-white px-3 py-2 rounded-lg text-xs font-medium shrink-0"
-                      >
-                        <Icon name="plus" size="{13}"/>
-                        <span>Neu</span>
-                      </button>
-                    </div>
-
-                    {displayedPantryItems.map(item => {
-                      const daysLeft = getDaysUntilExpiry(item);
-                      const badge = formatExpiryBadge(daysLeft, item.expiryDate);
-                      return (
-                        <div key={item.id} className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-2.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="text-sm font-semibold text-stone-900">{item.name}</span>
-                                {item.group && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-700">{item.group}</span>
-                                )}
-                              </div>
-                              {(badge || item.category === 'fridge') && (
-                                <button
-                                  onClick={() => {
-                                    setEditingExpiryItem(item);
-                                    setEditingExpiryDateVal(item.expiryDate || getFutureDateStr(daysLeft ?? 3));
-                                  }}
-                                  className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border transition ${
-                                    badge?.expired
-                                      ? 'bg-red-100 text-red-900 border-red-300'
-                                      : badge?.urgent
-                                      ? 'bg-amber-100 text-amber-900 border-amber-300'
-                                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                  }`}
-                                >
-                                  <Icon name="calendar" size="{11}"/>
-                                  <span>{badge ? badge.text : 'MHD festlegen'}</span>
-                                  <Icon className="opacity-60" name="edit-2" size="{9}"/>
-                                </button>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {['in_stock', 'low', 'empty'].map(st => (
-                                <button
-                                  key={st}
-                                  onClick={() => {
-                                    setPantry(prev => prev.map(p => p.id === item.id ? { ...p, status: st, ...(st === 'empty' && p.amount !== undefined ? { amount: 0 } : {}) } : p));
-                                    if (st === 'empty') {
-                                      setShoppingList(prev => {
-                                        if (prev.some(s => s.name.toLowerCase() === item.name.toLowerCase())) return prev;
-                                        return [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }];
-                                      });
-                                      showToast(`${item.name} auf Einkaufsliste gesetzt`);
-                                    }
-                                  }}
-                                  className={`px-2 py-1 rounded text-[10px] font-medium border ${
-                                    item.status === st
-                                      ? st === 'in_stock' ? 'bg-stone-900 text-white border-stone-900'
-                                        : st === 'low' ? 'bg-amber-600 text-white border-amber-600'
-                                        : 'bg-red-600 text-white border-red-600'
-                                      : 'bg-stone-50 text-stone-400 border-stone-200'
-                                  }`}
-                                >
-                                  {st === 'in_stock' ? 'Da' : st === 'low' ? 'Knapp' : 'Leer'}
-                                </button>
-                              ))}
-                              <button
-                                onClick={() => deletePantryItem(item.id)}
-                                className="text-stone-400 hover:text-red-600 p-1 ml-1"
-                                title="Vorrat löschen"
-                              >
-                                <Icon name="trash-2" size="{15}"/>
-                              </button>
-                            </div>
-                          </div>
-
-                          {item.amount !== undefined && (
-                            <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
-                              <span className="text-xs text-stone-500">Restbestand:</span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => updatePantryAmount(item.id, item.amount - (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))}
-                                  className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center text-stone-700 font-bold text-xs active:bg-stone-100"
-                                >
-                                  -
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingAmountItem(item);
-                                    setEditingAmountValue(String(item.amount));
-                                  }}
-                                  className="px-2.5 py-1 rounded bg-white border border-stone-300 text-xs font-semibold text-stone-900 min-w-[68px] text-center hover:border-stone-500"
-                                >
-                                  {item.amount} {item.unitType}
-                                </button>
-                                <button
-                                  onClick={() => updatePantryAmount(item.id, item.amount + (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))}
-                                  className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center font-bold text-xs active:bg-stone-700"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {displayedPantryItems.length === 0 && (
-                      <p className="text-center text-xs text-stone-400 py-6">Kein passender Vorrat gefunden.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB: REZEPTE & EDITOR */}
-            {activeTab === 'recipes' && (
-              <div className="space-y-4">
-                {selectedRecipe ? (
-                  <div className="bg-white border border-stone-200 rounded-xl p-4 space-y-4">
-                    <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                      <button
-                        onClick={() => { setSelectedRecipeId(null); setIsEditingRecipe(false); }}
-                        className="text-xs font-medium text-stone-600 hover:text-stone-900"
-                      >
-                        ← Zurück zur Übersicht
-                      </button>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => {
-                            setRecipes(prev => prev.filter(r => r.id !== selectedRecipe.id));
-                            setSelectedRecipeId(null);
-                            showToast('Rezept gelöscht');
-                          }}
-                          className="p-1.5 rounded-lg border border-red-200 text-red-600 text-xs"
-                          title="Rezept komplett löschen"
-                        >
-                          <Icon name="trash-2" size="{14}"/>
-                        </button>
-                        <button
-                          onClick={() => setIsEditingRecipe(!isEditingRecipe)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                            isEditingRecipe
-                              ? 'bg-stone-900 text-white border-stone-900'
                               : 'bg-stone-50 text-stone-800 border-stone-200'
                           }`}
                         >
-                          <Icon name="edit-3" size="{13}"/>
+                          <Icon name="edit-3" size={13} />
                           <span>{isEditingRecipe ? 'Bearbeitung fertig' : 'Rezept bearbeiten'}</span>
                         </button>
                       </div>
@@ -4130,7 +2091,7 @@ Wichtige Regeln:
                                 onClick={() => deleteIngredientFromRecipe(selectedRecipe.id, idx)}
                                 className="text-red-600 hover:bg-red-50 p-1.5 rounded-md transition flex items-center gap-1 text-[11px] font-medium"
                               >
-                                <Icon name="trash-2" size="{14}"/>
+                                <Icon name="trash-2" size={14} />
                                 <span>Löschen</span>
                               </button>
                             )}
@@ -4179,7 +2140,7 @@ Wichtige Regeln:
                                 onClick={() => deleteStepFromRecipe(selectedRecipe.id, idx)}
                                 className="text-red-500 p-1 shrink-0"
                               >
-                                <Icon name="trash-2" size="{14}"/>
+                                <Icon name="trash-2" size={14} />
                               </button>
                             )}
                           </li>
@@ -4217,14 +2178,14 @@ Wichtige Regeln:
                           className="flex items-center gap-1 bg-stone-200 text-stone-900 px-2.5 py-1.5 rounded-lg text-xs font-medium"
                           title="Kochbuchseite abfotografieren"
                         >
-                          <Icon name="camera" size="{13}"/>
+                          <Icon name="camera" size={13} />
                           <span>Buch-Scan</span>
                         </button>
                         <button
                           onClick={() => setShowNewRecipeModal(true)}
                           className="flex items-center gap-1 bg-stone-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
                         >
-                          <Icon name="plus" size="{14}"/>
+                          <Icon name="plus" size={14} />
                           <span>Neues Gericht</span>
                         </button>
                       </div>
@@ -4233,7 +2194,7 @@ Wichtige Regeln:
                     {/* SUCHFELD DIREKT ÜBER DER REZEPTLISTE */}
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
-                        <Icon name="search" size="{15}"/>
+                        <Icon name="search" size={15} />
                       </span>
                       <input
                         type="text"
@@ -4247,7 +2208,7 @@ Wichtige Regeln:
                           onClick={() => setRecipeSearchQuery('')}
                           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1"
                         >
-                          <Icon name="x" size="{14}"/>
+                          <Icon name="x" size={14} />
                         </button>
                       )}
                     </div>
@@ -4274,7 +2235,7 @@ Wichtige Regeln:
                             {(r.ingredients || []).length} Zutaten · Vor {r.lastCookedDaysAgo || 0} Tagen gekocht
                           </p>
                         </div>
-                        <Icon className="text-stone-400" name="chevron-right" size="{18}"/>
+                        <Icon name="chevron-right" size={18} className="text-stone-400" />
                       </div>
                     ))}
                     {displayedRecipes.length === 0 && (
@@ -4298,7 +2259,7 @@ Wichtige Regeln:
                       onClick={() => { setCopiedBringIds([]); setShowBringModal(true); }}
                       className="flex items-center gap-1.5 bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-800 transition shadow-sm"
                     >
-                      <Icon name="share-2" size="{13}"/>
+                      <Icon name="share-2" size={13} />
                       <span>An Bring! übergeben</span>
                     </button>
                   )}
@@ -4346,7 +2307,7 @@ Wichtige Regeln:
                           className="p-1.5 rounded-lg border border-stone-200 text-stone-600 text-xs"
                           title="Einzeln für Bring! kopieren"
                         >
-                          <Icon name="copy" size="{13}"/>
+                          <Icon name="copy" size={13} />
                         </button>
                         <button
                           onClick={() => {
@@ -4361,7 +2322,7 @@ Wichtige Regeln:
                           onClick={() => setShoppingList(prev => prev.filter(s => s.id !== item.id))}
                           className="text-stone-400 hover:text-red-600 p-1"
                         >
-                          <Icon name="trash-2" size="{14}"/>
+                          <Icon name="trash-2" size={14} />
                         </button>
                       </div>
                     </div>
@@ -4380,7 +2341,7 @@ Wichtige Regeln:
               <div className="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-stone-900">MHD: {editingExpiryItem.name}</h3>
-                  <button onClick={() => setEditingExpiryItem(null)} className="text-stone-400"><Icon name="x" size="{18}"/></button>
+                  <button onClick={() => setEditingExpiryItem(null)} className="text-stone-400"><Icon name="x" size={18} /></button>
                 </div>
 
                 <div className="space-y-2">
@@ -4434,7 +2395,7 @@ Wichtige Regeln:
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-semibold text-stone-900">An Bring! übergeben</h3>
                   <button onClick={() => setShowBringModal(false)} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
 
@@ -4455,7 +2416,7 @@ Wichtige Regeln:
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-stone-700">Option 2: Schnell-Kopieren</p>
                     <a
-                      href="[https://web.getbring.com](https://web.getbring.com)"
+                      href="https://web.getbring.com"
                       target="_blank"
                       rel="noreferrer"
                       className="text-[11px] font-semibold text-emerald-700 underline"
@@ -4504,7 +2465,7 @@ Wichtige Regeln:
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-semibold text-stone-900">Sync & Einstellungen</h3>
                   <button onClick={() => { setShowSettingsModal(false); setShowResetConfirm(false); }} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
 
@@ -4549,7 +2510,7 @@ Wichtige Regeln:
                     </label>
                     <input
                       type="text"
-                      placeholder="[https://...-default-rtdb.europe-west1.firebasedatabase.app](https://...-default-rtdb.europe-west1.firebasedatabase.app)"
+                      placeholder="https://...-default-rtdb.europe-west1.firebasedatabase.app"
                       value={firebaseUrl}
                       onChange={e => {
                         setFirebaseUrl(e.target.value);
@@ -4567,7 +2528,7 @@ Wichtige Regeln:
                       <div className="space-y-2">
                         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <Icon className="text-emerald-700" name="check-circle" size="{16}"/>
+                            <Icon name="check-circle" size={16} className="text-emerald-700" />
                             <div>
                               <span className="text-xs font-semibold text-emerald-900 block">API-Key aktiv & bestätigt</span>
                               <span className="text-[10px] text-emerald-700">
@@ -4648,8 +2609,8 @@ Wichtige Regeln:
                     onClick={copyShareLink}
                     className="w-full py-2.5 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
                   >
-                    <Icon name="share-2" size="{14}"/>
-                    <span>Link kopieren</span>
+                    <Icon name="share-2" size={14} />
+                    <span>Link kopieren (Einladung für deine Frau)</span>
                   </button>
                 )}
 
@@ -4675,7 +2636,7 @@ Wichtige Regeln:
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-stone-900">{editingMpKcalItem.name}</h3>
                   <button onClick={() => setEditingMpKcalItem(null)} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
                 <div>
@@ -4712,7 +2673,7 @@ Wichtige Regeln:
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-stone-900">{editingAmountItem.name}</h3>
                   <button onClick={() => setEditingAmountItem(null)} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
                 <div>
@@ -4748,7 +2709,7 @@ Wichtige Regeln:
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-semibold text-stone-900">Neues Gericht anlegen</h3>
                   <button onClick={() => setShowNewRecipeModal(false)} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
                 <div className="space-y-3">
@@ -4822,7 +2783,7 @@ Wichtige Regeln:
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-semibold text-stone-900">Neues Meal-Prep einfrieren</h3>
                   <button onClick={() => setShowAddMealPrepModal(false)} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
 
@@ -4902,7 +2863,7 @@ Wichtige Regeln:
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-semibold text-stone-900">Vorrat hinzufügen</h3>
                   <button onClick={() => setShowNewPantryItemModal(false)} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
 
@@ -4970,7 +2931,7 @@ Wichtige Regeln:
                     </div>
                   )}
 
-                  {/* HALTBARKEITSDATUM (MHD) JETZT BEI JEDEM NEUEN VORRAT EINSTELLBAR */}
+                  {/* HALTBARKEITSDATUM (MHD) BEI JEDEM NEUEN VORRAT EINSTELLBAR */}
                   <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-semibold text-amber-950">
@@ -5028,7 +2989,7 @@ Wichtige Regeln:
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-semibold text-stone-900">Heute gekocht: {cookedModalRecipe.title}</h3>
                   <button onClick={() => setCookedModalRecipe(null)} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
 
@@ -5076,7 +3037,7 @@ Wichtige Regeln:
                     <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">KI aktiv</span>
                   </div>
                   <button onClick={() => { stopListening(); setVoiceOverlay(false); }} className="text-stone-400">
-                    <Icon name="x" size="{18}"/>
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
 
@@ -5090,7 +3051,7 @@ Wichtige Regeln:
                     isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-100 hover:bg-stone-200 text-stone-900'
                   }`}
                 >
-                  <Icon name="mic" size="{16}"/>
+                  <Icon name="mic" size={16} />
                   <span>{isListening ? 'Ich höre zu... (jetzt sprechen)' : 'Erneut sprechen'}</span>
                 </button>
 
@@ -5138,7 +3099,7 @@ Wichtige Regeln:
                     active ? 'text-stone-900' : 'text-stone-400'
                   }`}
                 >
-                  <Icon name="{item.icon}" size="{18}"/>
+                  <Icon name={item.icon} size={18} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -5149,7 +3110,7 @@ Wichtige Regeln:
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App/>);
+    root.render(<App />);
   </script>
 </body>
 </html>
