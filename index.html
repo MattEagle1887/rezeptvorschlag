@@ -33,8 +33,10 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
 
-    const DEFAULT_GEMINI_KEY = "AQ.Ab8RN6K6PyMA1FeyY_xqg2fEUXTOVrLKBqxwzLU04F18trRKnQ";
-    const DEFAULT_FIREBASE_URL = "https://kueche-vorrat-default-rtdb.europe-west1.firebasedatabase.app/";
+    // SICHERHEIT: Keine öffentlichen Zugangsdaten im Quellcode!
+    // Nur wer den Einladungs-Link (?db=...&gemini=...) öffnet oder die Daten in den Settings einträgt, hat Zugriff auf eure Cloud.
+    const DEFAULT_GEMINI_KEY = "";
+    const DEFAULT_FIREBASE_URL = "";
 
     const Icon = ({ name, size = 18, className = "" }) => {
       const spanRef = useRef(null);
@@ -86,7 +88,7 @@
       return { text: `Noch ${days} Tage${dateHint}`, urgent: false, expired: false };
     };
 
-    // Vollständige Start-Daten (falls Firebase-Datenbank beim ersten Start leer ist)
+    // Vollständige Start-Daten (für lokale Test-Besucher oder falls eine neue Datenbank leer initialisiert wird)
     const SEED_DATA = {
       pantry: [
         { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(1), amount: 500, unitType: 'g', lowThreshold: 200 },
@@ -281,9 +283,12 @@
     let cachedWorkingModel = null;
 
     async function callGeminiWithAutoModel(apiKey, promptText, base64Image = null) {
-      const cleanKey = apiKey.trim();
-      let candidateModels = [];
+      const cleanKey = (apiKey || '').trim();
+      if (!cleanKey) {
+        throw new Error('Kein Gemini API-Key hinterlegt. Bitte Einladungs-Link nutzen oder im Zahnrad-Menü eintragen.');
+      }
 
+      let candidateModels = [];
       if (cachedWorkingModel) candidateModels.push(cachedWorkingModel);
 
       try {
@@ -353,8 +358,8 @@
         const params = new URLSearchParams(window.location.search);
         const fromUrl = params.get('db');
         if (fromUrl) {
-          localStorage.setItem('kueche_firebase_url', fromUrl);
-          return fromUrl;
+          localStorage.setItem('kueche_firebase_url', fromUrl.trim());
+          return fromUrl.trim();
         }
         return localStorage.getItem('kueche_firebase_url') || DEFAULT_FIREBASE_URL;
       });
@@ -363,8 +368,8 @@
         const params = new URLSearchParams(window.location.search);
         const fromUrl = params.get('gemini');
         if (fromUrl) {
-          localStorage.setItem('kueche_gemini_key', fromUrl);
-          return fromUrl;
+          localStorage.setItem('kueche_gemini_key', fromUrl.trim());
+          return fromUrl.trim();
         }
         return localStorage.getItem('kueche_gemini_key') || DEFAULT_GEMINI_KEY;
       });
@@ -404,7 +409,7 @@
       useEffect(() => {
         if (window.location.search.includes('db=') || window.location.search.includes('gemini=')) {
           window.history.replaceState({}, document.title, window.location.pathname);
-          setTimeout(() => showToast('Sync & KI-Einstellungen übernommen!'), 500);
+          setTimeout(() => showToast('Mit eurer Live-Datenbank verbunden!'), 500);
         }
       }, []);
 
@@ -425,8 +430,8 @@
       };
 
       const pushToCloud = async (stateObj) => {
-        if (!firebaseUrl || isApplyingRemote.current) return;
-        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
+        const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
+        if (!cleanUrl || isApplyingRemote.current) return;
         try {
           setSyncStatus('syncing');
           const now = Date.now();
@@ -460,8 +465,11 @@
       };
 
       const pullFromCloud = async () => {
-        if (!firebaseUrl) return;
-        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
+        const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
+        if (!cleanUrl) {
+          setSyncStatus('local');
+          return;
+        }
         try {
           const res = await fetch(`${cleanUrl}/kueche_shared.json`);
           if (!res.ok) return;
@@ -482,16 +490,36 @@
         }
       };
 
+      // Initiales Laden: Entweder aus der Firebase-Cloud (falls eingeladen) ODER rein lokal im Browser (für fremde Besucher)
       useEffect(() => {
-        if (!firebaseUrl) {
-          setPantry(SEED_DATA.pantry);
-          setMealPrep(SEED_DATA.mealPrep);
-          setRecipes(SEED_DATA.recipes);
+        const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
+        if (!cleanUrl) {
+          setSyncStatus('local');
+          try {
+            const localSaved = localStorage.getItem('kueche_local_sandbox_v1');
+            if (localSaved) {
+              const parsed = JSON.parse(localSaved);
+              setPantry(parsed.pantry || SEED_DATA.pantry);
+              setMealPrep(parsed.mealPrep || SEED_DATA.mealPrep);
+              setRecipes(parsed.recipes || SEED_DATA.recipes);
+              setShoppingList(parsed.shoppingList || []);
+              setMealPlan(parsed.mealPlan || []);
+            } else {
+              setPantry(SEED_DATA.pantry);
+              setMealPrep(SEED_DATA.mealPrep);
+              setRecipes(SEED_DATA.recipes);
+              setShoppingList([]);
+              setMealPlan([]);
+            }
+          } catch (e) {
+            setPantry(SEED_DATA.pantry);
+            setMealPrep(SEED_DATA.mealPrep);
+            setRecipes(SEED_DATA.recipes);
+          }
           setIsLoadedFromCloud(true);
           return;
         }
 
-        const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
         fetch(`${cleanUrl}/kueche_shared.json`)
           .then(res => res.json())
           .then(data => {
@@ -521,15 +549,24 @@
       }, [firebaseUrl]);
 
       useEffect(() => {
-        if (!firebaseUrl || !isLoadedFromCloud) return;
+        const cleanUrl = (firebaseUrl || '').trim();
+        if (!cleanUrl || !isLoadedFromCloud) return;
         const interval = setInterval(pullFromCloud, 4000);
         return () => clearInterval(interval);
       }, [firebaseUrl, isLoadedFromCloud]);
 
+      // Speichert Änderungen entweder in Firebase (wenn verbunden) oder nur lokal im Browser (für Gäste ohne Link)
       useEffect(() => {
         if (!isLoadedFromCloud || isApplyingRemote.current) return;
-        if (firebaseUrl) {
+        const cleanUrl = (firebaseUrl || '').trim();
+        if (cleanUrl) {
           pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
+        } else {
+          try {
+            localStorage.setItem('kueche_local_sandbox_v1', JSON.stringify({
+              pantry, mealPrep, recipes, shoppingList, mealPlan
+            }));
+          } catch (e) {}
         }
       }, [pantry, mealPrep, recipes, shoppingList, mealPlan]);
 
@@ -540,8 +577,8 @@
         setRecipes([]);
         setShoppingList([]);
         setMealPlan([]);
-        if (firebaseUrl) {
-          const cleanUrl = firebaseUrl.trim().replace(/\/$/, '');
+        const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
+        if (cleanUrl) {
           const now = Date.now();
           lastSyncTimestamp.current = now;
           await fetch(`${cleanUrl}/kueche_shared.json`, {
@@ -553,6 +590,10 @@
               updatedAt: now
             })
           });
+        } else {
+          localStorage.setItem('kueche_local_sandbox_v1', JSON.stringify({
+            pantry: [], mealPrep: [], recipes: [], shoppingList: [], mealPlan: []
+          }));
         }
         setTimeout(() => { isApplyingRemote.current = false; }, 300);
         setShowResetConfirm(false);
@@ -992,7 +1033,11 @@
       // OFFIZIELLER BRING!-EXPORT (Nutzt die statische Firebase-JSON-URL)
       const triggerOfficialBringImport = async () => {
         if (shoppingList.length === 0) return;
-        const cleanUrl = (firebaseUrl || DEFAULT_FIREBASE_URL).trim().replace(/\/$/, '');
+        const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
+        if (!cleanUrl) {
+          showToast('Für den Direkt-Import bitte zuerst die Firebase-URL in den Einstellungen verbinden (oder unten einzeln kopieren).');
+          return;
+        }
         try {
           await fetch(`${cleanUrl}/bring_export.json`, {
             method: 'PUT',
@@ -1012,7 +1057,7 @@
         if (!file) return;
         e.target.value = '';
 
-        const activeKey = (geminiKey || DEFAULT_GEMINI_KEY).trim();
+        const activeKey = (geminiKey || '').trim();
         const todayStr = new Date().toISOString().split('T')[0];
 
         try {
@@ -1062,7 +1107,7 @@
       const testAvailableModels = async () => {
         try {
           showToast('Frage verfügbare Modelle bei Google ab...');
-          const activeKey = (geminiKey || DEFAULT_GEMINI_KEY).trim();
+          const activeKey = (geminiKey || '').trim();
           const res = await callGeminiWithAutoModel(activeKey, 'Antworte nur mit dem Wort OK');
           setDetectedModelInfo(res.usedModel);
           showToast(`Erfolgreich! Aktives Modell: ${res.usedModel}`);
@@ -1122,7 +1167,7 @@
         if (!rawCmdText || !rawCmdText.trim()) return;
         stopListening();
 
-        const activeKey = (geminiKey || DEFAULT_GEMINI_KEY).trim();
+        const activeKey = (geminiKey || '').trim();
         const todayStr = new Date().toISOString().split('T')[0];
         const existingNames = pantry.map(p => `${p.name} (${p.amount !== undefined ? p.amount + ' ' + p.unitType : 'Gewürz'}, ${p.category})`).join(', ');
 
@@ -1206,7 +1251,7 @@ Wichtige Regeln:
         if (firebaseUrl.trim()) params.set('db', firebaseUrl.trim());
         if (geminiKey.trim()) params.set('gemini', geminiKey.trim());
         navigator.clipboard.writeText(`${baseUrl}?${params.toString()}`);
-        showToast('Link kopiert! Einfach per WhatsApp an deine Frau senden.');
+        showToast('Einladungs-Link kopiert! Nur wer diesen Link hat, kommt in eure Datenbank.');
       };
 
       return (
@@ -1227,10 +1272,13 @@ Wichtige Regeln:
               <h1 className="text-base font-semibold tracking-tight text-stone-900">Küche & Vorrat</h1>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className={`w-2 h-2 rounded-full ${
+                  !firebaseUrl ? 'bg-stone-400' :
                   syncStatus === 'synced' ? 'bg-emerald-500' :
                   syncStatus === 'syncing' ? 'bg-amber-400' : 'bg-red-500'
                 }`} />
-                <p className="text-[11px] text-stone-500">Live</p>
+                <p className="text-[11px] text-stone-500">
+                  {!firebaseUrl ? 'Lokal (Testmodus)' : 'Live'}
+                </p>
               </div>
             </div>
 
@@ -2472,8 +2520,12 @@ Wichtige Regeln:
                 {/* LIVE-STATUS DER FIREBASE-DATENBANK */}
                 <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-stone-800">Firebase Cloud-Datenbank</span>
-                    <span className="text-[11px] font-medium text-emerald-700">Verbunden</span>
+                    <span className="text-xs font-semibold text-stone-800">
+                      {firebaseUrl ? 'Firebase Cloud-Datenbank' : 'Lokaler Modus (Keine Cloud verbunden)'}
+                    </span>
+                    <span className={`text-[11px] font-medium ${firebaseUrl ? 'text-emerald-700' : 'text-stone-500'}`}>
+                      {firebaseUrl ? 'Verbunden' : 'Lokal'}
+                    </span>
                   </div>
                   <p className="text-[11px] text-stone-600">
                     Aktuell gespeichert: <strong>{pantry.length} Vorräte</strong>, <strong>{mealPrep.length} Meal-Preps</strong>, <strong>{recipes.length} Rezepte</strong>.
@@ -2510,7 +2562,7 @@ Wichtige Regeln:
                     </label>
                     <input
                       type="text"
-                      placeholder="https://...-default-rtdb.europe-west1.firebasedatabase.app"
+                      placeholder="Nur per Einladungs-Link oder manuell eintragen..."
                       value={firebaseUrl}
                       onChange={e => {
                         setFirebaseUrl(e.target.value);
@@ -2532,7 +2584,7 @@ Wichtige Regeln:
                             <div>
                               <span className="text-xs font-semibold text-emerald-900 block">API-Key aktiv & bestätigt</span>
                               <span className="text-[10px] text-emerald-700">
-                                {detectedModelInfo ? `Modell: ${detectedModelInfo}` : `Fest hinterlegt (${geminiKey.slice(0, 6)}...)`}
+                                {detectedModelInfo ? `Modell: ${detectedModelInfo}` : `Hinterlegt (${geminiKey.slice(0, 6)}...)`}
                               </span>
                             </div>
                           </div>
@@ -2565,11 +2617,11 @@ Wichtige Regeln:
                         <div className="flex gap-2">
                           <button
                             onClick={() => {
-                              const cleaned = tempKeyInput.trim() || DEFAULT_GEMINI_KEY;
+                              const cleaned = tempKeyInput.trim();
                               setGeminiKey(cleaned);
                               localStorage.setItem('kueche_gemini_key', cleaned);
                               setIsEditingKey(false);
-                              showToast('API-Key fest gespeichert!');
+                              showToast('API-Key gespeichert!');
                             }}
                             className="flex-1 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold"
                           >
