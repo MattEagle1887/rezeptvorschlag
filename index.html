@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#1c1917" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
+  
   <!-- PWA App-Icon & Manifest für Android / Chrome Installation -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%231c1917'/%3E%3Ccircle cx='256' cy='256' r='160' fill='%23849b82'/%3E%3Cpath d='M216 160v70c0 16 14 30 30 30v92h20V160h-16v56h-10v-56h-10v56h-10v-56h-4zm84 0c-18 0-32 18-32 48v44h18v100h18V160h-4z' fill='%23ffffff'/%3E%3C/svg%3E" />
@@ -19,7 +19,7 @@
       });
     }
   </script>
-  
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -46,7 +46,6 @@
     const { useState, useEffect, useMemo, useRef } = React;
 
     // SICHERHEIT: Keine öffentlichen Zugangsdaten im Quellcode!
-    // Nur wer den Einladungs-Link (?db=...&gemini=...) öffnet oder die Daten in den Settings einträgt, hat Zugriff auf eure Cloud.
     const DEFAULT_GEMINI_KEY = "";
     const DEFAULT_FIREBASE_URL = "";
 
@@ -100,32 +99,41 @@
       return { text: `Noch ${days} Tage${dateHint}`, urgent: false, expired: false };
     };
 
-    // Vollständige Start-Daten (für lokale Test-Besucher oder falls eine neue Datenbank leer initialisiert wird)
+    // Hilfsfunktion zur Berechnung der Gesamtsumme bei Packungs-Baukasten (Option 1)
+    const calcPacksSummary = (packs) => {
+      if (!Array.isArray(packs) || packs.length === 0) return null;
+      const totalAmount = packs.reduce((acc, p) => acc + (Number(p.count) || 0) * (Number(p.size) || 0), 0);
+      const totalPacks = packs.reduce((acc, p) => acc + (Number(p.count) || 0), 0);
+      const unit = packs[0]?.unit || 'g';
+      return { totalAmount, totalPacks, unit };
+    };
+
+    // Vollständige Start-Daten
     const SEED_DATA = {
       pantry: [
-        { id: 'p1', name: 'Rinderhackfleisch (Frisch)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(1), amount: 500, unitType: 'g', lowThreshold: 200 },
-        { id: 'p2', name: 'Zitronen (Bio)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(9), amount: 3, unitType: 'Stück', lowThreshold: 1 },
-        { id: 'p3', name: 'Parmesan (am Stück)', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(20), amount: 200, unitType: 'g', lowThreshold: 50 },
+        { id: 'p1', name: 'Rinderhackfleisch', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(1), amount: 500, unitType: 'g', lowThreshold: 200 },
+        { id: 'p2', name: 'Zitronen', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(9), amount: 3, unitType: 'Stück', lowThreshold: 1 },
+        { id: 'p3', name: 'Parmesan', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(20), amount: 200, unitType: 'g', lowThreshold: 50 },
         { id: 'p4', name: 'Butter', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(14), amount: 250, unitType: 'g', lowThreshold: 50 },
-        { id: 'p5', name: 'Frischer Rosmarin & Thymian (Terrasse)', category: 'fridge', status: 'low', expiryDate: getFutureDateStr(3), amount: 1, unitType: 'Topf', lowThreshold: 1 },
+        { id: 'p5', name: 'Rosmarin & Thymian', category: 'fridge', status: 'low', expiryDate: getFutureDateStr(3), amount: 1, unitType: 'Topf', lowThreshold: 1 },
         
-        { id: 'p6a', name: 'Tagliatelle', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
-        { id: 'p6b', name: 'Rigatoni', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', lowThreshold: 200 },
-        { id: 'p6c', name: 'Spaghetti', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 800, unitType: 'g', lowThreshold: 300 },
-        { id: 'p6d', name: 'Penne', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 400, unitType: 'g', lowThreshold: 200 },
-        { id: 'p7', name: 'Dosentomaten (San Marzano)', category: 'pantry', status: 'in_stock', amount: 4, unitType: 'Dosen', lowThreshold: 2 },
-        { id: 'p7b', name: 'Mutti Passata', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 'p8', name: 'Risottoreis / Basmati', category: 'pantry', status: 'in_stock', group: 'Reis', amount: 800, unitType: 'g', lowThreshold: 250 },
+        { id: 'p6a', name: 'Tagliatelle', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', packs: [{ size: 500, unit: 'g', count: 1 }], lowThreshold: 200 },
+        { id: 'p6b', name: 'Rigatoni', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 500, unitType: 'g', packs: [{ size: 500, unit: 'g', count: 1 }], lowThreshold: 200 },
+        { id: 'p6c', name: 'Spaghetti', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 1000, unitType: 'g', packs: [{ size: 500, unit: 'g', count: 2 }], lowThreshold: 300 },
+        { id: 'p6d', name: 'Penne', category: 'pantry', status: 'in_stock', group: 'Pasta', amount: 3000, unitType: 'g', packs: [{ size: 1000, unit: 'g', count: 2 }, { size: 500, unit: 'g', count: 2 }], lowThreshold: 200 },
+        { id: 'p7', name: 'Dosentomaten', category: 'pantry', status: 'in_stock', amount: 1600, unitType: 'g', packs: [{ size: 400, unit: 'g', count: 4 }], lowThreshold: 400 },
+        { id: 'p7b', name: 'Passata', category: 'pantry', status: 'in_stock', amount: 700, unitType: 'g', packs: [{ size: 700, unit: 'g', count: 1 }], lowThreshold: 350 },
+        { id: 'p8', name: 'Basmatireis', category: 'pantry', status: 'in_stock', group: 'Reis', amount: 800, unitType: 'g', lowThreshold: 250 },
         { id: 'p9', name: 'Zwiebeln & Knoblauch', category: 'pantry', status: 'in_stock', amount: 6, unitType: 'Stück', lowThreshold: 2 },
-        { id: 'p10', name: 'Apfelmus (Glas)', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
+        { id: 'p10', name: 'Apfelmus', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
         { id: 'p10b', name: 'Ketchup', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 'p11a', name: 'Rinderfond', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 2, unitType: 'Gläser', lowThreshold: 1 },
+        { id: 'p11a', name: 'Rinderfond', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 800, unitType: 'ml', packs: [{ size: 400, unit: 'ml', count: 2 }], lowThreshold: 200 },
         { id: 'p11b', name: 'Gemüsebrühe', category: 'pantry', status: 'in_stock', group: 'Fond', amount: 1, unitType: 'Gläser', lowThreshold: 1 },
-        { id: 'p12', name: 'Olivenöl Extra Vergine', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1, usesSinceOpen: 19, maxUses: 20 },
+        { id: 'p12', name: 'Olivenöl', category: 'pantry', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1, usesSinceOpen: 19, maxUses: 20 },
         { id: 'p13', name: 'Tomatenmark', category: 'pantry', status: 'in_stock', amount: 2, unitType: 'Tube', lowThreshold: 1 },
 
-        { id: 's_soja1', name: 'Sojasauce (helle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
-        { id: 's_soja2', name: 'Sojasauce (dunkle)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+        { id: 's_soja1', name: 'Sojasauce', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
+        { id: 's_soja2', name: 'Sojasauce (dunkel)', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
         { id: 's_essig1', name: 'Weißweinessig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
         { id: 's_essig2', name: 'Balsamico-Essig', category: 'sauces', status: 'in_stock', amount: 1, unitType: 'Flasche', lowThreshold: 1 },
 
@@ -136,10 +144,10 @@
         { id: 'sp_5', name: 'Tonkabohne', category: 'spices', status: 'in_stock' },
         { id: 'sp_6', name: 'Getrocknete Kräuter', category: 'spices', status: 'in_stock' },
 
-        { id: 'p14', name: 'Hähnchenbrustfilet (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 800, unitType: 'g', lowThreshold: 300 },
-        { id: 'p15', name: 'Hackfleisch-Reserve (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 1000, unitType: 'g', lowThreshold: 250 },
-        { id: 'p16', name: 'Merguez-Würstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 6, unitType: 'Stück', lowThreshold: 2 },
-        { id: 'p17', name: 'Nürnberger Rostbratwürstchen (TK)', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 12, unitType: 'Stück', lowThreshold: 6 },
+        { id: 'p14', name: 'Hähnchenbrustfilet', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 800, unitType: 'g', lowThreshold: 300 },
+        { id: 'p15', name: 'Hackfleisch-Reserve', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 1000, unitType: 'g', lowThreshold: 250 },
+        { id: 'p16', name: 'Merguez-Würstchen', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 6, unitType: 'Stück', lowThreshold: 2 },
+        { id: 'p17', name: 'Nürnberger Rostbratwürstchen', category: 'freezer_items', status: 'in_stock', subType: 'meat', amount: 12, unitType: 'Stück', lowThreshold: 6 },
         { id: 'p18', name: 'Fischstäbchen', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 6, unitType: 'Stück', lowThreshold: 5 },
         { id: 'p19', name: 'Kartoffelpuffer', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 5, unitType: 'Stück', lowThreshold: 3 },
         { id: 'p20', name: 'Pommes Frites', category: 'freezer_items', status: 'in_stock', subType: 'kid', amount: 300, unitType: 'g', lowThreshold: 200 },
@@ -147,24 +155,24 @@
         { id: 'p22', name: 'TK-Brokkoli', category: 'freezer_items', status: 'in_stock', subType: 'veggie', amount: 400, unitType: 'g', lowThreshold: 150 }
       ],
       mealPrep: [
-        { id: 'mp1', name: 'Ragù alla Bolognese', blocks500: 3, blocks250: 2, kcalPer100g: 210, needsFresh: ['Tagliatelle', 'Parmesan (am Stück)'], prepTime: 15, season: 'all' },
+        { id: 'mp1', name: 'Ragù alla Bolognese', blocks500: 3, blocks250: 2, kcalPer100g: 210, needsFresh: ['Tagliatelle', 'Parmesan'], prepTime: 15, season: 'all' },
         { id: 'mp2', name: 'Grünkohl (fertig geschmort)', blocks500: 2, blocks250: 1, kcalPer100g: 180, needsFresh: ['Kartoffeln', 'Mettenden / Kassler'], prepTime: 20, season: 'winter' },
         { id: 'mp3', name: 'Schmorkohl (Familienrezept)', blocks500: 2, blocks250: 0, kcalPer100g: 130, needsFresh: ['Kartoffeln'], prepTime: 20, season: 'winter' },
-        { id: 'mp4', name: 'Currysauce (Basis)', blocks500: 1, blocks250: 2, kcalPer100g: 160, needsFresh: ['Hähnchenbrustfilet (TK)', 'Risottoreis / Basmati'], prepTime: 20, season: 'all' }
+        { id: 'mp4', name: 'Currysauce (Basis)', blocks500: 1, blocks250: 2, kcalPer100g: 160, needsFresh: ['Hähnchenbrustfilet', 'Basmatireis'], prepTime: 20, season: 'all' }
       ],
       recipes: [
         {
           id: 'r0', title: 'Schnelle Hackfleisch-Pasta (Frische-Retter)', effort: 'quick', season: 'all', kcalPer100g: 215,
           isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 14, prepTime: 25,
           ingredients: [
-            { name: 'Rinderhackfleisch (Frisch)', amount: '500 g', essential: true },
-            { name: 'Mutti Passata', amount: '1 Flasche', essential: true },
+            { name: 'Rinderhackfleisch', amount: '500 g', essential: true },
+            { name: 'Passata', amount: '1 Flasche', essential: true },
             { name: 'Spaghetti', amount: '400 g', essential: true, isPasta: true },
-            { name: 'Parmesan (am Stück)', amount: '60 g', essential: true }
+            { name: 'Parmesan', amount: '60 g', essential: true }
           ],
           steps: [
             'Frisches Rinderhackfleisch krümelig und kräftig anbraten.',
-            'Mit Mutti Passata ablöschen und 15 Min. sämig einkochen.',
+            'Mit Passata ablöschen und 15 Min. sämig einkochen.',
             'Mit al dente gekochter Pasta und frisch geriebenem Parmesan servieren.'
           ]
         },
@@ -173,10 +181,10 @@
           isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 18, prepTime: 20,
           ingredients: [
             { name: 'Spaghetti', amount: '400 g Spaghetti', essential: true, isPasta: true },
-            { name: 'Zitronen (Bio)', amount: '2 Stück (Abrieb & Saft)', essential: true },
-            { name: 'Parmesan (am Stück)', amount: '80 g fein gerieben', essential: true },
+            { name: 'Zitronen', amount: '2 Stück (Abrieb & Saft)', essential: true },
+            { name: 'Parmesan', amount: '80 g fein gerieben', essential: true },
             { name: 'Butter', amount: '40 g (kalt)', essential: true },
-            { name: 'Olivenöl Extra Vergine', amount: '3 EL', essential: true }
+            { name: 'Olivenöl', amount: '3 EL', essential: true }
           ],
           steps: [
             'Spaghetti in reichlich (nur leicht gesalzenem) Wasser sehr al dente kochen.',
@@ -202,7 +210,7 @@
           ingredients: [
             { name: 'Ragù alla Bolognese (TK)', amount: '500g oder 750g Block', essential: true, isFromMealPrep: 'mp1' },
             { name: 'Tagliatelle', amount: '400 g (Alternativ: Jede andere Pasta)', essential: true, isPasta: true },
-            { name: 'Parmesan (am Stück)', amount: 'Zum Reiben', essential: true }
+            { name: 'Parmesan', amount: 'Zum Reiben', essential: true }
           ],
           steps: [
             'Gewünschte Silikonform-Blöcke schonend im Topf mit einem Schuss Wasser erwärmen.',
@@ -214,8 +222,8 @@
           isFamilyRecipe: true, isKidFriendly: true, isMealPrep: true, mealPrepId: 'mp4', isDraft: false, lastCookedDaysAgo: 34, prepTime: 25,
           ingredients: [
             { name: 'Currysauce (Basis) (TK)', amount: '500g Block', essential: true, isFromMealPrep: 'mp4' },
-            { name: 'Hähnchenbrustfilet (TK)', amount: '400 g', essential: true },
-            { name: 'Risottoreis / Basmati', amount: '250 g Basmatireis', essential: true }
+            { name: 'Hähnchenbrustfilet', amount: '400 g', essential: true },
+            { name: 'Basmatireis', amount: '250 g Basmatireis', essential: true }
           ],
           steps: [
             'Hähnchenbrust in Streifen schneiden und scharf anbraten.',
@@ -240,17 +248,17 @@
           isFamilyRecipe: false, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 21, prepTime: 15,
           ingredients: [
             { name: 'Kartoffelpuffer', amount: '3–4 Stück (TK)', essential: true },
-            { name: 'Apfelmus (Glas)', amount: '1 Schälchen', essential: true }
+            { name: 'Apfelmus', amount: '1 Schälchen', essential: true }
           ],
           steps: ['Kartoffelpuffer in der Pfanne goldbraun braten und mit Apfelmus servieren.']
         },
         {
-          id: 'r7', title: 'Pasta mit Öl & Parmesan (Kinderspaß)', effort: 'quick', season: 'all', kcalPer100g: 240,
+          id: 'r7', title: 'Pasta mit Öl & Parmesan', effort: 'quick', season: 'all', kcalPer100g: 240,
           isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 3, prepTime: 10,
           ingredients: [
             { name: 'Spaghetti', amount: '200 g (Jede Pasta geht)', essential: true, isPasta: true },
-            { name: 'Olivenöl Extra Vergine', amount: '3 EL', essential: true },
-            { name: 'Parmesan (am Stück)', amount: 'Viel geriebener Parmesan', essential: true }
+            { name: 'Olivenöl', amount: '3 EL', essential: true },
+            { name: 'Parmesan', amount: 'Viel geriebener Parmesan', essential: true }
           ],
           steps: ['Nudeln weich kochen, abgießen und mit gutem Olivenöl und Parmesan vermengen.']
         },
@@ -291,7 +299,7 @@
       reader.readAsDataURL(file);
     });
 
-    // DYNAMISCHER GEMINI AUFRUF (Findet automatisch das neueste aktive Flash-Modell)
+    // DYNAMISCHER GEMINI AUFRUF
     let cachedWorkingModel = null;
 
     async function callGeminiWithAutoModel(apiKey, promptText, base64Image = null) {
@@ -425,7 +433,6 @@
         }
       }, []);
 
-      // Erzeugt ein statisches, serverseitig lesbares Rezept-Objekt in Firebase (speziell für den Bring!-Parser)
       const buildBringParserPayload = (listItems) => {
         const cleanNames = (listItems || []).map(i => i.name.trim()).filter(Boolean);
         return {
@@ -502,7 +509,6 @@
         }
       };
 
-      // Initiales Laden: Entweder aus der Firebase-Cloud (falls eingeladen) ODER rein lokal im Browser (für fremde Besucher)
       useEffect(() => {
         const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
         if (!cleanUrl) {
@@ -567,7 +573,6 @@
         return () => clearInterval(interval);
       }, [firebaseUrl, isLoadedFromCloud]);
 
-      // Speichert Änderungen entweder in Firebase (wenn verbunden) oder nur lokal im Browser (für Gäste ohne Link)
       useEffect(() => {
         if (!isLoadedFromCloud || isApplyingRemote.current) return;
         const cleanUrl = (firebaseUrl || '').trim();
@@ -637,12 +642,27 @@
       const [editingMpKcalItem, setEditingMpKcalItem] = useState(null);
       const [editingMpKcalVal, setEditingMpKcalVal] = useState('');
 
+      // Modal für neuen Vorrat (inkl. Packungs-Baukasten Option)
       const [showNewPantryItemModal, setShowNewPantryItemModal] = useState(false);
       const [newPantryName, setNewPantryName] = useState('');
       const [newPantryAmount, setNewPantryAmount] = useState(1);
-      const [newPantryUnitType, setNewPantryUnitType] = useState('Flasche');
+      const [newPantryUnitType, setNewPantryUnitType] = useState('Packung');
+      const [newPantryPackWeight, setNewPantryPackWeight] = useState('500');
+      const [newPantryPackUnit, setNewPantryPackUnit] = useState('g');
       const [newPantryCategory, setNewPantryCategory] = useState('pantry');
       const [newPantryExpiryDate, setNewPantryExpiryDate] = useState('');
+
+      // NEU: Vollständiger Editier-Dialog für bestehende Vorräte (Name, Kategorie, MHD, Packungs-Baukasten)
+      const [editingFullPantryItem, setEditingFullPantryItem] = useState(null);
+      const [editPantryName, setEditPantryName] = useState('');
+      const [editPantryCategory, setEditPantryCategory] = useState('pantry');
+      const [editPantryAmount, setEditPantryAmount] = useState(1);
+      const [editPantryUnitType, setEditPantryUnitType] = useState('g');
+      const [editPantryPacks, setEditPantryPacks] = useState([]);
+      const [editNewPackSize, setEditNewPackSize] = useState('');
+      const [editNewPackUnit, setEditNewPackUnit] = useState('g');
+      const [editNewPackCount, setEditNewPackCount] = useState(1);
+      const [editPantryExpiryDate, setEditPantryExpiryDate] = useState('');
 
       const [editingExpiryItem, setEditingExpiryItem] = useState(null);
       const [editingExpiryDateVal, setEditingExpiryDateVal] = useState('');
@@ -667,6 +687,123 @@
       const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
       const [newShopItemName, setNewShopItemName] = useState('');
       const recognitionRef = useRef(null);
+
+      // Öffnet das vollständige Bearbeitungs-Fenster (✏️) für einen Vorrat
+      const openFullEditModal = (item) => {
+        setEditingFullPantryItem(item);
+        setEditPantryName(item.name || '');
+        setEditPantryCategory(item.category || 'pantry');
+        setEditPantryAmount(item.amount !== undefined ? item.amount : 1);
+        setEditPantryUnitType(item.unitType || 'Stück');
+        setEditPantryPacks(Array.isArray(item.packs) ? item.packs.map(p => ({ ...p })) : []);
+        setEditNewPackSize('');
+        setEditNewPackUnit(item.packs?.[0]?.unit || (item.unitType === 'ml' ? 'ml' : 'g'));
+        setEditNewPackCount(1);
+        const daysLeft = getDaysUntilExpiry(item);
+        setEditPantryExpiryDate(item.expiryDate || (daysLeft !== undefined ? getFutureDateStr(daysLeft) : ''));
+      };
+
+      const handleSaveFullEditPantryItem = () => {
+        if (!editingFullPantryItem || !editPantryName.trim()) return;
+        const cleanName = editPantryName.trim();
+        const lowerClean = cleanName.toLowerCase();
+        const isSpice = editPantryCategory === 'spices';
+
+        // Falls im Edit-Modal unten noch eine neue Packungsgröße eingetippt, aber noch nicht auf "+" geklickt wurde, automatisch mitnehmen:
+        let finalPacks = [...editPantryPacks].filter(p => Number(p.size) > 0 && Number(p.count) >= 0);
+        if (Number(editNewPackSize) > 0 && Number(editNewPackCount) > 0) {
+          const s = Number(editNewPackSize);
+          const c = Number(editNewPackCount);
+          const u = editNewPackUnit || 'g';
+          const existingIdx = finalPacks.findIndex(p => Number(p.size) === s && p.unit === u);
+          if (existingIdx !== -1) {
+            finalPacks[existingIdx].count += c;
+          } else {
+            finalPacks.push({ size: s, unit: u, count: c });
+          }
+        }
+        finalPacks.sort((a, b) => Number(b.size) - Number(a.size));
+
+        let cleanAmount = isSpice ? undefined : Math.max(0, Number(editPantryAmount));
+        let unit = isSpice ? undefined : editPantryUnitType;
+
+        if (!isSpice && finalPacks.length > 0) {
+          const sum = calcPacksSummary(finalPacks);
+          cleanAmount = sum.totalAmount;
+          unit = sum.unit;
+        }
+
+        const threshold = unit === 'g' || unit === 'ml' ? 200 : 1;
+        let nextStatus = 'in_stock';
+        if (!isSpice) {
+          if (cleanAmount === 0) nextStatus = 'empty';
+          else if (cleanAmount <= threshold) nextStatus = 'low';
+        }
+
+        let detectedGroup = editingFullPantryItem.group;
+        if (lowerClean.includes('tagliatelle') || lowerClean.includes('rigatoni') || lowerClean.includes('spaghetti') || lowerClean.includes('penne') || lowerClean.includes('pasta') || lowerClean.includes('nudeln') || lowerClean.includes('fusilli') || lowerClean.includes('farfalle')) {
+          detectedGroup = 'Pasta';
+        } else if (lowerClean.includes('fond') || lowerClean.includes('brühe')) {
+          detectedGroup = 'Fond';
+        } else if (lowerClean.includes('reis')) {
+          detectedGroup = 'Reis';
+        }
+
+        setPantry(prev => prev.map(p => {
+          if (p.id !== editingFullPantryItem.id) return p;
+          return {
+            ...p,
+            name: cleanName,
+            category: editPantryCategory,
+            amount: cleanAmount,
+            unitType: unit,
+            packs: (!isSpice && finalPacks.length > 0) ? finalPacks : undefined,
+            lowThreshold: threshold,
+            status: nextStatus,
+            group: detectedGroup,
+            expiryDate: editPantryExpiryDate ? editPantryExpiryDate : undefined,
+            expiryDays: undefined
+          };
+        }));
+
+        setEditingFullPantryItem(null);
+        showToast(`"${cleanName}" gespeichert!`);
+      };
+
+      // Packungs-Anzahl in einer Vorratskarte direkt per [-] / [+] anpassen (Option 1)
+      const updatePackCount = (itemId, packIndex, delta) => {
+        setPantry(prev => prev.map(item => {
+          if (item.id !== itemId || !Array.isArray(item.packs)) return item;
+          const nextPacks = item.packs.map((pk, idx) => {
+            if (idx !== packIndex) return pk;
+            return { ...pk, count: Math.max(0, (Number(pk.count) || 0) + delta) };
+          });
+          const summary = calcPacksSummary(nextPacks);
+          const cleanAmount = summary ? summary.totalAmount : 0;
+          const unit = summary ? summary.unit : item.unitType;
+          const threshold = item.lowThreshold || (unit === 'g' || unit === 'ml' ? 200 : 1);
+
+          let nextStatus = 'in_stock';
+          if (cleanAmount === 0) nextStatus = 'empty';
+          else if (cleanAmount <= threshold) nextStatus = 'low';
+
+          if (nextStatus === 'empty' && item.status !== 'empty') {
+            setShoppingList(sl => {
+              if (sl.some(s => s.name.toLowerCase() === item.name.toLowerCase())) return sl;
+              return [...sl, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }];
+            });
+            showToast(`${item.name} ist leer → Einkaufsliste`);
+          }
+
+          return {
+            ...item,
+            packs: nextPacks,
+            amount: cleanAmount,
+            unitType: unit,
+            status: nextStatus
+          };
+        }));
+      };
 
       // Bald ablaufende Artikel (<= 2 Tage)
       const urgentExpiringItems = useMemo(() => {
@@ -741,7 +878,8 @@
         if (mpToDelete) showToast(`"${mpToDelete.name}" aus TK gelöscht`);
       };
 
-      const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined) => {
+      // Intelligentes Hinzufügen oder Aufstocken (Unterstützt Option 1 Packungs-Baukasten!)
+      const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined, packSizeNum = undefined, packUnitStr = undefined) => {
         const cleanName = name.trim();
         if (!cleanName) return;
         const lowerClean = cleanName.toLowerCase();
@@ -756,6 +894,11 @@
           resolvedExpiryDate = getFutureDateStr(5);
         }
 
+        const hasPackInfo = Number(packSizeNum) > 0;
+        const pSize = Number(packSizeNum);
+        const pUnit = packUnitStr || (unit === 'ml' || unit === 'Flasche' ? 'ml' : 'g');
+        const pCount = Math.max(1, Number(amountToAdd) || 1);
+
         const existingIndex = pantry.findIndex(p => {
           const pLower = p.name.toLowerCase();
           return pLower === lowerClean || pLower.includes(lowerClean) || lowerClean.includes(pLower);
@@ -766,6 +909,39 @@
           setPantry(prev => prev.map((item, idx) => {
             if (idx !== existingIndex) return item;
             if (item.category === 'spices') return { ...item, status: 'in_stock' };
+
+            // Fall A: Artikel nutzt bereits den Packungs-Baukasten ODER es wurde eine Packungsgröße übergeben
+            if (hasPackInfo || (Array.isArray(item.packs) && item.packs.length > 0)) {
+              let nextPacks = Array.isArray(item.packs) ? item.packs.map(pk => ({ ...pk })) : [];
+              // Falls der bestehende Artikel bisher ohne Baukasten in g/ml war, überführe alten Bestand in ersten Baustein
+              if (nextPacks.length === 0 && (item.unitType === 'g' || item.unitType === 'ml') && item.amount > 0) {
+                nextPacks.push({ size: item.amount, unit: item.unitType, count: 1 });
+              }
+
+              const targetSize = hasPackInfo ? pSize : ( (unit === 'g' || unit === 'ml') && Number(amountToAdd) >= 100 ? Number(amountToAdd) : (nextPacks[0]?.size || 500) );
+              const targetUnit = hasPackInfo ? pUnit : (nextPacks[0]?.unit || item.unitType || 'g');
+              const addCount = hasPackInfo ? pCount : ( (unit === 'g' || unit === 'ml') && Number(amountToAdd) >= 100 ? 1 : pCount );
+
+              const packIdx = nextPacks.findIndex(pk => Number(pk.size) === Number(targetSize) && pk.unit === targetUnit);
+              if (packIdx !== -1) {
+                nextPacks[packIdx].count = (Number(nextPacks[packIdx].count) || 0) + addCount;
+              } else {
+                nextPacks.push({ size: targetSize, unit: targetUnit, count: addCount });
+              }
+              nextPacks.sort((a, b) => Number(b.size) - Number(a.size));
+
+              const sum = calcPacksSummary(nextPacks);
+              return {
+                ...item,
+                packs: nextPacks,
+                amount: sum.totalAmount,
+                unitType: sum.unit,
+                status: 'in_stock',
+                ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
+              };
+            }
+
+            // Fall B: Normaler Einzel-Zähler (z.B. 3 Zitronen + 2 Zitronen)
             const currentAmt = item.amount !== undefined ? Number(item.amount) : 0;
             return {
               ...item,
@@ -774,16 +950,33 @@
               ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
             };
           }));
-          showToast(`"${matchedItem.name}" aufgestockt (+${amountToAdd} ${matchedItem.unitType || unit})!`);
+
+          if (hasPackInfo) {
+            showToast(`"${matchedItem.name}": +${pCount}× ${pSize}${pUnit} Packung hinzugefügt!`);
+          } else {
+            showToast(`"${matchedItem.name}" aufgestockt (+${amountToAdd} ${matchedItem.unitType || unit})!`);
+          }
         } else {
+          // Neuen Artikel anlegen
+          const initialPacks = (targetCat !== 'spices' && hasPackInfo)
+            ? [{ size: pSize, unit: pUnit, count: pCount }]
+            : undefined;
+          const finalAmount = targetCat === 'spices'
+            ? undefined
+            : (initialPacks ? pSize * pCount : Number(amountToAdd));
+          const finalUnit = targetCat === 'spices'
+            ? undefined
+            : (initialPacks ? pUnit : unit);
+
           const newItem = {
             id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
             name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
             category: targetCat,
             status: 'in_stock',
-            amount: targetCat === 'spices' ? undefined : Number(amountToAdd),
-            unitType: targetCat === 'spices' ? undefined : unit,
-            lowThreshold: unit === 'g' || unit === 'ml' ? 150 : 1,
+            amount: finalAmount,
+            unitType: finalUnit,
+            ...(initialPacks ? { packs: initialPacks } : {}),
+            lowThreshold: finalUnit === 'g' || finalUnit === 'ml' ? 200 : 1,
             ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate } : {}),
             ...(lowerClean.includes('tagliatelle') || lowerClean.includes('rigatoni') || lowerClean.includes('spaghetti') || lowerClean.includes('penne') || lowerClean.includes('pasta') ? { group: 'Pasta' } : {}),
             ...(lowerClean.includes('fond') || lowerClean.includes('brühe') ? { group: 'Fond' } : {})
@@ -919,7 +1112,16 @@
       const handleAddPantryItem = () => {
         if (!newPantryName.trim()) return;
         const expToSave = newPantryExpiryDate ? newPantryExpiryDate : null;
-        addOrUpdatePantryItem(newPantryName, Number(newPantryAmount) || 1, newPantryUnitType, newPantryCategory, expToSave);
+        const usesContainerPack = ['Packung', 'Dosen', 'Flasche', 'Gläser', 'Tube'].includes(newPantryUnitType) && Number(newPantryPackWeight) > 0;
+        addOrUpdatePantryItem(
+          newPantryName,
+          Number(newPantryAmount) || 1,
+          newPantryUnitType,
+          newPantryCategory,
+          expToSave,
+          usesContainerPack ? Number(newPantryPackWeight) : undefined,
+          usesContainerPack ? newPantryPackUnit : undefined
+        );
         setNewPantryName('');
         setNewPantryExpiryDate('');
         setShowNewPantryItemModal(false);
@@ -1042,7 +1244,7 @@
         showToast('Aus dem Kochplan entfernt');
       };
 
-      // OFFIZIELLER BRING!-EXPORT (Nutzt die statische Firebase-JSON-URL)
+      // OFFIZIELLER BRING!-EXPORT
       const triggerOfficialBringImport = async () => {
         if (shoppingList.length === 0) return;
         const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
@@ -1063,7 +1265,7 @@
         window.open(officialDeepLink, '_blank');
       };
 
-      // FOTO-SCAN MIT AUTOMATISCHER MODELL- & MHD-ERKENNUNG
+      // FOTO-SCAN: Ignoriert jetzt Marken ("Bamboo Garden" -> "Sojasauce") und erkennt Packungsgrößen (z.B. 1000g Penne)!
       const handleFileSelected = async (e, scanType = 'pantry') => {
         const file = e.target.files[0];
         if (!file) return;
@@ -1078,8 +1280,14 @@
           const base64Data = await compressImageToBase64(file, 1024, 0.75);
 
           const prompt = scanType === 'recipe'
-            ? `Analysiere diese abfotografierte Kochbuchseite und antworte NUR mit reinem JSON: {"title": "Name des Gerichts", "prepTime": 30, "kcalPer100g": 180, "ingredients": [{"name": "Zutat", "amount": "Menge"}], "steps": ["Schritt 1", "Schritt 2"]}`
-            : `Heute ist ${todayStr}. Erkenne das fotografierte Lebensmittel oder den Kassenbon. Falls ein Haltbarkeitsdatum (MHD) lesbar ist, gib es als YYYY-MM-DD in "expiryDate" an (sonst bei frischen Kühlschrank-Produkten geschätztes Datum in 2-5 Tagen). Antworte NUR mit reinem JSON: {"items": [{"name": "Genauer Produktname (z.B. Mutti Passata)", "amount": 1, "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDate": "YYYY-MM-DD"}]}`;
+            ? `Analysiere diese abfotografierte Kochbuchseite und antworte NUR mit reinem JSON: {"title": "Name des Gerichts", "prepTime": 30, "kcalPer100g": 180, "ingredients": [{"name": "Zutat (ohne Markennamen)", "amount": "Menge"}], "steps": ["Schritt 1", "Schritt 2"]}`
+            : `Heute ist ${todayStr}. Erkenne das fotografierte Lebensmittel oder den Kassenbon.
+WICHTIGE REGELN:
+1. KEINE MARKENNAMEN! Speichere immer nur den reinen Gattungsbegriff (z.B. "Sojasauce" statt "Bamboo Garden Sojasauce", "Penne" statt "Barilla Penne", "Passata" statt "Mutti Passata").
+2. PACKUNGSGEWICHT ERKENNEN: Wenn auf einer Packung/Dose/Flasche ein Gewicht oder Volumen steht (z.B. 1 kg = 1000 g Penne, 500 g Spaghetti, 400 g Dosentomaten), gib "packSize": 1000 (als Zahl in g oder ml), "packUnit": "g"|"ml" und "packCount": 1 an!
+3. Falls ein Haltbarkeitsdatum (MHD) lesbar ist, gib es als YYYY-MM-DD in "expiryDate" an.
+Antworte NUR mit reinem JSON:
+{"items": [{"name": "Reiner Produktname ohne Marke", "amount": 1, "unitType": "Packung|Flasche|Dosen|Stück|g|ml|Tube", "packSize": 1000, "packUnit": "g", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDate": "YYYY-MM-DD"}]}`;
 
           const { text: rawText, usedModel } = await callGeminiWithAutoModel(activeKey, prompt, base64Data);
           setDetectedModelInfo(usedModel);
@@ -1104,7 +1312,16 @@
             showToast(`Rezept "${newRec.title}" eingescannt!`);
           } else if (parsed.items && parsed.items.length > 0) {
             parsed.items.forEach(it => {
-              addOrUpdatePantryItem(it.name, it.amount || 1, it.unitType || 'Stück', it.category || 'pantry', it.expiryDate);
+              const hasDetectedPack = Number(it.packSize) > 0;
+              addOrUpdatePantryItem(
+                it.name,
+                it.amount || 1,
+                it.unitType || 'Stück',
+                it.category || 'pantry',
+                it.expiryDate || null,
+                hasDetectedPack ? Number(it.packSize) : undefined,
+                hasDetectedPack ? (it.packUnit || 'g') : undefined
+              );
             });
           }
         } catch (err) {
@@ -1174,7 +1391,7 @@
         startListening();
       };
 
-      // GEMINI KI SPRACH-INTERPRETER
+      // GEMINI KI SPRACH-INTERPRETER (Unterstützt Vorräte, Packungsgrößen UND das Anlegen neuer Rezepte wie "Senfeier"!)
       const executeVoiceCommand = async (rawCmdText) => {
         if (!rawCmdText || !rawCmdText.trim()) return;
         stopListening();
@@ -1185,7 +1402,7 @@
 
         try {
           setIsProcessingVoice(true);
-          const voicePrompt = `Du bist der smarte Küchen-Assistent einer Vorrats-App.
+          const voicePrompt = `Du bist der smarte Küchen-Assistent einer Vorrats- und Rezept-App.
 Heute ist ${todayStr}.
 Aktuell im Bestand vorhandene Artikel: [${existingNames}].
 Der Nutzer hat folgenden Sprachbefehl eingesprochen: "${rawCmdText.trim()}"
@@ -1194,21 +1411,32 @@ Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSO
 {
   "actions": [
     {
-      "type": "add_or_increment" | "set_exact" | "delete" | "mealprep_add" | "query",
-      "name": "Sauberer Produktname (Falls im Bestand vorhanden, nutze exakt den vorhandenen Namen!)",
+      "type": "add_or_increment" | "set_exact" | "delete" | "mealprep_add" | "create_recipe" | "query",
+      "name": "Sauberer Produktname OHNE Markennamen (Falls im Bestand vorhanden, nutze exakt den vorhandenen Namen!)",
       "amount": 1,
-      "unitType": "Flasche|Dosen|Stück|g|ml|Packung|Tube|Gläser",
+      "unitType": "Packung|Flasche|Dosen|Stück|g|ml|Tube|Gläser",
+      "packSize": null,
+      "packUnit": "g",
       "category": "pantry|fridge|freezer_items|sauces|spices",
       "expiryDate": "YYYY-MM-DD (nur falls Kühlschrank/Frischware oder MHD genannt, sonst null)",
       "blocks500": 1,
       "blocks250": 0,
+      "recipe": {
+        "title": "Name des Gerichts",
+        "prepTime": 25,
+        "kcalPer100g": 180,
+        "isKidFriendly": true,
+        "ingredients": [{"name": "Zutat", "amount": "Menge"}],
+        "steps": ["Schritt 1", "Schritt 2"]
+      },
       "answerText": "Antwort-Text falls der Nutzer eine Frage gestellt hat"
     }
   ]
 }
 Wichtige Regeln:
-- Entferne alle Befehlswörter ("füge hinzu", "packe in den Kühlschrank") aus dem Produktnamen!
-- Beispiel: "10g Pancetta" -> type: "add_or_increment", name: "Pancetta", amount: 10, unitType: "g", category: "fridge".`;
+- Lass Markennamen immer weg ("Bamboo Garden Sojasauce" -> "Sojasauce").
+- Wenn der Nutzer Packungsgrößen nennt (z.B. "zwei 1-Kilo Packungen Penne"), setze type: "add_or_increment", name: "Penne", amount: 2, packSize: 1000, packUnit: "g", category: "pantry".
+- Wenn der Nutzer ein neues Rezept anlegen möchte (z.B. "Rezept für Senfeier anlegen"), setze type: "create_recipe" und fülle das Objekt "recipe" komplett mit typischen Zutaten und Zubereitungsschritten aus!`;
 
           const { text: aiResponse } = await callGeminiWithAutoModel(activeKey, voicePrompt);
           const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
@@ -1219,6 +1447,25 @@ Wichtige Regeln:
             parsed.actions.forEach(act => {
               if (act.type === 'query' && act.answerText) {
                 showToast(act.answerText);
+              } else if (act.type === 'create_recipe' && act.recipe) {
+                const r = act.recipe;
+                const newRec = {
+                  id: 'r_' + Date.now(),
+                  title: r.title || act.name || 'Neues Rezept',
+                  effort: (Number(r.prepTime) || 25) <= 30 ? 'quick' : 'elaborate',
+                  season: 'all',
+                  kcalPer100g: Number(r.kcalPer100g) || 180,
+                  isFamilyRecipe: true,
+                  isKidFriendly: Boolean(r.isKidFriendly),
+                  isMealPrep: false,
+                  isDraft: false,
+                  lastCookedDaysAgo: 99,
+                  prepTime: Number(r.prepTime) || 25,
+                  ingredients: (r.ingredients || []).map(i => ({ name: i.name, amount: i.amount || 'Nach Bedarf', essential: true })),
+                  steps: r.steps || ['Frisch zubereiten.']
+                };
+                setRecipes(prev => [newRec, ...prev]);
+                showToast(`Rezept "${newRec.title}" mit Zutaten angelegt!`);
               } else if (act.type === 'delete') {
                 const found = pantry.find(p => p.name.toLowerCase().includes((act.name || '').toLowerCase()));
                 if (found) deletePantryItem(found.id);
@@ -1238,12 +1485,15 @@ Wichtige Regeln:
                 }, ...prev]);
                 showToast(`Im TK angelegt: ${act.name}`);
               } else {
+                const hasPack = Number(act.packSize) > 0;
                 addOrUpdatePantryItem(
                   act.name || rawCmdText,
                   Number(act.amount) || 1,
                   act.unitType || 'Stück',
                   act.category || 'pantry',
-                  act.expiryDate || undefined
+                  act.expiryDate || undefined,
+                  hasPack ? Number(act.packSize) : undefined,
+                  hasPack ? (act.packUnit || 'g') : undefined
                 );
               }
             });
@@ -1274,7 +1524,7 @@ Wichtige Regeln:
           {isAnalyzingPhoto && (
             <div className="fixed inset-0 bg-black/60 z-50 flex flex-col items-center justify-center p-6 text-white space-y-3 text-center">
               <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm font-semibold">Gemini analysiert dein Foto & Haltbarkeit...</p>
+              <p className="text-sm font-semibold">Gemini erkennt Produkt (ohne Marke) & Packungsgewicht...</p>
             </div>
           )}
 
@@ -1333,14 +1583,14 @@ Wichtige Regeln:
               <div className="flex items-start gap-3">
                 <Icon name="alert-circle" size={18} className="text-amber-700 mt-0.5" />
                 <div className="text-xs text-amber-900">
-                  <p className="font-semibold">Mitdenk-Zähler: Olivenöl Extra Vergine</p>
+                  <p className="font-semibold">Mitdenk-Zähler: Olivenöl</p>
                   <p className="mt-0.5 text-amber-800">Du hast jetzt 20x mit dieser Flasche gekocht. Wird sie langsam knapp?</p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: 'Olivenöl Extra Vergine', reason: '20x genutzt', done: false }]);
+                    setShoppingList(prev => [...prev, { id: 's_' + Date.now(), name: 'Olivenöl', reason: '20x genutzt', done: false }]);
                     setOliveOilAlert(false);
                     showToast('Olivenöl auf die Einkaufsliste gesetzt');
                   }}
@@ -1463,7 +1713,7 @@ Wichtige Regeln:
                   )}
                 </div>
 
-                {/* KOMPAKTE STARTSEITEN-KACHELN MIT EXAKTER BENENNUNG OHNE UNTERZEILE */}
+                {/* KOMPAKTE STARTSEITEN-KACHELN */}
                 <div className="space-y-2">
                   <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 px-1">Vorräte & Einkäufe einpflegen</span>
                   <div className="grid grid-cols-2 gap-2.5">
@@ -1752,7 +2002,7 @@ Wichtige Regeln:
               </div>
             )}
 
-            {/* TAB: VORRÄTE & TK (REITER OBEN, SUCHLEISTE DIREKT DARUNTER ÜBER DEN VORRÄTEN) */}
+            {/* TAB: VORRÄTE & TK */}
             {activeTab === 'pantry' && (
               <div className="space-y-3.5">
                 {/* 1. GRÖSSERE, GUT LESBARE REITER IM 3x2 RASTER OBEN */}
@@ -1780,14 +2030,14 @@ Wichtige Regeln:
                   ))}
                 </div>
 
-                {/* 2. SUCHLEISTE DIREKT UNTER DEN REITERN / ÜBER DEN VORRÄTEN */}
+                {/* 2. SUCHLEISTE DIREKT UNTER DEN REITERN */}
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
                     <Icon name="search" size={15} />
                   </span>
                   <input
                     type="text"
-                    placeholder="Vorrat schnell suchen (z.B. Pancetta, Passata)..."
+                    placeholder="Vorrat schnell suchen (z.B. Penne, Passata)..."
                     value={pantrySearchQuery}
                     onChange={e => setPantrySearchQuery(e.target.value)}
                     className="w-full bg-white border border-stone-300 rounded-xl pl-9 pr-8 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-600 shadow-sm"
@@ -1912,7 +2162,7 @@ Wichtige Regeln:
                           {pantrySearchQuery ? `Suchergebnisse (${displayedPantryItems.length})` : 'Bestandsliste (Alphabetisch A–Z)'}
                         </span>
                         <span className="text-[11px] text-stone-500">
-                          Tippe auf das MHD-Datum zum Anpassen
+                          Stift-Icon (✏️) zum Bearbeiten von Namen & Packungsgrößen
                         </span>
                       </div>
                       <button
@@ -1932,6 +2182,9 @@ Wichtige Regeln:
                     {displayedPantryItems.map(item => {
                       const daysLeft = getDaysUntilExpiry(item);
                       const badge = formatExpiryBadge(daysLeft, item.expiryDate);
+                      const hasPacks = Array.isArray(item.packs) && item.packs.length > 0;
+                      const packSummary = hasPacks ? calcPacksSummary(item.packs) : null;
+
                       return (
                         <div key={item.id} className="bg-white border border-stone-200 rounded-xl p-3.5 space-y-2.5">
                           <div className="flex items-start justify-between gap-2">
@@ -1963,12 +2216,17 @@ Wichtige Regeln:
                               )}
                             </div>
 
-                            <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center gap-1 shrink-0">
                               {['in_stock', 'low', 'empty'].map(st => (
                                 <button
                                   key={st}
                                   onClick={() => {
-                                    setPantry(prev => prev.map(p => p.id === item.id ? { ...p, status: st, ...(st === 'empty' && p.amount !== undefined ? { amount: 0 } : {}) } : p));
+                                    setPantry(prev => prev.map(p => p.id === item.id ? {
+                                      ...p,
+                                      status: st,
+                                      ...(st === 'empty' && p.amount !== undefined ? { amount: 0 } : {}),
+                                      ...(st === 'empty' && Array.isArray(p.packs) ? { packs: p.packs.map(pk => ({ ...pk, count: 0 })) } : {})
+                                    } : p));
                                     if (st === 'empty') {
                                       setShoppingList(prev => {
                                         if (prev.some(s => s.name.toLowerCase() === item.name.toLowerCase())) return prev;
@@ -1988,9 +2246,17 @@ Wichtige Regeln:
                                   {st === 'in_stock' ? 'Da' : st === 'low' ? 'Knapp' : 'Leer'}
                                 </button>
                               ))}
+                              {/* NEU: EDITIER-BUTTON (STIFT) */}
+                              <button
+                                onClick={() => openFullEditModal(item)}
+                                className="text-stone-500 hover:text-stone-900 p-1.5 ml-0.5 rounded hover:bg-stone-100"
+                                title="Name, Einheiten & Packungsgrößen bearbeiten"
+                              >
+                                <Icon name="edit-3" size={15} />
+                              </button>
                               <button
                                 onClick={() => deletePantryItem(item.id)}
-                                className="text-stone-400 hover:text-red-600 p-1 ml-1"
+                                className="text-stone-400 hover:text-red-600 p-1"
                                 title="Vorrat löschen"
                               >
                                 <Icon name="trash-2" size={15} />
@@ -1998,33 +2264,81 @@ Wichtige Regeln:
                             </div>
                           </div>
 
-                          {item.amount !== undefined && (
-                            <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
-                              <span className="text-xs text-stone-500">Restbestand:</span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => updatePantryAmount(item.id, item.amount - (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))}
-                                  className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center text-stone-700 font-bold text-xs active:bg-stone-100"
-                                >
-                                  -
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingAmountItem(item);
-                                    setEditingAmountValue(String(item.amount));
-                                  }}
-                                  className="px-2.5 py-1 rounded bg-white border border-stone-300 text-xs font-semibold text-stone-900 min-w-[68px] text-center hover:border-stone-500"
-                                >
-                                  {item.amount} {item.unitType}
-                                </button>
-                                <button
-                                  onClick={() => updatePantryAmount(item.id, item.amount + (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))}
-                                  className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center font-bold text-xs active:bg-stone-700"
-                                >
-                                  +
-                                </button>
+                          {/* OPTION 1: PACKUNGS-BAUKASTEN ANZEIGE (z.B. 2x 1000g + 2x 500g = 3000g) */}
+                          {hasPacks ? (
+                            <div className="bg-stone-50 border border-stone-200 rounded-xl p-2.5 space-y-2">
+                              <div className="flex items-center justify-between border-b border-stone-200/80 pb-1.5">
+                                <span className="text-[11px] font-semibold text-stone-600">
+                                  Gesamtbestand ({packSummary.totalPacks} {packSummary.totalPacks === 1 ? 'Packung' : 'Packungen'}):
+                                </span>
+                                <span className="text-xs font-bold text-stone-900 bg-white px-2 py-0.5 rounded border border-stone-200">
+                                  {packSummary.totalAmount} {packSummary.unit}
+                                </span>
                               </div>
+
+                              <div className="space-y-1.5">
+                                {item.packs.map((pk, pIdx) => (
+                                  <div key={pIdx} className="bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+                                    <div>
+                                      <span className="text-xs font-semibold text-stone-800">{pk.size} {pk.unit} Packung</span>
+                                      <span className="text-[11px] text-stone-500 ml-1.5">({pk.count} Stk.)</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        onClick={() => updatePackCount(item.id, pIdx, -1)}
+                                        className="w-7 h-7 rounded bg-stone-100 hover:bg-stone-200 border border-stone-300 flex items-center justify-center text-stone-800 font-bold text-xs"
+                                      >
+                                        -
+                                      </button>
+                                      <span className="text-xs font-semibold min-w-[20px] text-center">{pk.count}</span>
+                                      <button
+                                        onClick={() => updatePackCount(item.id, pIdx, 1)}
+                                        className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center font-bold text-xs"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <button
+                                onClick={() => openFullEditModal(item)}
+                                className="w-full py-1 text-[11px] font-medium text-stone-600 hover:text-stone-900 flex items-center justify-center gap-1"
+                              >
+                                <Icon name="plus" size={11} />
+                                <span>Weitere Packungsgröße (z.B. 500g / 1000g)</span>
+                              </button>
                             </div>
+                          ) : (
+                            item.amount !== undefined && (
+                              <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                                <span className="text-xs text-stone-500">Restbestand:</span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => updatePantryAmount(item.id, item.amount - (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))}
+                                    className="w-7 h-7 rounded bg-white border border-stone-300 flex items-center justify-center text-stone-700 font-bold text-xs active:bg-stone-100"
+                                  >
+                                    -
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingAmountItem(item);
+                                      setEditingAmountValue(String(item.amount));
+                                    }}
+                                    className="px-2.5 py-1 rounded bg-white border border-stone-300 text-xs font-semibold text-stone-900 min-w-[68px] text-center hover:border-stone-500"
+                                  >
+                                    {item.amount} {item.unitType}
+                                  </button>
+                                  <button
+                                    onClick={() => updatePantryAmount(item.id, item.amount + (item.unitType === 'g' || item.unitType === 'ml' ? 50 : 1))}
+                                    className="w-7 h-7 rounded bg-stone-900 text-white flex items-center justify-center font-bold text-xs active:bg-stone-700"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            )
                           )}
                         </div>
                       );
@@ -2389,6 +2703,225 @@ Wichtige Regeln:
             )}
           </main>
 
+          {/* NEU: MODAL ZUM VOLLSTÄNDIGEN BEARBEITEN EINES VORRATS (INKL. OPTION 1 PACKUNGS-BAUKASTEN) */}
+          {editingFullPantryItem && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-stone-900">Vorrat bearbeiten</h3>
+                  <button onClick={() => setEditingFullPantryItem(null)} className="text-stone-400">
+                    <Icon name="x" size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-stone-600 block mb-1">Bezeichnung (ohne Marke)</label>
+                    <input
+                      type="text"
+                      value={editPantryName}
+                      onChange={e => setEditPantryName(e.target.value)}
+                      className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-stone-600 block mb-1">Lagerort / Kategorie</label>
+                    <select
+                      value={editPantryCategory}
+                      onChange={e => setEditPantryCategory(e.target.value)}
+                      className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
+                    >
+                      <option value="pantry">Vorratsschrank</option>
+                      <option value="fridge">Kühlschrank</option>
+                      <option value="freezer_items">Tiefkühler</option>
+                      <option value="sauces">Öle und Soßen</option>
+                      <option value="spices">Gewürzschrank (ohne Einheit)</option>
+                    </select>
+                  </div>
+
+                  {editPantryCategory !== 'spices' && (
+                    <>
+                      {/* PACKUNGS-BAUKASTEN (OPTION 1) */}
+                      <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-stone-800">Packungs-Baukasten (z.B. 500g & 1000g)</span>
+                          {editPantryPacks.length > 0 && (
+                            <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              Summe: {calcPacksSummary(editPantryPacks)?.totalAmount} {calcPacksSummary(editPantryPacks)?.unit}
+                            </span>
+                          )}
+                        </div>
+
+                        {editPantryPacks.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {editPantryPacks.map((pk, idx) => (
+                              <div key={idx} className="bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-xs">
+                                <span className="font-semibold">{pk.size} {pk.unit} Packung</span>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditPantryPacks(prev => prev.map((item, i) => i === idx ? { ...item, count: Math.max(0, Number(item.count) - 1) } : item))}
+                                    className="w-6 h-6 rounded bg-stone-100 border border-stone-300 font-bold"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="font-semibold min-w-[20px] text-center">{pk.count}×</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditPantryPacks(prev => prev.map((item, i) => i === idx ? { ...item, count: Number(item.count) + 1 } : item))}
+                                    className="w-6 h-6 rounded bg-stone-900 text-white font-bold"
+                                  >
+                                    +
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditPantryPacks(prev => prev.filter((_, i) => i !== idx))}
+                                    className="text-stone-400 hover:text-red-600 p-1 ml-1"
+                                  >
+                                    <Icon name="trash-2" size={13} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-stone-500">
+                            Noch keine Einzel-Packungen hinterlegt. Füge unten z.B. „1000 g“ oder „500 g“ hinzu, um den Baukasten für diesen Artikel zu aktivieren:
+                          </p>
+                        )}
+
+                        <div className="pt-1 border-t border-stone-200/80 space-y-1.5">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-stone-500 block">
+                            Packungsgröße hinzufügen:
+                          </label>
+                          <div className="flex gap-1.5">
+                            {[250, 400, 500, 1000].map(preset => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setEditNewPackSize(String(preset))}
+                                className="flex-1 py-1 bg-white border border-stone-300 rounded text-[10px] font-semibold text-stone-700 hover:bg-stone-100"
+                              >
+                                {preset}g
+                              </button>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5 pt-1">
+                            <input
+                              type="number"
+                              placeholder="Größe (z.B. 1000)"
+                              value={editNewPackSize}
+                              onChange={e => setEditNewPackSize(e.target.value)}
+                              className="bg-white border border-stone-300 rounded-lg px-2 py-1.5 text-xs font-semibold"
+                            />
+                            <select
+                              value={editNewPackUnit}
+                              onChange={e => setEditNewPackUnit(e.target.value)}
+                              className="bg-white border border-stone-300 rounded-lg px-2 py-1.5 text-xs"
+                            >
+                              <option value="g">Gramm (g)</option>
+                              <option value="ml">Milliliter (ml)</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const s = Number(editNewPackSize);
+                                if (!s || s <= 0) return;
+                                setEditPantryPacks(prev => {
+                                  const existing = prev.findIndex(p => Number(p.size) === s && p.unit === editNewPackUnit);
+                                  if (existing !== -1) {
+                                    return prev.map((p, i) => i === existing ? { ...p, count: Number(p.count) + 1 } : p);
+                                  }
+                                  return [...prev, { size: s, unit: editNewPackUnit, count: 1 }].sort((a, b) => b.size - a.size);
+                                });
+                                setEditNewPackSize('');
+                              }}
+                              className="bg-stone-900 text-white rounded-lg text-xs font-semibold"
+                            >
+                              + Packung
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* FALLS KEIN PACKUNGS-BAUKASTEN GENUTZT WIRD: NORMALE MENGE & EINHEIT */}
+                      {editPantryPacks.length === 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] text-stone-500 block mb-1">Menge / Anzahl</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={editPantryAmount}
+                              onChange={e => setEditPantryAmount(e.target.value)}
+                              className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-stone-500 block mb-1">Einheit</label>
+                            <select
+                              value={editPantryUnitType}
+                              onChange={e => setEditPantryUnitType(e.target.value)}
+                              className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
+                            >
+                              <option value="g">Gramm (g)</option>
+                              <option value="ml">Milliliter (ml)</option>
+                              <option value="Stück">Stück</option>
+                              <option value="Flasche">Flasche</option>
+                              <option value="Dosen">Dose / Glas</option>
+                              <option value="Gläser">Gläser</option>
+                              <option value="Tube">Tube</option>
+                              <option value="Packung">Packung</option>
+                              <option value="Topf">Topf</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* MHD FELD IM EDITIER-MENÜ */}
+                  <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-semibold text-amber-950">Haltbar bis / MHD:</label>
+                      {editPantryExpiryDate && (
+                        <button
+                          type="button"
+                          onClick={() => setEditPantryExpiryDate('')}
+                          className="text-[10px] text-stone-500 underline"
+                        >
+                          MHD entfernen
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="date"
+                      value={editPantryExpiryDate}
+                      onChange={e => setEditPantryExpiryDate(e.target.value)}
+                      className="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleSaveFullEditPantryItem}
+                    className="flex-1 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
+                  >
+                    Änderungen speichern
+                  </button>
+                  <button
+                    onClick={() => setEditingFullPantryItem(null)}
+                    className="px-4 py-2.5 bg-stone-100 text-stone-700 rounded-xl text-xs font-medium"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* MODAL: HALTBARKEITSDATUM (MHD) BEARBEITEN */}
           {editingExpiryItem && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -2523,7 +3056,6 @@ Wichtige Regeln:
                   </button>
                 </div>
 
-                {/* LIVE-STATUS DER FIREBASE-DATENBANK */}
                 <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-stone-800">
@@ -2775,7 +3307,7 @@ Wichtige Regeln:
                     <label className="text-xs font-medium text-stone-700 block mb-1">Name des Gerichts</label>
                     <input
                       type="text"
-                      placeholder="z.B. Chili con Carne, Carbonara..."
+                      placeholder="z.B. Senfeier, Chili con Carne..."
                       value={newRecipeTitle}
                       onChange={e => setNewRecipeTitle(e.target.value)}
                       className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
@@ -2914,10 +3446,10 @@ Wichtige Regeln:
             </div>
           )}
 
-          {/* MODAL: NEUER VORRAT (INKL. HALTBARKEITSDATUM FÜR ALLE KATEGORIEN) */}
+          {/* MODAL: NEUER VORRAT (INKL. OPTION 1 PACKUNGSGEWICHT & MHD) */}
           {showNewPantryItemModal && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-semibold text-stone-900">Vorrat hinzufügen</h3>
                   <button onClick={() => setShowNewPantryItemModal(false)} className="text-stone-400">
@@ -2947,49 +3479,106 @@ Wichtige Regeln:
 
                   <input
                     type="text"
-                    placeholder="Bezeichnung (z.B. Mutti Passata, Pancetta...)"
+                    placeholder="Bezeichnung ohne Marke (z.B. Penne, Sojasauce...)"
                     value={newPantryName}
                     onChange={e => setNewPantryName(e.target.value)}
-                    className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
+                    className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
                   />
 
                   {newPantryCategory !== 'spices' && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[11px] text-stone-500 block mb-1">Menge / Anzahl</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={newPantryAmount}
-                          onChange={e => setNewPantryAmount(e.target.value)}
-                          className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
-                        />
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[11px] text-stone-500 block mb-1">Anzahl / Menge</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={newPantryAmount}
+                            onChange={e => setNewPantryAmount(e.target.value)}
+                            className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] text-stone-500 block mb-1">Einheit</label>
+                          <select
+                            value={newPantryUnitType}
+                            onChange={e => {
+                              const u = e.target.value;
+                              setNewPantryUnitType(u);
+                              if (u === 'g' || u === 'ml') {
+                                setNewPantryAmount(500);
+                                setNewPantryPackWeight('');
+                              } else {
+                                setNewPantryAmount(1);
+                              }
+                            }}
+                            className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
+                          >
+                            <option value="Packung">Packung (mit Gewicht)</option>
+                            <option value="Dosen">Dose / Glas</option>
+                            <option value="Flasche">Flasche</option>
+                            <option value="Stück">Stück (Einzeln)</option>
+                            <option value="g">Gramm (g lose)</option>
+                            <option value="ml">Milliliter (ml lose)</option>
+                            <option value="Tube">Tube</option>
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-[11px] text-stone-500 block mb-1">Einheit</label>
-                        <select
-                          value={newPantryUnitType}
-                          onChange={e => {
-                            const u = e.target.value;
-                            setNewPantryUnitType(u);
-                            if (u === 'g' || u === 'ml') setNewPantryAmount(250);
-                            else setNewPantryAmount(1);
-                          }}
-                          className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
-                        >
-                          <option value="Flasche">Flasche</option>
-                          <option value="Dosen">Dose / Glas</option>
-                          <option value="Stück">Stück</option>
-                          <option value="g">Gramm (g)</option>
-                          <option value="ml">Milliliter (ml)</option>
-                          <option value="Tube">Tube</option>
-                          <option value="Packung">Packung</option>
-                        </select>
-                      </div>
-                    </div>
+
+                      {/* OPTION 1: GEWICHT PRO PACKUNG / DOSE / FLASCHE */}
+                      {['Packung', 'Dosen', 'Flasche', 'Gläser', 'Tube'].includes(newPantryUnitType) && (
+                        <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-semibold text-stone-800">
+                              Inhalt pro {newPantryUnitType} (Optional für Baukasten):
+                            </label>
+                            {newPantryPackWeight && (
+                              <button
+                                type="button"
+                                onClick={() => setNewPantryPackWeight('')}
+                                className="text-[10px] text-stone-500 underline"
+                              >
+                                Ohne Gewicht
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex gap-1.5">
+                            {[250, 400, 500, 1000].map(w => (
+                              <button
+                                key={w}
+                                type="button"
+                                onClick={() => { setNewPantryPackWeight(String(w)); setNewPantryPackUnit('g'); }}
+                                className={`flex-1 py-1 rounded border text-[10px] font-semibold ${
+                                  Number(newPantryPackWeight) === w ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-300'
+                                }`}
+                              >
+                                {w}g
+                              </button>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 pt-0.5">
+                            <input
+                              type="number"
+                              placeholder="z.B. 500 oder 1000"
+                              value={newPantryPackWeight}
+                              onChange={e => setNewPantryPackWeight(e.target.value)}
+                              className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold"
+                            />
+                            <select
+                              value={newPantryPackUnit}
+                              onChange={e => setNewPantryPackUnit(e.target.value)}
+                              className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs"
+                            >
+                              <option value="g">Gramm (g)</option>
+                              <option value="ml">Milliliter (ml)</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
-                  {/* HALTBARKEITSDATUM (MHD) BEI JEDEM NEUEN VORRAT EINSTELLBAR */}
+                  {/* HALTBARKEITSDATUM (MHD) */}
                   <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-semibold text-amber-950">
@@ -3100,7 +3689,7 @@ Wichtige Regeln:
                 </div>
 
                 <p className="text-xs text-stone-500">
-                  Beispiele: <em>„10 g Pancetta in den Kühlschrank“</em>, <em>„Zwei Flaschen Mutti Passata“</em> oder <em>„Fischstäbchen noch 4“</em>
+                  Beispiele: <em>„Zwei 1-Kilo Packungen Penne“</em>, <em>„10 g Pancetta in den Kühlschrank“</em> oder <em>„Rezept für klassische Senfeier anlegen“</em>
                 </p>
 
                 <button
