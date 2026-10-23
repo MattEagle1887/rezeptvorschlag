@@ -1451,79 +1451,74 @@ Wichtige Regeln:
                   )}
                 </div>
 
+                {/* KOMPAKTE STARTSEITEN-KACHELN MIT EXAKTER BENENNUNG OHNE UNTERZEILE */}
                 <div className="space-y-2">
                   <span className="text-xs font-semibold uppercase tracking-wider text-stone-400 px-1">Vorräte & Einkäufe einpflegen</span>
                   <div className="grid grid-cols-2 gap-2.5">
                     <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('mealprep'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                      className="bg-white border border-stone-200 rounded-xl p-3 text-left hover:border-stone-400 transition space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <Icon name="snowflake" size={18} className="text-stone-700" />
                         <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK Meal</span>
                       </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Gefrierfach (Saucen)</span>
-                      <span className="text-[11px] text-stone-500 block">500g / 250g Blöcke</span>
+                      <span className="text-sm font-semibold text-stone-900 block">Mealprep</span>
                     </button>
 
                     <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('freezer_items'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                      className="bg-white border border-stone-200 rounded-xl p-3 text-left hover:border-stone-400 transition space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <Icon name="archive" size={18} className="text-stone-700" />
                         <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">TK Vorrat</span>
                       </div>
-                      <span className="text-sm font-semibold text-stone-900 block">TK (Fischstäbchen...)</span>
-                      <span className="text-[11px] text-stone-500 block">Stück & Gramm</span>
+                      <span className="text-sm font-semibold text-stone-900 block">Tiefkühler</span>
                     </button>
 
                     <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('fridge'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                      className="bg-white border border-stone-200 rounded-xl p-3 text-left hover:border-stone-400 transition space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <Icon name="clock" size={18} className="text-stone-700" />
                         <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">MHD</span>
                       </div>
                       <span className="text-sm font-semibold text-stone-900 block">Kühlschrank</span>
-                      <span className="text-[11px] text-stone-500 block">Frisch & Verfallsdatum</span>
                     </button>
 
                     <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('pantry'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                      className="bg-white border border-stone-200 rounded-xl p-3 text-left hover:border-stone-400 transition space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <Icon name="box" size={18} className="text-stone-700" />
                         <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Schrank</span>
                       </div>
                       <span className="text-sm font-semibold text-stone-900 block">Vorratsschrank</span>
-                      <span className="text-[11px] text-stone-500 block">Pasta, Passata, Reis</span>
                     </button>
 
                     <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('sauces'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                      className="bg-white border border-stone-200 rounded-xl p-3 text-left hover:border-stone-400 transition space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <Icon name="droplet" size={18} className="text-stone-700" />
                         <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Saucen</span>
                       </div>
-                      <span className="text-sm font-semibold text-stone-900 block">Sojasauce & Essige</span>
-                      <span className="text-[11px] text-stone-500 block">Flüssige Würzmittel</span>
+                      <span className="text-sm font-semibold text-stone-900 block">Öle und Soßen</span>
                     </button>
 
                     <button
                       onClick={() => { setActiveTab('pantry'); setPantrySubTab('spices'); }}
-                      className="bg-white border border-stone-200 rounded-xl p-3.5 text-left hover:border-stone-400 transition space-y-1"
+                      className="bg-white border border-stone-200 rounded-xl p-3 text-left hover:border-stone-400 transition space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <Icon name="tag" size={18} className="text-stone-700" />
                         <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 px-2 py-0.5 rounded">Gewürze</span>
                       </div>
                       <span className="text-sm font-semibold text-stone-900 block">Gewürzschrank</span>
-                      <span className="text-[11px] text-stone-500 block">Piment, Nelken, Muskat</span>
                     </button>
                   </div>
                 </div>
@@ -1566,12 +1561,11 @@ Wichtige Regeln:
                     </button>
                     <button
                       onClick={() => { setFilterMode('kid'); setCurrentSuggestionIndex(0); }}
-                      className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1 transition ${
+                      className={`py-2 px-2 rounded-lg text-xs font-medium border flex items-center justify-center transition ${
                         filterMode === 'kid' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-200'
                       }`}
                     >
-                      <Icon name="baby" size={14} />
-                      <span>Nur Kinder-Rezepte</span>
+                      <span>Moritz</span>
                     </button>
                   </div>
 
@@ -1635,7 +1629,7 @@ Wichtige Regeln:
                           )}
                           {activeSuggestion.isKidFriendly && (
                             <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-800">
-                              👶 Kinder
+                              Moritz
                             </span>
                           )}
                         </div>
@@ -2075,7 +2069,7 @@ Wichtige Regeln:
                         <span className="text-xs text-stone-500">Zubereitung: {selectedRecipe.prepTime} Min.</span>
                         {selectedRecipe.isKidFriendly && (
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-800">
-                            👶 Kinder
+                            Moritz
                           </span>
                         )}
                         {selectedRecipe.isFamilyRecipe && (
@@ -2102,7 +2096,7 @@ Wichtige Regeln:
                           />
                         </div>
                         <div className="flex items-center justify-between">
-                          <label className="text-xs text-stone-700 font-medium">Als Kinder-Rezept:</label>
+                          <label className="text-xs text-stone-700 font-medium">Für Moritz:</label>
                           <input
                             type="checkbox"
                             checked={selectedRecipe.isKidFriendly || false}
@@ -2272,7 +2266,7 @@ Wichtige Regeln:
                             <h4 className="text-sm font-semibold text-stone-900">{r.title}</h4>
                             {r.isKidFriendly && (
                               <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-medium">
-                                👶 Kinder
+                                Moritz
                               </span>
                             )}
                             <span className="text-[10px] px-2 py-0.5 rounded font-medium bg-amber-50 text-amber-900 border border-amber-200">
@@ -2932,9 +2926,9 @@ Wichtige Regeln:
                       className="w-full border border-stone-300 rounded-lg px-2.5 py-2 text-xs bg-white"
                     >
                       <option value="pantry">Vorratsschrank</option>
-                      <option value="fridge">Kühlschrank (Frisch)</option>
-                      <option value="freezer_items">Tiefkühler (TK-Vorrat)</option>
-                      <option value="sauces">Sojasauce & Essige</option>
+                      <option value="fridge">Kühlschrank</option>
+                      <option value="freezer_items">Tiefkühler</option>
+                      <option value="sauces">Öle und Soßen</option>
                       <option value="spices">Gewürzschrank (ohne Einheit)</option>
                     </select>
                   </div>
