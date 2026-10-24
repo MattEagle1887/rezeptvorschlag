@@ -57,7 +57,7 @@
     // Reihenfolge der Tabs für die untere Leiste & die Wisch-Steuerung (Start in der Mitte)
     const TAB_ORDER = ['decide', 'pantry', 'home', 'recipes', 'shopping'];
 
-    // Performance-optimierte Icon-Komponente (verhindert unnötige Re-Renders beim Tippen)
+    // Performance-optimierte Icon-Komponente
     const Icon = memo(({ name, size = 18, className = "" }) => {
       const spanRef = useRef(null);
       useEffect(() => {
@@ -117,6 +117,37 @@
       return { totalAmount, totalPacks, unit };
     };
 
+    // Liest benötigte Gramm / Milliliter / Stückzahlen aus einem Rezept-Mengentext aus (z.B. "500 g" -> { val: 500, unit: 'g' })
+    const parseRequiredAmount = (amountStr) => {
+      if (!amountStr) return null;
+      const str = String(amountStr).toLowerCase().replace(',', '.');
+      const matchKg = str.match(/(\d+(?:\.\d+)?)\s*kg\b/);
+      if (matchKg) return { val: Math.round(parseFloat(matchKg[1]) * 1000), unit: 'g' };
+      const matchG = str.match(/(\d+(?:\.\d+)?)\s*(?:g|gramm)\b/);
+      if (matchG) return { val: Math.round(parseFloat(matchG[1])), unit: 'g' };
+      const matchL = str.match(/(\d+(?:\.\d+)?)\s*(?:l|liter)\b/);
+      if (matchL) return { val: Math.round(parseFloat(matchL[1]) * 1000), unit: 'ml' };
+      const matchMl = str.match(/(\d+(?:\.\d+)?)\s*ml\b/);
+      if (matchMl) return { val: Math.round(parseFloat(matchMl[1])), unit: 'ml' };
+      return null;
+    };
+
+    // Präziser Namens-Abgleich zwischen Rezept-Zutat und Vorratsschrank
+    const isIngredientMatchingPantry = (pantryName, ingName) => {
+      const p = (pantryName || '').trim().toLowerCase();
+      const i = (ingName || '').trim().toLowerCase();
+      if (!p || !i) return false;
+      if (p === i) return true;
+      // Bereinige Klammerzusätze wie "(Frisch)" oder "(TK)" oder "(Bio)"
+      const pClean = p.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+      const iClean = i.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+      if (pClean === iClean) return true;
+      if (pClean.length >= 3 && iClean.length >= 3) {
+        if (pClean.includes(iClean) || iClean.includes(pClean)) return true;
+      }
+      return false;
+    };
+
     // Automatische Gruppenerkennung für Joker-Zutaten (Pasta, Fond, Reis)
     const detectItemGroup = (nameStr, existingGroup = undefined) => {
       const lower = (nameStr || '').toLowerCase();
@@ -141,7 +172,7 @@
       return suggestedCategory || 'pantry';
     };
 
-    // Vollständige Start-Daten (für lokale Test-Besucher oder Erstinitialisierung)
+    // Vollständige Start-Daten
     const SEED_DATA = {
       pantry: [
         { id: 'p1', name: 'Rinderhackfleisch', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(1), amount: 500, unitType: 'g', lowThreshold: 200 },
@@ -229,11 +260,11 @@
           id: 'r2', title: 'Klassisches Rindergulasch', effort: 'elaborate', season: 'winter', kcalPer100g: 320,
           isFamilyRecipe: true, isKidFriendly: false, isMealPrep: false, isDraft: true, lastCookedDaysAgo: 185, prepTime: 150,
           ingredients: [
-            { name: 'Rindergulasch', amount: 'Beim Kochen abwiegen', essential: true },
-            { name: 'Kalbsfond', amount: '1 Glas (oder Rinderfond als Joker)', essential: true, isFond: true },
-            { name: 'Zwiebeln & Knoblauch', amount: 'Große Menge', essential: true },
-            { name: 'Tomatenmark', amount: 'Nach Gefühl', essential: true },
-            { name: 'Wacholderbeeren', amount: '3-4 Stück', essential: false }
+            { name: 'Rindergulasch', amount: '800 g', essential: true },
+            { name: 'Kalbsfond', amount: '400 ml', essential: true, isFond: true },
+            { name: 'Zwiebeln & Knoblauch', amount: '4 Stück', essential: true },
+            { name: 'Tomatenmark', amount: '2 EL', essential: true },
+            { name: 'Wacholderbeeren', amount: '4 Stück', essential: false }
           ],
           steps: ['Kopf-Rezept (Entwurf): Beim nächsten Kochen die genauen Mengen ergänzen.']
         },
@@ -241,9 +272,9 @@
           id: 'r3', title: 'Ragù aus dem TK mit Tagliatelle', effort: 'quick', season: 'all', kcalPer100g: 210,
           isFamilyRecipe: true, isKidFriendly: true, isMealPrep: true, mealPrepId: 'mp1', isDraft: false, lastCookedDaysAgo: 12, prepTime: 15,
           ingredients: [
-            { name: 'Ragù alla Bolognese (TK)', amount: '500g oder 750g Block', essential: true, isFromMealPrep: 'mp1' },
-            { name: 'Tagliatelle', amount: '400 g (Alternativ: Jede andere Pasta)', essential: true, isPasta: true },
-            { name: 'Parmesan', amount: 'Zum Reiben', essential: true }
+            { name: 'Ragù alla Bolognese (TK)', amount: '500 g', essential: true, isFromMealPrep: 'mp1' },
+            { name: 'Tagliatelle', amount: '400 g', essential: true, isPasta: true },
+            { name: 'Parmesan', amount: '50 g', essential: true }
           ],
           steps: [
             'Gewünschte Silikonform-Blöcke schonend im Topf mit einem Schuss Wasser erwärmen.',
@@ -254,9 +285,9 @@
           id: 'r4', title: 'Currysauce (TK) mit Hähnchen & Reis', effort: 'quick', season: 'all', kcalPer100g: 160,
           isFamilyRecipe: true, isKidFriendly: true, isMealPrep: true, mealPrepId: 'mp4', isDraft: false, lastCookedDaysAgo: 34, prepTime: 25,
           ingredients: [
-            { name: 'Currysauce (Basis) (TK)', amount: '500g Block', essential: true, isFromMealPrep: 'mp4' },
+            { name: 'Currysauce (Basis) (TK)', amount: '500 g', essential: true, isFromMealPrep: 'mp4' },
             { name: 'Hähnchenbrustfilet', amount: '400 g', essential: true },
-            { name: 'Basmatireis', amount: '250 g Basmatireis', essential: true }
+            { name: 'Basmatireis', amount: '250 g', essential: true }
           ],
           steps: [
             'Hähnchenbrust in Streifen schneiden und scharf anbraten.',
@@ -267,9 +298,9 @@
           id: 'r5', title: 'Fischstäbchen mit Pommes & TK-Erbsen', effort: 'quick', season: 'all', kcalPer100g: 340,
           isFamilyRecipe: false, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 9, prepTime: 20,
           ingredients: [
-            { name: 'Fischstäbchen', amount: '5–6 Stück', essential: true },
-            { name: 'Pommes Frites', amount: 'ca. 200 g', essential: true },
-            { name: 'TK-Erbsen', amount: 'ca. 100 g', essential: true }
+            { name: 'Fischstäbchen', amount: '6 Stück', essential: true },
+            { name: 'Pommes Frites', amount: '200 g', essential: true },
+            { name: 'TK-Erbsen', amount: '100 g', essential: true }
           ],
           steps: [
             'Pommes und Fischstäbchen im Ofen oder der Heißluftfritteuse knusprig backen.',
@@ -280,8 +311,8 @@
           id: 'r6', title: 'Kartoffelpuffer mit Apfelmus', effort: 'quick', season: 'all', kcalPer100g: 190,
           isFamilyRecipe: false, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 21, prepTime: 15,
           ingredients: [
-            { name: 'Kartoffelpuffer', amount: '3–4 Stück (TK)', essential: true },
-            { name: 'Apfelmus', amount: '1 Schälchen', essential: true }
+            { name: 'Kartoffelpuffer', amount: '4 Stück', essential: true },
+            { name: 'Apfelmus', amount: '1 Glas', essential: true }
           ],
           steps: ['Kartoffelpuffer in der Pfanne goldbraun braten und mit Apfelmus servieren.']
         },
@@ -289,9 +320,9 @@
           id: 'r7', title: 'Pasta mit Öl & Parmesan', effort: 'quick', season: 'all', kcalPer100g: 240,
           isFamilyRecipe: true, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 3, prepTime: 10,
           ingredients: [
-            { name: 'Spaghetti', amount: '200 g (Jede Pasta geht)', essential: true, isPasta: true },
+            { name: 'Spaghetti', amount: '200 g', essential: true, isPasta: true },
             { name: 'Olivenöl', amount: '3 EL', essential: true },
-            { name: 'Parmesan', amount: 'Viel geriebener Parmesan', essential: true }
+            { name: 'Parmesan', amount: '40 g', essential: true }
           ],
           steps: ['Nudeln weich kochen, abgießen und mit gutem Olivenöl und Parmesan vermengen.']
         },
@@ -299,7 +330,7 @@
           id: 'r8', title: 'Nudeln mit Ketchup', effort: 'quick', season: 'all', kcalPer100g: 160,
           isFamilyRecipe: false, isKidFriendly: true, isMealPrep: false, isDraft: false, lastCookedDaysAgo: 5, prepTime: 10,
           ingredients: [
-            { name: 'Penne', amount: '200 g (Jede Pasta geht)', essential: true, isPasta: true },
+            { name: 'Penne', amount: '200 g', essential: true, isPasta: true },
             { name: 'Ketchup', amount: 'Nach Wunsch', essential: true }
           ],
           steps: ['Nudeln kochen, abgießen und mit Ketchup servieren.']
@@ -514,7 +545,6 @@
             })
           ];
 
-          // Bring!-Export-Datei nur aktualisieren, wenn sich die Einkaufsliste tatsächlich geändert hat
           if (currentShopJson !== lastSyncedShoppingJsonRef.current) {
             lastSyncedShoppingJsonRef.current = currentShopJson;
             requests.push(
@@ -541,7 +571,6 @@
           setSyncStatus('local');
           return;
         }
-        // Nicht dazwischenfunken, während eigene Änderungen getippt oder hochgeladen werden
         if (isPushingRef.current || pushDebounceTimerRef.current || document.hidden) return;
 
         try {
@@ -621,7 +650,6 @@
           });
       }, [firebaseUrl]);
 
-      // Hintergrund-Sync + Sofort-Sync beim Aufwecken des Handys
       useEffect(() => {
         const cleanUrl = (firebaseUrl || '').trim();
         if (!cleanUrl || !isLoadedFromCloud) return;
@@ -636,7 +664,6 @@
         };
       }, [firebaseUrl, isLoadedFromCloud]);
 
-      // Debounced Cloud-Save (bündelt schnelle Tipp-Serien zu einem einzigen sauberen Upload)
       useEffect(() => {
         if (!isLoadedFromCloud || isApplyingRemote.current) return;
         const cleanUrl = (firebaseUrl || '').trim();
@@ -784,7 +811,6 @@
         isAnalyzingPhoto
       );
 
-      // Sauberes History-Management für geöffnete Modals (egal ob per "X", "Speichern" oder Android-Zurück geschlossen)
       useEffect(() => {
         if (isAnyModalOpen && !modalHistoryPushedRef.current) {
           window.history.pushState({ modalOpen: true, tab: activeTab, subTab: pantrySubTab, recipeId: selectedRecipeId }, '');
@@ -796,7 +822,6 @@
         }
       }, [isAnyModalOpen]);
 
-      // Synchronisiert Tab-Wechsel, Vorrats-Kategorien und geöffnete Rezepte mit dem Browser-Verlauf
       useEffect(() => {
         if (isPopStateNavigating.current) {
           isPopStateNavigating.current = false;
@@ -816,7 +841,6 @@
         }
       }, [activeTab, pantrySubTab, selectedRecipeId]);
 
-      // Fängt den Druck auf den Android-Zurück-Pfeil ab
       useEffect(() => {
         const handlePopState = (event) => {
           if (ignoreNextPopStateRef.current) {
@@ -892,6 +916,46 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }
+      };
+
+      // Direktes Bearbeiten von Zutaten innerhalb eines Rezepts (aktualisiert auch den Wochenplan!)
+      const updateIngredientInRecipe = (recipeId, ingIndex, field, value) => {
+        setRecipes(prev => prev.map(r => {
+          if (r.id !== recipeId) return r;
+          const nextIngs = (r.ingredients || []).map((ing, idx) =>
+            idx === ingIndex ? { ...ing, [field]: value } : ing
+          );
+          return { ...r, ingredients: nextIngs };
+        }));
+        setMealPlan(prev => prev.map(m => {
+          if (m.id !== recipeId) return m;
+          const nextIngs = (m.ingredients || []).map((ing, idx) =>
+            idx === ingIndex ? { ...ing, [field]: value } : ing
+          );
+          return { ...m, ingredients: nextIngs };
+        }));
+      };
+
+      const updateStepInRecipe = (recipeId, stepIndex, value) => {
+        setRecipes(prev => prev.map(r => {
+          if (r.id !== recipeId) return r;
+          const nextSteps = (r.steps || []).map((st, idx) =>
+            idx === stepIndex ? value : st
+          );
+          return { ...r, steps: nextSteps };
+        }));
+      };
+
+      const updateRecipeMeta = (recipeId, field, value) => {
+        setRecipes(prev => prev.map(r => {
+          if (r.id !== recipeId) return r;
+          const updated = { ...r, [field]: value };
+          if (field === 'prepTime') {
+            updated.effort = (Number(value) || 30) <= 30 ? 'quick' : 'elaborate';
+          }
+          return updated;
+        }));
+        setMealPlan(prev => prev.map(m => m.id === recipeId ? { ...m, [field]: value } : m));
       };
 
       // Öffnet das vollständige Bearbeitungs-Fenster (✏️) für einen Vorrat
@@ -1079,7 +1143,6 @@
       const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined, packSizeNum = undefined, packUnitStr = undefined) => {
         const cleanName = name.trim();
         if (!cleanName) return;
-        const lowerClean = cleanName.toLowerCase();
         const rawCat = category || (pantrySubTab === 'mealprep' ? 'pantry' : pantrySubTab);
         const targetCat = enforceSmartCategory(cleanName, rawCat);
 
@@ -1097,10 +1160,7 @@
         const pUnit = packUnitStr || (unit === 'ml' || unit === 'Flasche' ? 'ml' : 'g');
         const pCount = Math.max(1, Number(amountToAdd) || 1);
 
-        const existingIndex = pantry.findIndex(p => {
-          const pLower = p.name.toLowerCase();
-          return pLower === lowerClean || pLower.includes(lowerClean) || lowerClean.includes(pLower);
-        });
+        const existingIndex = pantry.findIndex(p => isIngredientMatchingPantry(p.name, cleanName));
 
         if (existingIndex !== -1) {
           const matchedItem = pantry[existingIndex];
@@ -1182,50 +1242,93 @@
         }
       };
 
-      // Prüft Verfügbarkeit & aktiviert automatisch Pasta- und Fond-Joker (auch für neu gescannte Rezepte!)
+      // PRÄZISER ZUTATEN- & MENGEN-CHECK (Prüft jetzt auch, ob genug Gramm/ml im Vorrat sind!)
       const checkRecipeAvailability = (recipe) => {
         const missing = [];
+        const missingDetails = [];
         const fromFreezerMeat = [];
         const urgentFridgeItems = [];
         const notes = [];
         let minExpiryDays = 999;
 
+        const hasEnoughQuantity = (pantryItem, ingAmountStr) => {
+          if (!pantryItem || pantryItem.status === 'empty') return false;
+          if (pantryItem.category === 'spices') return true;
+          const availAmt = pantryItem.amount !== undefined ? Number(pantryItem.amount) : 0;
+          if (availAmt <= 0) return false;
+
+          const req = parseRequiredAmount(ingAmountStr);
+          if (req && (pantryItem.unitType === 'g' || pantryItem.unitType === 'ml') && req.unit === pantryItem.unitType) {
+            return availAmt >= req.val;
+          }
+          return true;
+        };
+
         (recipe.ingredients || []).forEach((ing) => {
+          const cleanIngName = (ing.name || '').trim();
+          if (!cleanIngName) return;
+
           if (ing.isFromMealPrep) {
             const mp = mealPrep.find(m => m.id === ing.isFromMealPrep);
             const totalGrams = mp ? ((mp.blocks500 || 0) * 500 + (mp.blocks250 || 0) * 250) : 0;
-            if (totalGrams === 0) missing.push(ing.name);
+            const req = parseRequiredAmount(ing.amount);
+            const neededGrams = req && req.unit === 'g' ? req.val : 250;
+            if (totalGrams < neededGrams) {
+              missing.push(cleanIngName);
+              missingDetails.push({ name: cleanIngName, reason: `Für Wochenplan: ${recipe.title}` });
+            }
             return;
           }
 
-          const ingGroup = detectItemGroup(ing.name);
+          const ingGroup = detectItemGroup(cleanIngName);
           const isPastaIng = Boolean(ing.isPasta || ingGroup === 'Pasta');
           const isFondIng = Boolean(ing.isFond || ingGroup === 'Fond');
 
           if (isPastaIng) {
-            const exactPasta = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.status !== 'empty' && (p.amount === undefined || p.amount > 0));
+            const exactPasta = pantry.find(p => isIngredientMatchingPantry(p.name, cleanIngName) && hasEnoughQuantity(p, ing.amount));
             if (exactPasta) return;
-            const anyPasta = pantry.find(p => (p.group === 'Pasta' || detectItemGroup(p.name) === 'Pasta') && p.status !== 'empty' && (p.amount === undefined || p.amount > 0));
-            if (anyPasta) { notes.push(`Joker: ${anyPasta.name} im Haus`); return; }
-            if (ing.essential !== false) missing.push(ing.name);
+
+            const partialExactPasta = pantry.find(p => isIngredientMatchingPantry(p.name, cleanIngName) && p.status !== 'empty' && Number(p.amount) > 0);
+            const anyPasta = pantry.find(p => (p.group === 'Pasta' || detectItemGroup(p.name) === 'Pasta') && hasEnoughQuantity(p, ing.amount));
+            if (anyPasta) {
+              notes.push(`Joker: ${anyPasta.name} (${anyPasta.amount}${anyPasta.unitType}) im Haus`);
+              return;
+            }
+            if (ing.essential !== false) {
+              missing.push(cleanIngName);
+              const reasonHint = partialExactPasta
+                ? `Für ${recipe.title} (Benötigt: ${ing.amount}, nur ${partialExactPasta.amount}${partialExactPasta.unitType} da)`
+                : `Für Wochenplan: ${recipe.title} (${ing.amount || 'Nach Bedarf'})`;
+              missingDetails.push({ name: cleanIngName, reason: reasonHint });
+            }
             return;
           }
 
           if (isFondIng) {
-            const exactFond = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.status !== 'empty' && (p.amount === undefined || p.amount > 0));
+            const exactFond = pantry.find(p => isIngredientMatchingPantry(p.name, cleanIngName) && hasEnoughQuantity(p, ing.amount));
             if (exactFond) return;
-            const anyFond = pantry.find(p => (p.group === 'Fond' || detectItemGroup(p.name) === 'Fond') && p.status !== 'empty' && (p.amount === undefined || p.amount > 0));
-            if (anyFond) { notes.push(`Joker: ${anyFond.name} statt ${ing.name}`); return; }
-            if (ing.essential !== false) missing.push(ing.name);
+            const anyFond = pantry.find(p => (p.group === 'Fond' || detectItemGroup(p.name) === 'Fond') && hasEnoughQuantity(p, ing.amount));
+            if (anyFond) {
+              notes.push(`Joker: ${anyFond.name} statt ${cleanIngName}`);
+              return;
+            }
+            if (ing.essential !== false) {
+              missing.push(cleanIngName);
+              missingDetails.push({ name: cleanIngName, reason: `Für Wochenplan: ${recipe.title} (${ing.amount || 'Nach Bedarf'})` });
+            }
             return;
           }
 
-          const found = pantry.find(p =>
-            p.name.toLowerCase().includes(ing.name.toLowerCase()) ||
-            ing.name.toLowerCase().includes(p.name.toLowerCase())
-          );
-          if (!found || found.status === 'empty' || (found.amount !== undefined && found.amount <= 0)) {
-            if (ing.essential !== false) missing.push(ing.name);
+          const found = pantry.find(p => isIngredientMatchingPantry(p.name, cleanIngName));
+          if (!found || !hasEnoughQuantity(found, ing.amount)) {
+            if (ing.essential !== false) {
+              missing.push(cleanIngName);
+              const hasSome = found && found.status !== 'empty' && Number(found.amount) > 0;
+              const reasonHint = hasSome
+                ? `Für ${recipe.title} (Benötigt: ${ing.amount}, nur ${found.amount} ${found.unitType} da)`
+                : `Für Wochenplan: ${recipe.title}${ing.amount ? ` (${ing.amount})` : ''}`;
+              missingDetails.push({ name: cleanIngName, reason: reasonHint });
+            }
           } else {
             if (found.category === 'freezer_items' && found.subType === 'meat') {
               fromFreezerMeat.push(`${found.name} (${found.amount} ${found.unitType})`);
@@ -1238,7 +1341,7 @@
           }
         });
 
-        return { missing, fromFreezerMeat, urgentFridgeItems, minExpiryDays, noteText: notes.join(' · ') };
+        return { missing, missingDetails, fromFreezerMeat, urgentFridgeItems, minExpiryDays, noteText: notes.join(' · ') };
       };
 
       const filteredSuggestions = useMemo(() => {
@@ -1297,7 +1400,7 @@
             effort: 'quick', season: 'all', kcalPer100g: Number(newMpKcal) || 170,
             isFamilyRecipe: true, isKidFriendly: true, isMealPrep: true, mealPrepId: newId, isDraft: false, lastCookedDaysAgo: 30, prepTime: 20,
             ingredients: [
-              { name: `${newMpName.trim()} (TK)`, amount: '500g oder 250g Block', essential: true, isFromMealPrep: newId },
+              { name: `${newMpName.trim()} (TK)`, amount: '500 g', essential: true, isFromMealPrep: newId },
               ...needsArray.map(n => ({ name: n, amount: 'Nach Bedarf', essential: true }))
             ],
             steps: [
@@ -1376,18 +1479,27 @@
           if (removed) showToast(`"${removed.name}" gelöscht`);
           return { ...r, ingredients: nextIngs };
         }));
+        setMealPlan(prev => prev.map(m => {
+          if (m.id !== recipeId) return m;
+          return { ...m, ingredients: (m.ingredients || []).filter((_, idx) => idx !== ingIndex) };
+        }));
       };
 
       const addIngredientToRecipe = (recipeId) => {
         if (!newIngredientName.trim()) return;
+        const newIngObj = { name: newIngredientName.trim(), amount: newIngredientAmount.trim() || 'Nach Bedarf', essential: true };
         setRecipes(prev => prev.map(r => {
           if (r.id !== recipeId) return r;
           return {
             ...r,
-            ingredients: [
-              ...(r.ingredients || []),
-              { name: newIngredientName.trim(), amount: newIngredientAmount.trim() || 'Nach Bedarf', essential: true }
-            ]
+            ingredients: [...(r.ingredients || []), newIngObj]
+          };
+        }));
+        setMealPlan(prev => prev.map(m => {
+          if (m.id !== recipeId) return m;
+          return {
+            ...m,
+            ingredients: [...(m.ingredients || []), newIngObj]
           };
         }));
         setNewIngredientName(''); setNewIngredientAmount('');
@@ -1424,23 +1536,79 @@
         setRecipes(prev => prev.map(r => r.id === recipeId ? { ...r, kcalPer100g: Number(val) || 0 } : r));
       };
 
-      const addToMealPlan = (recipe) => {
-        if (mealPlan.some(m => m.id === recipe.id)) {
-          showToast('Rezept ist bereits im Kochplan!');
-          return;
-        }
-        setMealPlan(prev => [...prev, recipe]);
-        const avail = checkRecipeAvailability(recipe);
-        const newShoppingItems = avail.missing
-          .filter(ingName => !shoppingList.some(s => s.name.toLowerCase() === ingName.toLowerCase()))
-          .map(ingName => ({ id: 's_' + Date.now() + '_' + Math.random(), name: ingName, reason: `Für Wochenplan: ${recipe.title}`, done: false }));
+      // Fügt ein Rezept zum Wochenplan hinzu (oder gleicht die fehlenden Zutaten erneut mit dem Einkaufswagen ab!)
+      const addToMealPlan = (recipeInput) => {
+        const freshRecipe = recipes.find(r => r.id === recipeInput.id) || recipeInput;
+        const alreadyInPlan = mealPlan.some(m => m.id === freshRecipe.id);
 
-        if (newShoppingItems.length > 0) {
-          setShoppingList(prev => [...prev, ...newShoppingItems]);
-          showToast(`"${recipe.title}" gemerkt & ${newShoppingItems.length} Zutat(en) auf Einkaufsliste!`);
+        if (!alreadyInPlan) {
+          setMealPlan(prev => [...prev, freshRecipe]);
         } else {
-          showToast(`"${recipe.title}" im Wochenplan gemerkt!`);
+          setMealPlan(prev => prev.map(m => m.id === freshRecipe.id ? freshRecipe : m));
         }
+
+        const avail = checkRecipeAvailability(freshRecipe);
+        let addedCount = 0;
+
+        setShoppingList(prev => {
+          const nextList = [...prev];
+          (avail.missingDetails || []).forEach(detail => {
+            const exists = nextList.some(s => isIngredientMatchingPantry(s.name, detail.name));
+            if (!exists) {
+              addedCount++;
+              nextList.push({
+                id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                name: detail.name,
+                reason: detail.reason,
+                done: false
+              });
+            }
+          });
+          return nextList;
+        });
+
+        setTimeout(() => {
+          if (addedCount > 0) {
+            showToast(`"${freshRecipe.title}": ${addedCount} fehlende Zutat(en) in den Einkaufswagen gelegt!`);
+          } else if (avail.missing.length > 0) {
+            showToast(`"${freshRecipe.title}": Fehlende Zutaten stehen bereits im Einkaufswagen!`);
+          } else {
+            showToast(`"${freshRecipe.title}" im Wochenplan – alle Zutaten sind ausreichend im Haus!`);
+          }
+        }, 50);
+      };
+
+      // Gleicht den gesamten Wochenplan auf Knopfdruck frisch mit Vorrat & Einkaufswagen ab
+      const syncAllMealPlanToShopping = () => {
+        if (mealPlan.length === 0) return;
+        let addedCount = 0;
+        setShoppingList(prev => {
+          const nextList = [...prev];
+          mealPlan.forEach(planItem => {
+            const latestRec = recipes.find(r => r.id === planItem.id) || planItem;
+            const avail = checkRecipeAvailability(latestRec);
+            (avail.missingDetails || []).forEach(detail => {
+              const exists = nextList.some(s => isIngredientMatchingPantry(s.name, detail.name));
+              if (!exists) {
+                addedCount++;
+                nextList.push({
+                  id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                  name: detail.name,
+                  reason: detail.reason,
+                  done: false
+                });
+              }
+            });
+          });
+          return nextList;
+        });
+        setTimeout(() => {
+          if (addedCount > 0) {
+            showToast(`${addedCount} fehlende Zutat(en) aus dem Wochenplan ergänzt!`);
+          } else {
+            showToast('Wochenplan geprüft: Alles vorrätig oder bereits auf der Einkaufsliste!');
+          }
+        }, 50);
       };
 
       const removeFromMealPlan = (recipeId) => {
@@ -1469,7 +1637,7 @@
         window.open(officialDeepLink, '_blank');
       };
 
-      // FOTO-SCAN: Öffnet nach der KI-Erkennung die Vorschau zum Prüfen & Bestätigen
+      // FOTO-SCAN
       const handleFileSelected = async (e, scanType = 'pantry') => {
         const file = e.target.files[0];
         if (!file) return;
@@ -1712,10 +1880,10 @@ Wichtige Regeln:
                 setRecipes(prev => [newRec, ...prev]);
                 showToast(`Rezept "${newRec.title}" mit Zutaten angelegt!`);
               } else if (act.type === 'delete') {
-                const found = pantry.find(p => p.name.toLowerCase().includes((act.name || '').toLowerCase()));
+                const found = pantry.find(p => isIngredientMatchingPantry(p.name, act.name));
                 if (found) deletePantryItem(found.id);
               } else if (act.type === 'set_exact') {
-                const found = pantry.find(p => p.name.toLowerCase().includes((act.name || '').toLowerCase()));
+                const found = pantry.find(p => isIngredientMatchingPantry(p.name, act.name));
                 if (found) {
                   updatePantryAmount(found.id, Number(act.amount) || 0);
                   showToast(`${found.name} auf ${act.amount} ${found.unitType || ''} gesetzt!`);
@@ -1921,41 +2089,51 @@ Wichtige Regeln:
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">Euer Kochplan ({mealPlan.length})</h3>
                     {mealPlan.length > 0 && (
-                      <span className="text-[11px] text-emerald-700 font-medium">Zutaten abgeglichen</span>
+                      <button
+                        onClick={syncAllMealPlanToShopping}
+                        className="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 transition"
+                        title="Fehlende Zutaten aller geplanten Gerichte jetzt mit Einkaufswagen abgleichen"
+                      >
+                        <Icon name="refresh-cw" size={11} />
+                        <span>Zutaten abgleichen</span>
+                      </button>
                     )}
                   </div>
                   {mealPlan.length > 0 ? (
                     <div className="space-y-2">
-                      {mealPlan.map(meal => (
-                        <div key={meal.id} className="bg-stone-50 border border-stone-200 rounded-xl p-3 flex items-center justify-between">
-                          <div
-                            onClick={() => { setSelectedRecipeId(meal.id); setActiveTab('recipes'); }}
-                            className="cursor-pointer"
-                          >
-                            <h4 className="text-sm font-semibold text-stone-900">{meal.title}</h4>
-                            <p className="text-[11px] text-stone-500">{meal.prepTime} Min. · ~{meal.kcalPer100g || 170} kcal/100g</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => {
-                                setCookedModalRecipe(meal);
-                                removeFromMealPlan(meal.id);
-                              }}
-                              className="text-emerald-700 hover:bg-emerald-50 p-1.5 rounded"
-                              title="Heute gekocht"
+                      {mealPlan.map(meal => {
+                        const latestMeal = recipes.find(r => r.id === meal.id) || meal;
+                        return (
+                          <div key={latestMeal.id} className="bg-stone-50 border border-stone-200 rounded-xl p-3 flex items-center justify-between">
+                            <div
+                              onClick={() => { setSelectedRecipeId(latestMeal.id); setActiveTab('recipes'); }}
+                              className="cursor-pointer"
                             >
-                              <Icon name="check" size={15} />
-                            </button>
-                            <button
-                              onClick={() => removeFromMealPlan(meal.id)}
-                              className="text-stone-400 hover:text-red-600 p-1.5"
-                              title="Aus Plan entfernen"
-                            >
-                              <Icon name="trash-2" size={15} />
-                            </button>
+                              <h4 className="text-sm font-semibold text-stone-900">{latestMeal.title}</h4>
+                              <p className="text-[11px] text-stone-500">{latestMeal.prepTime} Min. · ~{latestMeal.kcalPer100g || 170} kcal/100g</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => {
+                                  setCookedModalRecipe(latestMeal);
+                                  removeFromMealPlan(latestMeal.id);
+                                }}
+                                className="text-emerald-700 hover:bg-emerald-50 p-1.5 rounded"
+                                title="Heute gekocht"
+                              >
+                                <Icon name="check" size={15} />
+                              </button>
+                              <button
+                                onClick={() => removeFromMealPlan(latestMeal.id)}
+                                className="text-stone-400 hover:text-red-600 p-1.5"
+                                title="Aus Plan entfernen"
+                              >
+                                <Icon name="trash-2" size={15} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-xs text-stone-400 py-2">Noch keine Gerichte für die nächsten Tage vorgemerkt.</p>
@@ -2171,14 +2349,12 @@ Wichtige Regeln:
                     )}
 
                     <div className="space-y-1.5">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zutaten-Check</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zutaten-Check (inkl. Mengenprüfung)</p>
                       <div className="divide-y divide-stone-100 border border-stone-100 rounded-lg overflow-hidden">
                         {(activeSuggestion.ingredients || []).map((ing, i) => {
-                          const isMissing = (activeSuggestion.missing || []).includes(ing.name);
-                          const matchedPantry = pantry.find(p =>
-                            p.name.toLowerCase().includes(ing.name.toLowerCase()) ||
-                            ing.name.toLowerCase().includes(p.name.toLowerCase())
-                          );
+                          const cleanIngName = (ing.name || '').trim();
+                          const isMissing = (activeSuggestion.missing || []).includes(cleanIngName);
+                          const matchedPantry = pantry.find(p => isIngredientMatchingPantry(p.name, cleanIngName));
                           const matchedDays = getDaysUntilExpiry(matchedPantry);
                           return (
                             <div key={i} className="px-3 py-2.5 flex items-start justify-between gap-3 text-xs bg-white">
@@ -2193,8 +2369,8 @@ Wichtige Regeln:
                                 </div>
                                 <span className="text-[11px] text-stone-500 mt-0.5">Benötigt: {ing.amount}</span>
                                 {matchedPantry && matchedPantry.amount !== undefined && (
-                                  <span className="text-[11px] text-stone-400 mt-0.5">
-                                    Auf Lager: {matchedPantry.amount} {matchedPantry.unitType}
+                                  <span className={`text-[11px] mt-0.5 ${isMissing ? 'text-red-600 font-medium' : 'text-stone-400'}`}>
+                                    Auf Lager: {matchedPantry.amount} {matchedPantry.unitType} {isMissing ? '(zu wenig!)' : ''}
                                   </span>
                                 )}
                               </div>
@@ -2478,7 +2654,7 @@ Wichtige Regeln:
                                     } : p));
                                     if (st === 'empty') {
                                       setShoppingList(prev => {
-                                        if (prev.some(s => s.name.toLowerCase() === item.name.toLowerCase())) return prev;
+                                        if (prev.some(s => isIngredientMatchingPantry(s.name, item.name))) return prev;
                                         return [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }];
                                       });
                                       showToast(`${item.name} auf Einkaufsliste gesetzt`);
@@ -2599,7 +2775,7 @@ Wichtige Regeln:
               </div>
             )}
 
-            {/* TAB: REZEPTE & EDITOR */}
+            {/* TAB: REZEPTE & EDITOR (INKL. DIREKT-BEARBEITUNG & WOCHENPLAN-BUTTON) */}
             {activeTab === 'recipes' && (
               <div className="space-y-4">
                 {selectedRecipe ? (
@@ -2615,6 +2791,7 @@ Wichtige Regeln:
                         <button
                           onClick={() => {
                             setRecipes(prev => prev.filter(r => r.id !== selectedRecipe.id));
+                            setMealPlan(prev => prev.filter(m => m.id !== selectedRecipe.id));
                             setSelectedRecipeId(null);
                             showToast('Rezept gelöscht');
                           }}
@@ -2624,7 +2801,12 @@ Wichtige Regeln:
                           <Icon name="trash-2" size={14} />
                         </button>
                         <button
-                          onClick={() => setIsEditingRecipe(!isEditingRecipe)}
+                          onClick={() => {
+                            if (isEditingRecipe && mealPlan.some(m => m.id === selectedRecipe.id)) {
+                              addToMealPlan(selectedRecipe);
+                            }
+                            setIsEditingRecipe(!isEditingRecipe);
+                          }}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
                             isEditingRecipe
                               ? 'bg-stone-900 text-white border-stone-900'
@@ -2638,8 +2820,20 @@ Wichtige Regeln:
                     </div>
 
                     <div>
-                      <h2 className="text-lg font-semibold text-stone-900">{selectedRecipe.title}</h2>
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                      {isEditingRecipe ? (
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-semibold text-stone-500 block">Name des Gerichts:</label>
+                          <input
+                            type="text"
+                            value={selectedRecipe.title}
+                            onChange={e => updateRecipeMeta(selectedRecipe.id, 'title', e.target.value)}
+                            className="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-base font-semibold text-stone-900"
+                          />
+                        </div>
+                      ) : (
+                        <h2 className="text-lg font-semibold text-stone-900">{selectedRecipe.title}</h2>
+                      )}
+                      <div className="flex flex-wrap items-center gap-2 mt-1.5">
                         <span className="text-xs text-stone-500">Zubereitung: {selectedRecipe.prepTime} Min.</span>
                         {selectedRecipe.isKidFriendly && (
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-800">
@@ -2657,9 +2851,22 @@ Wichtige Regeln:
                       </div>
                     </div>
 
+                    {/* DIREKT AUS DEM REZEPT FÜR DEN WOCHENPLAN VORMERKEN & EINKAUFSWAGEN FÜLLEN */}
+                    <button
+                      onClick={() => addToMealPlan(selectedRecipe)}
+                      className="w-full py-2.5 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
+                    >
+                      <Icon name="calendar-plus" size={15} />
+                      <span>
+                        {mealPlan.some(m => m.id === selectedRecipe.id)
+                          ? 'Im Wochenplan (Tippen um Einkaufsliste neu abzugleichen)'
+                          : 'Für den Wochenplan vormerken & Einkauf prüfen'}
+                      </span>
+                    </button>
+
                     {isEditingRecipe && (
                       <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-3">
-                        <p className="text-xs font-semibold text-stone-800">Kategorien & Kalorien einstellen</p>
+                        <p className="text-xs font-semibold text-stone-800">Eckdaten & Kategorien einstellen</p>
                         <div className="flex items-center justify-between">
                           <label className="text-xs text-stone-700 font-medium">Als Familien-Rezept:</label>
                           <input
@@ -2679,6 +2886,15 @@ Wichtige Regeln:
                           />
                         </div>
                         <div className="flex items-center justify-between">
+                          <label className="text-xs text-stone-700 font-medium">Zubereitungsdauer (Min.):</label>
+                          <input
+                            type="number"
+                            value={selectedRecipe.prepTime || 30}
+                            onChange={(e) => updateRecipeMeta(selectedRecipe.id, 'prepTime', Number(e.target.value) || 0)}
+                            className="w-24 bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold text-right"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
                           <label className="text-xs text-stone-700 font-medium">Gesamt-kcal / 100g (inkl. Beilagen):</label>
                           <input
                             type="number"
@@ -2690,26 +2906,45 @@ Wichtige Regeln:
                       </div>
                     )}
 
-                    {/* ZUTATEN */}
+                    {/* ZUTATEN (DIREKT IN DIE FELDER TIPPEN) */}
                     <div className="space-y-2">
                       <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">
-                        Zutaten {isEditingRecipe && '(Antippen zum Löschen)'}
+                        Zutaten {isEditingRecipe && '(Direkt in die Felder tippen zum Ändern)'}
                       </h3>
                       <div className="divide-y divide-stone-100 border border-stone-200 rounded-lg overflow-hidden">
                         {(selectedRecipe.ingredients || []).map((ing, idx) => (
-                          <div key={idx} className="px-3 py-2.5 flex items-center justify-between text-xs bg-white">
-                            <div>
-                              <span className="font-medium text-stone-900">{ing.name}</span>
-                              <span className="text-stone-500 ml-2">({ing.amount})</span>
-                            </div>
-                            {isEditingRecipe && (
-                              <button
-                                onClick={() => deleteIngredientFromRecipe(selectedRecipe.id, idx)}
-                                className="text-red-600 hover:bg-red-50 p-1.5 rounded-md transition flex items-center gap-1 text-[11px] font-medium"
-                              >
-                                <Icon name="trash-2" size={14} />
-                                <span>Löschen</span>
-                              </button>
+                          <div key={idx} className="px-3 py-2.5 flex items-center justify-between gap-2 text-xs bg-white">
+                            {isEditingRecipe ? (
+                              <>
+                                <div className="grid grid-cols-5 gap-1.5 flex-1">
+                                  <input
+                                    type="text"
+                                    value={ing.name}
+                                    placeholder="Zutat"
+                                    onChange={e => updateIngredientInRecipe(selectedRecipe.id, idx, 'name', e.target.value)}
+                                    className="col-span-3 bg-stone-50 border border-stone-300 rounded-md px-2 py-1.5 text-xs font-semibold text-stone-900 focus:bg-white focus:outline-none focus:border-stone-600"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={ing.amount}
+                                    placeholder="Menge"
+                                    onChange={e => updateIngredientInRecipe(selectedRecipe.id, idx, 'amount', e.target.value)}
+                                    className="col-span-2 bg-stone-50 border border-stone-300 rounded-md px-2 py-1.5 text-xs text-stone-700 focus:bg-white focus:outline-none focus:border-stone-600"
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => deleteIngredientFromRecipe(selectedRecipe.id, idx)}
+                                  className="text-stone-400 hover:text-red-600 p-1.5 rounded-md transition shrink-0"
+                                  title="Zutat löschen"
+                                >
+                                  <Icon name="trash-2" size={14} />
+                                </button>
+                              </>
+                            ) : (
+                              <div>
+                                <span className="font-medium text-stone-900">{ing.name}</span>
+                                <span className="text-stone-500 ml-2">({ing.amount})</span>
+                              </div>
                             )}
                           </div>
                         ))}
@@ -2717,18 +2952,18 @@ Wichtige Regeln:
 
                       {isEditingRecipe && (
                         <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 space-y-2">
-                          <p className="text-[11px] font-semibold text-stone-700">Zutat zum Rezept hinzufügen</p>
+                          <p className="text-[11px] font-semibold text-stone-700">Weitere Zutat hinzufügen</p>
                           <div className="grid grid-cols-2 gap-2">
                             <input
                               type="text"
-                              placeholder="Zutat (z.B. Butter)"
+                              placeholder="Zutat (z.B. Guanciale)"
                               value={newIngredientName}
                               onChange={e => setNewIngredientName(e.target.value)}
                               className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs"
                             />
                             <input
                               type="text"
-                              placeholder="Menge (z.B. 40 g)"
+                              placeholder="Menge (z.B. 200 g)"
                               value={newIngredientAmount}
                               onChange={e => setNewIngredientAmount(e.target.value)}
                               className="bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-xs"
@@ -2750,7 +2985,19 @@ Wichtige Regeln:
                       <ol className="space-y-2">
                         {(selectedRecipe.steps || []).map((step, idx) => (
                           <li key={idx} className="bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs text-stone-800 flex items-start justify-between gap-2">
-                            <span><strong>{idx + 1}.</strong> {step}</span>
+                            {isEditingRecipe ? (
+                              <div className="flex items-start gap-2 flex-1">
+                                <strong className="pt-1.5">{idx + 1}.</strong>
+                                <textarea
+                                  rows={2}
+                                  value={step}
+                                  onChange={e => updateStepInRecipe(selectedRecipe.id, idx, e.target.value)}
+                                  className="flex-1 bg-white border border-stone-300 rounded-md px-2 py-1 text-xs text-stone-900"
+                                />
+                              </div>
+                            ) : (
+                              <span><strong>{idx + 1}.</strong> {step}</span>
+                            )}
                             {isEditingRecipe && (
                               <button
                                 onClick={() => deleteStepFromRecipe(selectedRecipe.id, idx)}
@@ -4069,7 +4316,7 @@ Wichtige Regeln:
             </div>
           )}
 
-{/* DUNKLE ANTHRAZIT BOTTOM NAVIGATION (#1c1917): Kompakt mit salbeigrüner Hervorhebung */}
+          {/* DUNKLE ANTHRAZIT BOTTOM NAVIGATION (#1c1917): Kompakt mit salbeigrüner Hervorhebung */}
           <nav
             style={{
               paddingBottom: 'env(safe-area-inset-bottom, 0px)',
