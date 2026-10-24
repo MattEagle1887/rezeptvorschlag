@@ -156,7 +156,6 @@
       let w = (word || '').toLowerCase().trim();
       if (!w) return '';
 
-      // Bekannte Synonyme & unregelmäßige Plurale auf einen gemeinsamen Stamm bringen
       const synonymMap = {
         'eier': 'ei',
         'eiern': 'ei',
@@ -182,7 +181,6 @@
       };
       if (synonymMap[w]) return synonymMap[w];
 
-      // Regelmäßige deutsche Plural-Endungen bei typischen Zutaten angleichen (z.B. Zitronen -> Zitrone, Kartoffeln -> Kartoffel)
       if (w.length > 5 && (w.endsWith('zwiebeln') || w.endsWith('kartoffeln') || w.endsWith('nudeln') || w.endsWith('tomaten') || w.endsWith('zitronen') || w.endsWith('limetten') || w.endsWith('nelken') || w.endsWith('beeren') || w.endsWith('bohnen') || w.endsWith('linsen') || w.endsWith('erbsen') || w.endsWith('gurken') || w.endsWith('schalotten') || w.endsWith('oliven') || w.endsWith('kapern'))) {
         return w.slice(0, -1);
       }
@@ -192,21 +190,13 @@
       return w;
     };
 
-    // PRÄZISER & STRENGER ZUTATEN-ABGLEICH:
-    // Verhindert zuverlässig Verwechslungen wie:
-    // - "Salz" vs. "Pommesgewürz Salz" / "Kräutersalz"
-    // - "Guanciale" vs. "Sugo alla Amatriciana con Guanciale"
-    // - "Butter" vs. "Kräuterbutter" / "Erdnussbutter"
-    // - "Milch" vs. "Kokosmilch"
-    // - "Zucker" vs. "Puderzucker" / "Vanillezucker"
-    // - "Tomaten" vs. "Tomatenmark" / "Dosentomaten"
+    // PRÄZISER & STRENGER ZUTATEN-ABGLEICH
     const isIngredientMatchingPantry = (pantryName, ingName) => {
       const pRaw = (pantryName || '').trim().toLowerCase();
       const iRaw = (ingName || '').trim().toLowerCase();
       if (!pRaw || !iRaw) return false;
       if (pRaw === iRaw) return true;
 
-      // 1. Klammerzusätze wie "(Frisch)", "(TK)" und rein beschreibende Adjektive entfernen
       const cleanNeutralWords = (str) => str
         .replace(/\s*\(.*?\)\s*/g, ' ')
         .replace(/\b(frisch|frische|frischer|frisches|bio|tk|tiefgekühlt|fein|feiner|feines|grob|grober|grobes|gemahlen|gemahlener|ganz|ganze|extra|vergine|glatte|glatter|krause|getrocknet|getrocknete|getrockneter|gerieben|geriebener|kalt|kalte|warm|warme)\b/gi, ' ')
@@ -218,14 +208,11 @@
       if (!pClean || !iClean) return false;
       if (pClean === iClean) return true;
 
-      // 2. Schutzregel gegen zusammengesetzte Fertigprodukte, Saucen & Gewürzmischungen:
-      // Wenn nur einer der beiden Begriffe ein Sugo/Pesto/Sauce/Gewürz/Mark ist, passen sie NIEMALS zusammen!
       const compoundSauceOrSpiceRegex = /\b(sugo|pesto|sauce|soße|pastasauce|tomatensauce|nudelsoße|suppe|fond|brühe|bouillon|creme|aufstrich|gewürz|pommesgewürz|gewürzmischung|gewürzsalz|kräutersalz|knoblauchsalz|rauchsalz|selleriesalz|zwiebelsalz|curry|paste|mark|tomatenmark|ketchup|senf|mayo|mayonnaise|apfelmus)\b/i;
       if (compoundSauceOrSpiceRegex.test(pClean) !== compoundSauceOrSpiceRegex.test(iClean)) {
         return false;
       }
 
-      // 3. Schutzregel für kritische Küchen-Paare, die auf dasselbe Grundwort enden, aber völlig andere Produkte sind:
       const forbiddenMismatchPairs = [
         /\b(kokosmilch|kondensmilch|hafermilch|mandelmilch|sojamilch|buttermilch)\b/i,
         /\b(kräuterbutter|knoblauchbutter|erdnussbutter|mandelbutter|kakaobutter)\b/i,
@@ -242,13 +229,11 @@
         }
       }
 
-      // 4. Schneide Nebenzutaten hinter "con ...", "mit ...", "alla ...", "al ...", "in ..." ab:
       const stripModifiers = (str) => str.split(/\s+(?:con|mit|alla|all'|al|ai|in|auf|nach|aus|vom)\s+/i)[0].trim();
       const pHead = stripModifiers(pClean);
       const iHead = stripModifiers(iClean);
       if (pHead === iHead) return true;
 
-      // 5. Unterstütze explizite Kombi-Einträge im Vorratsschrank mit "&" oder "+" (z.B. "Zwiebeln & Knoblauch" oder "Rosmarin & Thymian")
       if (pHead.includes('&') || pHead.includes('+') || pHead.includes(' und ')) {
         const subItems = pHead.split(/\s*(?:&|\+|und)\s*/i).map(s => s.trim()).filter(Boolean);
         if (subItems.some(sub => isIngredientMatchingPantry(sub, iHead))) {
@@ -256,19 +241,16 @@
         }
       }
 
-      // 6. Zerlege die Hauptbegriffe in einzelne Wörter und normalisiere Singular/Plural
       const pWords = pHead.split(/[\s,\-\/]+/).filter(Boolean).map(normalizeGermanFoodWord);
       const iWords = iHead.split(/[\s,\-\/]+/).filter(Boolean).map(normalizeGermanFoodWord);
 
       if (pWords.join(' ') === iWords.join(' ')) return true;
 
-      // Wenn beide Einträge aus genau 1 Wort bestehen (z.B. "Zitrone" vs. "Zitronen", oder "Rinderhackfleisch" vs. "Hackfleisch"):
       if (pWords.length === 1 && iWords.length === 1) {
         const pw = pWords[0];
         const iw = iWords[0];
         if (pw === iw) return true;
 
-        // Nur bei echten Fleisch-/Reis-/Pasta-Unterarten darf "Rinderhackfleisch" auf "Hackfleisch" oder "Basmatireis" auf "Reis" passen:
         const allowedGenericBaseWords = ['hackfleisch', 'gulasch', 'filet', 'brustfilet', 'hähnchenbrust', 'reis', 'nudeln', 'nudel', 'pasta', 'käse', 'reibekäse', 'zwiebel', 'kartoffel', 'öl', 'speiseöl', 'essig'];
         if (allowedGenericBaseWords.includes(iw) && pw.endsWith(iw)) return true;
         if (allowedGenericBaseWords.includes(pw) && iw.endsWith(pw)) return true;
@@ -884,7 +866,7 @@
       const [newPantryCategory, setNewPantryCategory] = useState('pantry');
       const [newPantryExpiryDate, setNewPantryExpiryDate] = useState('');
 
-      // Vollständiger Editier-Dialog für bestehende Vorräte (inkl. Behälter-Typ wie Packung, Glas, Dose, Flasche...)
+      // Vollständiger Editier-Dialog für bestehende Vorräte
       const [editingFullPantryItem, setEditingFullPantryItem] = useState(null);
       const [editPantryName, setEditPantryName] = useState('');
       const [editPantryCategory, setEditPantryCategory] = useState('pantry');
@@ -913,13 +895,17 @@
       const [freezeLeftovers250, setFreezeLeftovers250] = useState(0);
       const [oliveOilAlert, setOliveOilAlert] = useState(false);
 
+      // NEU: Endlos-Sprachaufnahme States & Refs (kein Abbruch mehr bei Sprechpausen!)
       const [voiceOverlay, setVoiceOverlay] = useState(false);
       const [voiceText, setVoiceText] = useState('');
+      const [voiceInterimText, setVoiceInterimText] = useState('');
       const [isListening, setIsListening] = useState(false);
       const [isProcessingVoice, setIsProcessingVoice] = useState(false);
       const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
       const [newShopItemName, setNewShopItemName] = useState('');
       const recognitionRef = useRef(null);
+      const shouldKeepListeningRef = useRef(false);
+      const restartListeningTimerRef = useRef(null);
 
       // Touch-Swipe-Steuerung & Android-Zurück-Button (History API)
       const touchStartRef = useRef({ x: null, y: null });
@@ -981,6 +967,7 @@
 
           if (modalHistoryPushedRef.current) {
             modalHistoryPushedRef.current = false;
+            stopListening();
             setShowSettingsModal(false);
             setShowResetConfirm(false);
             setShowAddMealPrepModal(false);
@@ -1274,7 +1261,7 @@
         if (mpToDelete) showToast(`"${mpToDelete.name}" aus TK gelöscht`);
       };
 
-      // Intelligentes Hinzufügen oder Aufstocken (speichert jetzt auch den Behälter-Typ wie Glas, Flasche, Dose, Packung)
+      // Intelligentes Hinzufügen oder Aufstocken
       const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined, packSizeNum = undefined, packUnitStr = undefined) => {
         const cleanName = name.trim();
         if (!cleanName) return;
@@ -1298,7 +1285,6 @@
         const pUnit = packUnitStr || (normContainer === 'Flasche' || unit === 'ml' ? 'ml' : 'g');
         const pCount = Math.max(1, Number(amountToAdd) || 1);
 
-        // Beim Anlegen im Vorrat prüfen wir streng, ob wirklich dasselbe Produkt schon existiert
         const existingIndex = pantry.findIndex(p => isIngredientMatchingPantry(p.name, cleanName));
 
         if (existingIndex !== -1) {
@@ -1901,55 +1887,134 @@ Antworte NUR mit reinem JSON:
         }
       };
 
-      // SPRACHERKENNUNG OHNE DOPPELTE SÄTZE
-      const startListening = () => {
+      // NEU: ENDLOS-DIKTAT (Hört ohne Zeitlimit so lange zu, bis du auf Stopp oder Ausführen drückst!)
+      const createAndStartRecognitionSession = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
           showToast('Spracherkennung wird von diesem Browser nicht unterstützt.');
+          shouldKeepListeningRef.current = false;
+          setIsListening(false);
           return;
         }
+
         try {
           if (recognitionRef.current) {
+            recognitionRef.current.onend = null;
+            recognitionRef.current.onerror = null;
+            recognitionRef.current.onresult = null;
             try { recognitionRef.current.abort(); } catch (e) {}
           }
+
           const recognition = new SpeechRecognition();
           recognitionRef.current = recognition;
           recognition.lang = 'de-DE';
+          // Auf Android ist continuous=false + sofortiger Auto-Restart in onend am stabilsten gegen doppelte Wörter!
           recognition.continuous = false;
-          recognition.interimResults = false;
+          recognition.interimResults = true;
           recognition.maxAlternatives = 1;
 
-          setIsListening(true);
           recognition.onresult = (event) => {
-            const lastIdx = event.results.length - 1;
-            const singleCleanTranscript = event.results[lastIdx][0].transcript.trim();
-            setVoiceText(singleCleanTranscript);
-            try { recognition.stop(); } catch (e) {}
+            let finalChunk = '';
+            let interimChunk = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcriptPiece = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                finalChunk += transcriptPiece + ' ';
+              } else {
+                interimChunk += transcriptPiece;
+              }
+            }
+
+            if (finalChunk.trim()) {
+              const cleanChunk = finalChunk.trim();
+              setVoiceText(prev => {
+                const p = (prev || '').trim();
+                return p ? `${p} ${cleanChunk}` : cleanChunk;
+              });
+              setVoiceInterimText('');
+            } else {
+              setVoiceInterimText(interimChunk);
+            }
           };
-          recognition.onend = () => setIsListening(false);
-          recognition.onerror = () => setIsListening(false);
+
+          recognition.onerror = (event) => {
+            // Bei "not-allowed" (Mikrofon verweigert) Aufnahme sauber beenden
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+              shouldKeepListeningRef.current = false;
+              setIsListening(false);
+              setVoiceInterimText('');
+              showToast('Bitte Mikrofon-Zugriff erlauben.');
+            }
+          };
+
+          recognition.onend = () => {
+            // Solange der Nutzer NICHT auf Pause oder Ausführen geklickt hat, sofort nahtlos weiterlauschen!
+            if (shouldKeepListeningRef.current) {
+              if (restartListeningTimerRef.current) clearTimeout(restartListeningTimerRef.current);
+              restartListeningTimerRef.current = setTimeout(() => {
+                if (shouldKeepListeningRef.current) {
+                  createAndStartRecognitionSession();
+                }
+              }, 120);
+            } else {
+              setIsListening(false);
+              setVoiceInterimText('');
+            }
+          };
+
           recognition.start();
+          setIsListening(true);
         } catch (e) {
-          setIsListening(false);
+          if (shouldKeepListeningRef.current) {
+            restartListeningTimerRef.current = setTimeout(() => {
+              if (shouldKeepListeningRef.current) createAndStartRecognitionSession();
+            }, 300);
+          } else {
+            setIsListening(false);
+          }
         }
       };
 
+      const startListening = () => {
+        shouldKeepListeningRef.current = true;
+        setIsListening(true);
+        createAndStartRecognitionSession();
+      };
+
       const stopListening = () => {
+        shouldKeepListeningRef.current = false;
+        if (restartListeningTimerRef.current) {
+          clearTimeout(restartListeningTimerRef.current);
+          restartListeningTimerRef.current = null;
+        }
         if (recognitionRef.current) {
+          recognitionRef.current.onend = null;
           try { recognitionRef.current.stop(); } catch (e) {}
         }
+        // Falls noch ein unbestätigter Zwischensatz im Puffer hing, vor dem Stoppen sichern
+        setVoiceInterimText(currentInterim => {
+          if (currentInterim && currentInterim.trim()) {
+            setVoiceText(prev => {
+              const p = (prev || '').trim();
+              return p ? `${p} ${currentInterim.trim()}` : currentInterim.trim();
+            });
+          }
+          return '';
+        });
         setIsListening(false);
       };
 
       const openVoiceAssistantAndStart = () => {
         setVoiceText('');
+        setVoiceInterimText('');
         setVoiceOverlay(true);
         startListening();
       };
 
       // GEMINI KI SPRACH-INTERPRETER
       const executeVoiceCommand = async (rawCmdText) => {
-        if (!rawCmdText || !rawCmdText.trim()) return;
+        const combinedText = `${rawCmdText || ''} ${voiceInterimText || ''}`.trim();
+        if (!combinedText) return;
         stopListening();
 
         const activeKey = (geminiKey || '').trim();
@@ -1961,7 +2026,7 @@ Antworte NUR mit reinem JSON:
           const voicePrompt = `Du bist der smarte Küchen-Assistent einer Vorrats- und Rezept-App.
 Heute ist ${todayStr}.
 Aktuell im Bestand vorhandene Artikel: [${existingNames}].
-Der Nutzer hat folgenden Sprachbefehl eingesprochen: "${rawCmdText.trim()}"
+Der Nutzer hat folgenden Sprachbefehl (ggf. mehrere Sätze oder ein ganzes Rezept mit Zutaten und Zubereitung) eingesprochen: "${combinedText}"
 
 Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSON in genau diesem Format:
 {
@@ -1993,7 +2058,7 @@ Wichtige Regeln:
 - Lass Markennamen immer weg ("Bamboo Garden Sojasauce" -> "Sojasauce").
 - KATEGORIEN: Pesto, Sugo, Tomatensauce, Pastasauce, Passata, Fonds (Bratenfond, Rinderfond, Krustentierfond) und Brühen gehören IMMER in "pantry" (Vorratsschrank). "sauces" ist nur für flüssige Würzsaucen (Sojasauce, Austernsauce), Öle und Essig!
 - Wenn der Nutzer Packungsgrößen nennt (z.B. "zwei 1-Kilo Packungen Penne"), setze type: "add_or_increment", name: "Penne", amount: 2, unitType: "Packung", packSize: 1000, packUnit: "g", category: "pantry".
-- Wenn der Nutzer ein neues Rezept anlegen möchte (z.B. "Rezept für Senfeier anlegen"), setze type: "create_recipe" und fülle das Objekt "recipe" komplett mit typischen Zutaten und Zubereitungsschritten aus!`;
+- Wenn der Nutzer ein neues Rezept diktiert oder anlegen möchte (z.B. "Rezept für Senfeier..." oder eine Aufzählung von Zutaten & Schritten für ein Gericht), setze type: "create_recipe" und übernimm alle vom Nutzer genannten Mengen, Zutaten und Zubereitungsschritte sauber in das Objekt "recipe" (fehlende Angaben wie kcalPer100g oder prepTime sinnvoll schätzen)!`;
 
           const { text: aiResponse } = await callGeminiWithAutoModel(activeKey, voicePrompt);
           const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
@@ -2022,7 +2087,9 @@ Wichtige Regeln:
                   steps: r.steps || ['Frisch zubereiten.']
                 };
                 setRecipes(prev => [newRec, ...prev]);
-                showToast(`Rezept "${newRec.title}" mit Zutaten angelegt!`);
+                setSelectedRecipeId(newRec.id);
+                setActiveTab('recipes');
+                showToast(`Rezept "${newRec.title}" komplett angelegt!`);
               } else if (act.type === 'delete') {
                 const found = pantry.find(p => isIngredientMatchingPantry(p.name, act.name));
                 if (found) deletePantryItem(found.id);
@@ -2044,7 +2111,7 @@ Wichtige Regeln:
               } else {
                 const hasPack = Number(act.packSize) > 0;
                 addOrUpdatePantryItem(
-                  act.name || rawCmdText,
+                  act.name || combinedText,
                   Number(act.amount) || 1,
                   act.unitType || 'Stück',
                   act.category || 'pantry',
@@ -2056,6 +2123,7 @@ Wichtige Regeln:
             });
           }
           setVoiceText('');
+          setVoiceInterimText('');
           setVoiceOverlay(false);
         } catch (err) {
           showToast(`Sprach-Fehler: ${err.message}`);
@@ -4457,46 +4525,68 @@ Wichtige Regeln:
             </div>
           )}
 
-          {/* MODAL: SPRACHBEFEHL */}
+          {/* MODAL: SPRACHBEFEHL MIT ENDLOS-DIKTAT (KEIN ABBRUCH BEI SPRECHPAUSEN) */}
           {voiceOverlay && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-semibold text-stone-900">Gemini Sprach-Assistent</h3>
-                    <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">KI aktiv</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                      isListening ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    }`}>
+                      {isListening ? '● Mikrofon offen' : 'Bereit'}
+                    </span>
                   </div>
                   <button onClick={() => { stopListening(); setVoiceOverlay(false); }} className="text-stone-400">
                     <Icon name="x" size={18} />
                   </button>
                 </div>
 
-                <p className="text-xs text-stone-500">
-                  Beispiele: <em>„Zwei 1-Kilo Packungen Penne“</em>, <em>„10 g Pancetta in den Kühlschrank“</em> oder <em>„Rezept für klassische Senfeier anlegen“</em>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  Sprich ganz entspannt (auch mit Pausen beim Kochen). Das Mikrofon bleibt so lange an, bis du unten auf <strong>„Mit Gemini ausführen“</strong> oder auf Pause tippst!
                 </p>
 
-                <button
-                  onClick={isListening ? stopListening : startListening}
-                  className={`w-full py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
-                    isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-100 hover:bg-stone-200 text-stone-900'
-                  }`}
-                >
-                  <Icon name="mic" size={16} />
-                  <span>{isListening ? 'Ich höre zu... (jetzt sprechen)' : 'Erneut sprechen'}</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={isListening ? stopListening : startListening}
+                    className={`flex-1 py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                      isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-100 hover:bg-stone-200 text-stone-900'
+                    }`}
+                  >
+                    <Icon name="mic" size={16} />
+                    <span>{isListening ? 'Aufnahme pausieren' : 'Weiter sprechen'}</span>
+                  </button>
+                  {(voiceText || voiceInterimText) && (
+                    <button
+                      onClick={() => { setVoiceText(''); setVoiceInterimText(''); }}
+                      className="px-3 py-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-medium"
+                      title="Textfeld leeren"
+                    >
+                      Leeren
+                    </button>
+                  )}
+                </div>
 
-                <input
-                  type="text"
-                  placeholder="Erkannter Satz erscheint nach dem Sprechen hier..."
-                  value={voiceText}
-                  onChange={e => setVoiceText(e.target.value)}
-                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs"
-                />
+                <div className="space-y-1">
+                  <textarea
+                    rows={4}
+                    placeholder="Dein gesprochener Text wird hier laufend aneinandergehängt..."
+                    value={voiceText}
+                    onChange={e => setVoiceText(e.target.value)}
+                    className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs leading-relaxed text-stone-900 focus:outline-none focus:border-stone-600"
+                  />
+                  {voiceInterimText && (
+                    <p className="text-[11px] text-stone-500 italic px-1 animate-pulse">
+                      Höre gerade: „{voiceInterimText}...“
+                    </p>
+                  )}
+                </div>
 
                 <button
-                  disabled={isProcessingVoice || !voiceText.trim()}
+                  disabled={isProcessingVoice || (!voiceText.trim() && !voiceInterimText.trim())}
                   onClick={() => executeVoiceCommand(voiceText)}
-                  className="w-full py-2.5 bg-stone-900 disabled:bg-stone-400 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-[#849b82] hover:bg-[#738871] disabled:bg-stone-300 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition"
                 >
                   {isProcessingVoice ? (
                     <>
@@ -4504,7 +4594,10 @@ Wichtige Regeln:
                       <span>Gemini verarbeitet...</span>
                     </>
                   ) : (
-                    <span>Mit Gemini ausführen</span>
+                    <>
+                      <Icon name="check" size={16} />
+                      <span>Fertig – Mit Gemini ausführen</span>
+                    </>
                   )}
                 </button>
               </div>
