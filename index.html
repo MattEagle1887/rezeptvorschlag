@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="bg-[#1c1917]">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Küche & Vorrat</title>
   <meta name="theme-color" content="#1c1917" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -34,16 +34,21 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    body { -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+    html, body {
+      background-color: #1c1917;
+      -webkit-tap-highlight-color: transparent;
+      font-family: system-ui, -apple-system, sans-serif;
+      overscroll-behavior-y: none;
+    }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-stone-100 text-stone-900 select-none">
+<body class="bg-[#1c1917] text-stone-900 select-none">
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
+    const { useState, useEffect, useMemo, useRef, memo } = React;
 
     // SICHERHEIT: Keine öffentlichen Zugangsdaten im Quellcode!
     const DEFAULT_GEMINI_KEY = "";
@@ -52,7 +57,8 @@
     // Reihenfolge der Tabs für die untere Leiste & die Wisch-Steuerung (Start in der Mitte)
     const TAB_ORDER = ['decide', 'pantry', 'home', 'recipes', 'shopping'];
 
-    const Icon = ({ name, size = 18, className = "" }) => {
+    // Performance-optimierte Icon-Komponente (verhindert unnötige Re-Renders beim Tippen)
+    const Icon = memo(({ name, size = 18, className = "" }) => {
       const spanRef = useRef(null);
       useEffect(() => {
         if (spanRef.current && window.lucide) {
@@ -64,7 +70,7 @@
         }
       }, [name, size, className]);
       return <span ref={spanRef} className="inline-flex items-center justify-center shrink-0" />;
-    };
+    });
 
     // Hilfsfunktionen für Haltbarkeitsdaten (MHD)
     const getFutureDateStr = (daysToAdd) => {
@@ -102,7 +108,7 @@
       return { text: `Noch ${days} Tage${dateHint}`, urgent: false, expired: false };
     };
 
-    // Hilfsfunktion zur Berechnung der Gesamtsumme beim Packungs-Baukasten
+    // Berechnet die Gesamtsumme beim Packungs-Baukasten
     const calcPacksSummary = (packs) => {
       if (!Array.isArray(packs) || packs.length === 0) return null;
       const totalAmount = packs.reduce((acc, p) => acc + (Number(p.count) || 0) * (Number(p.size) || 0), 0);
@@ -111,16 +117,31 @@
       return { totalAmount, totalPacks, unit };
     };
 
+    // Automatische Gruppenerkennung für Joker-Zutaten (Pasta, Fond, Reis)
+    const detectItemGroup = (nameStr, existingGroup = undefined) => {
+      const lower = (nameStr || '').toLowerCase();
+      if (/tagliatelle|rigatoni|spaghetti|penne|pasta|nudeln|fusilli|farfalle|makkaroni|linguine|fettuccine|orecchiette|lasagne/i.test(lower)) {
+        return 'Pasta';
+      }
+      if (/fond|brühe|bouillon/i.test(lower)) {
+        return 'Fond';
+      }
+      if (/reis|risotto|basmati|jasminreis/i.test(lower)) {
+        return 'Reis';
+      }
+      return existingGroup;
+    };
+
     // Sicherheits-Weiche für Kategorien: Pesto, Fonds, Brühen & Pastasaucen gehören IMMER in den Vorratsschrank!
     const enforceSmartCategory = (productName, suggestedCategory) => {
       const lower = (productName || '').toLowerCase();
-      if (/pesto|fond|brühe|bouillon|tomatensauce|tomatensoße|passata|polpa|arrabbiata|bolognese|nudelsoße|pastasauce|kokosmilch|ketchup|senf|mayo|apelmus|apfelmus|konserve|mais|bohnen|linsen|kichererbsen|nudeln|pasta|penne|spaghetti|rigatoni|tagliatelle|fusilli|reis|mehl|zucker/i.test(lower)) {
+      if (/pesto|fond|brühe|bouillon|tomatensauce|tomatensoße|passata|polpa|arrabbiata|bolognese|nudelsoße|pastasauce|kokosmilch|ketchup|senf|mayo|apfelmus|konserve|mais|bohnen|linsen|kichererbsen|nudeln|pasta|penne|spaghetti|rigatoni|tagliatelle|fusilli|farfalle|reis|mehl|zucker/i.test(lower)) {
         return 'pantry';
       }
       return suggestedCategory || 'pantry';
     };
 
-    // Vollständige Start-Daten
+    // Vollständige Start-Daten (für lokale Test-Besucher oder Erstinitialisierung)
     const SEED_DATA = {
       pantry: [
         { id: 'p1', name: 'Rinderhackfleisch', category: 'fridge', status: 'in_stock', expiryDate: getFutureDateStr(1), amount: 500, unitType: 'g', lowThreshold: 200 },
@@ -418,6 +439,9 @@
       const [syncStatus, setSyncStatus] = useState('local');
       const lastSyncTimestamp = useRef(0);
       const isApplyingRemote = useRef(false);
+      const pushDebounceTimerRef = useRef(null);
+      const isPushingRef = useRef(false);
+      const lastSyncedShoppingJsonRef = useRef('');
 
       const [pantry, setPantry] = useState([]);
       const [mealPrep, setMealPrep] = useState([]);
@@ -434,14 +458,16 @@
       const [scanPreviewItems, setScanPreviewItems] = useState(null);
 
       const [toastMsg, setToastMsg] = useState(null);
+      const toastTimerRef = useRef(null);
       const showToast = (msg) => {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
         setToastMsg(msg);
-        setTimeout(() => setToastMsg(null), 5000);
+        toastTimerRef.current = setTimeout(() => setToastMsg(null), 4500);
       };
 
       useEffect(() => {
         if (window.location.search.includes('db=') || window.location.search.includes('gemini=')) {
-          window.history.replaceState({}, document.title, window.location.pathname);
+          window.history.replaceState({ tab: 'home', subTab: 'pantry', recipeId: null }, document.title, window.location.pathname);
           setTimeout(() => showToast('Mit eurer Live-Datenbank verbunden!'), 500);
         }
       }, []);
@@ -465,12 +491,14 @@
         const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
         if (!cleanUrl || isApplyingRemote.current) return;
         try {
+          isPushingRef.current = true;
           setSyncStatus('syncing');
           const now = Date.now();
           lastSyncTimestamp.current = now;
           const currentShop = stateObj.shoppingList || [];
+          const currentShopJson = JSON.stringify(currentShop.map(s => s.name));
 
-          await Promise.all([
+          const requests = [
             fetch(`${cleanUrl}/kueche_shared.json`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
@@ -483,16 +511,27 @@
                 mealPlan: stateObj.mealPlan || [],
                 updatedAt: now
               })
-            }),
-            fetch(`${cleanUrl}/bring_export.json`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(buildBringParserPayload(currentShop))
             })
-          ]);
+          ];
+
+          // Bring!-Export-Datei nur aktualisieren, wenn sich die Einkaufsliste tatsächlich geändert hat
+          if (currentShopJson !== lastSyncedShoppingJsonRef.current) {
+            lastSyncedShoppingJsonRef.current = currentShopJson;
+            requests.push(
+              fetch(`${cleanUrl}/bring_export.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(buildBringParserPayload(currentShop))
+              })
+            );
+          }
+
+          await Promise.all(requests);
           setSyncStatus('synced');
         } catch (err) {
           setSyncStatus('error');
+        } finally {
+          isPushingRef.current = false;
         }
       };
 
@@ -502,6 +541,9 @@
           setSyncStatus('local');
           return;
         }
+        // Nicht dazwischenfunken, während eigene Änderungen getippt oder hochgeladen werden
+        if (isPushingRef.current || pushDebounceTimerRef.current || document.hidden) return;
+
         try {
           const res = await fetch(`${cleanUrl}/kueche_shared.json`);
           if (!res.ok) return;
@@ -579,18 +621,31 @@
           });
       }, [firebaseUrl]);
 
+      // Hintergrund-Sync + Sofort-Sync beim Aufwecken des Handys
       useEffect(() => {
         const cleanUrl = (firebaseUrl || '').trim();
         if (!cleanUrl || !isLoadedFromCloud) return;
         const interval = setInterval(pullFromCloud, 4000);
-        return () => clearInterval(interval);
+        const handleVisibilityChange = () => {
+          if (!document.hidden) pullFromCloud();
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+          clearInterval(interval);
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
       }, [firebaseUrl, isLoadedFromCloud]);
 
+      // Debounced Cloud-Save (bündelt schnelle Tipp-Serien zu einem einzigen sauberen Upload)
       useEffect(() => {
         if (!isLoadedFromCloud || isApplyingRemote.current) return;
         const cleanUrl = (firebaseUrl || '').trim();
         if (cleanUrl) {
-          pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
+          if (pushDebounceTimerRef.current) clearTimeout(pushDebounceTimerRef.current);
+          pushDebounceTimerRef.current = setTimeout(() => {
+            pushDebounceTimerRef.current = null;
+            pushToCloud({ pantry, mealPrep, recipes, shoppingList, mealPlan });
+          }, 400);
         } else {
           try {
             localStorage.setItem('kueche_local_sandbox_v1', JSON.stringify({
@@ -598,9 +653,16 @@
             }));
           } catch (e) {}
         }
+        return () => {
+          if (pushDebounceTimerRef.current) clearTimeout(pushDebounceTimerRef.current);
+        };
       }, [pantry, mealPrep, recipes, shoppingList, mealPlan]);
 
       const handleDatabaseReset = async () => {
+        if (pushDebounceTimerRef.current) {
+          clearTimeout(pushDebounceTimerRef.current);
+          pushDebounceTimerRef.current = null;
+        }
         isApplyingRemote.current = true;
         setPantry([]);
         setMealPrep([]);
@@ -701,8 +763,11 @@
       const [newShopItemName, setNewShopItemName] = useState('');
       const recognitionRef = useRef(null);
 
-      // NEU: Touch-Swipe-Steuerung zum Wischen zwischen den 5 Hauptbereichen
+      // Touch-Swipe-Steuerung & Android-Zurück-Button (History API)
       const touchStartRef = useRef({ x: null, y: null });
+      const isPopStateNavigating = useRef(false);
+      const modalHistoryPushedRef = useRef(false);
+      const ignoreNextPopStateRef = useRef(false);
 
       const isAnyModalOpen = Boolean(
         showSettingsModal ||
@@ -719,10 +784,86 @@
         isAnalyzingPhoto
       );
 
+      // Sauberes History-Management für geöffnete Modals (egal ob per "X", "Speichern" oder Android-Zurück geschlossen)
+      useEffect(() => {
+        if (isAnyModalOpen && !modalHistoryPushedRef.current) {
+          window.history.pushState({ modalOpen: true, tab: activeTab, subTab: pantrySubTab, recipeId: selectedRecipeId }, '');
+          modalHistoryPushedRef.current = true;
+        } else if (!isAnyModalOpen && modalHistoryPushedRef.current) {
+          modalHistoryPushedRef.current = false;
+          ignoreNextPopStateRef.current = true;
+          window.history.back();
+        }
+      }, [isAnyModalOpen]);
+
+      // Synchronisiert Tab-Wechsel, Vorrats-Kategorien und geöffnete Rezepte mit dem Browser-Verlauf
+      useEffect(() => {
+        if (isPopStateNavigating.current) {
+          isPopStateNavigating.current = false;
+          return;
+        }
+        const currentState = window.history.state;
+        if (!currentState || currentState.tab === undefined) {
+          window.history.replaceState({ tab: activeTab, subTab: pantrySubTab, recipeId: selectedRecipeId }, '');
+          return;
+        }
+        if (
+          currentState.tab !== activeTab ||
+          currentState.subTab !== pantrySubTab ||
+          currentState.recipeId !== selectedRecipeId
+        ) {
+          window.history.pushState({ tab: activeTab, subTab: pantrySubTab, recipeId: selectedRecipeId }, '');
+        }
+      }, [activeTab, pantrySubTab, selectedRecipeId]);
+
+      // Fängt den Druck auf den Android-Zurück-Pfeil ab
+      useEffect(() => {
+        const handlePopState = (event) => {
+          if (ignoreNextPopStateRef.current) {
+            ignoreNextPopStateRef.current = false;
+            return;
+          }
+
+          if (modalHistoryPushedRef.current) {
+            modalHistoryPushedRef.current = false;
+            setShowSettingsModal(false);
+            setShowResetConfirm(false);
+            setShowAddMealPrepModal(false);
+            setEditingMpKcalItem(null);
+            setShowNewPantryItemModal(false);
+            setEditingFullPantryItem(null);
+            setEditingExpiryItem(null);
+            setShowNewRecipeModal(false);
+            setEditingAmountItem(null);
+            setCookedModalRecipe(null);
+            setVoiceOverlay(false);
+            setScanPreviewItems(null);
+            return;
+          }
+
+          if (event.state && event.state.tab) {
+            isPopStateNavigating.current = true;
+            setActiveTab(event.state.tab);
+            if (event.state.subTab) setPantrySubTab(event.state.subTab);
+            setSelectedRecipeId(event.state.recipeId || null);
+            setIsEditingRecipe(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            isPopStateNavigating.current = true;
+            setSelectedRecipeId(null);
+            setIsEditingRecipe(false);
+            setActiveTab('home');
+          }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+      }, []);
+
       const handleTouchStart = (e) => {
         if (isAnyModalOpen) return;
         const targetTag = e.target?.tagName?.toLowerCase();
-        if (['input', 'textarea', 'select'].includes(targetTag)) return;
+        if (['input', 'textarea', 'select', 'button'].includes(targetTag)) return;
         if (e.touches && e.touches.length === 1) {
           touchStartRef.current = {
             x: e.touches[0].clientX,
@@ -739,17 +880,14 @@
         const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
         touchStartRef.current = { x: null, y: null };
 
-        // Nur auslösen, wenn deutlich horizontal gewischt wurde (mind. 65px und flacher Winkel)
-        if (Math.abs(deltaX) > 65 && Math.abs(deltaX) > Math.abs(deltaY) * 1.6) {
+        if (Math.abs(deltaX) > 65 && Math.abs(deltaX) > Math.abs(deltaY) * 1.7) {
           const currentIndex = TAB_ORDER.indexOf(activeTab);
           if (currentIndex === -1) return;
 
           if (deltaX < 0 && currentIndex < TAB_ORDER.length - 1) {
-            // Wischen nach links -> nächster Tab rechts
             setActiveTab(TAB_ORDER[currentIndex + 1]);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           } else if (deltaX > 0 && currentIndex > 0) {
-            // Wischen nach rechts -> nächster Tab links
             setActiveTab(TAB_ORDER[currentIndex - 1]);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
@@ -774,7 +912,6 @@
       const handleSaveFullEditPantryItem = () => {
         if (!editingFullPantryItem || !editPantryName.trim()) return;
         const cleanName = editPantryName.trim();
-        const lowerClean = cleanName.toLowerCase();
         const isSpice = editPantryCategory === 'spices';
 
         let finalPacks = [...editPantryPacks].filter(p => Number(p.size) > 0 && Number(p.count) >= 0);
@@ -807,14 +944,7 @@
           else if (cleanAmount <= threshold) nextStatus = 'low';
         }
 
-        let detectedGroup = editingFullPantryItem.group;
-        if (lowerClean.includes('tagliatelle') || lowerClean.includes('rigatoni') || lowerClean.includes('spaghetti') || lowerClean.includes('penne') || lowerClean.includes('pasta') || lowerClean.includes('nudeln') || lowerClean.includes('fusilli') || lowerClean.includes('farfalle')) {
-          detectedGroup = 'Pasta';
-        } else if (lowerClean.includes('fond') || lowerClean.includes('brühe')) {
-          detectedGroup = 'Fond';
-        } else if (lowerClean.includes('reis')) {
-          detectedGroup = 'Reis';
-        }
+        const detectedGroup = detectItemGroup(cleanName, editingFullPantryItem.group);
 
         setPantry(prev => prev.map(p => {
           if (p.id !== editingFullPantryItem.id) return p;
@@ -1002,6 +1132,7 @@
                 packs: nextPacks,
                 amount: sum.totalAmount,
                 unitType: sum.unit,
+                group: detectItemGroup(item.name, item.group),
                 status: 'in_stock',
                 ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
               };
@@ -1011,6 +1142,7 @@
             return {
               ...item,
               amount: currentAmt + Number(amountToAdd),
+              group: detectItemGroup(item.name, item.group),
               status: 'in_stock',
               ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
             };
@@ -1031,6 +1163,7 @@
           const finalUnit = targetCat === 'spices'
             ? undefined
             : (initialPacks ? pUnit : unit);
+          const detectedGrp = detectItemGroup(cleanName);
 
           const newItem = {
             id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -1042,14 +1175,14 @@
             ...(initialPacks ? { packs: initialPacks } : {}),
             lowThreshold: finalUnit === 'g' || finalUnit === 'ml' ? 200 : 1,
             ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate } : {}),
-            ...(lowerClean.includes('tagliatelle') || lowerClean.includes('rigatoni') || lowerClean.includes('spaghetti') || lowerClean.includes('penne') || lowerClean.includes('pasta') ? { group: 'Pasta' } : {}),
-            ...(lowerClean.includes('fond') || lowerClean.includes('brühe') ? { group: 'Fond' } : {})
+            ...(detectedGrp ? { group: detectedGrp } : {})
           };
           setPantry(prev => [newItem, ...prev]);
           showToast(`Neu angelegt: ${newItem.name}`);
         }
       };
 
+      // Prüft Verfügbarkeit & aktiviert automatisch Pasta- und Fond-Joker (auch für neu gescannte Rezepte!)
       const checkRecipeAvailability = (recipe) => {
         const missing = [];
         const fromFreezerMeat = [];
@@ -1064,28 +1197,35 @@
             if (totalGrams === 0) missing.push(ing.name);
             return;
           }
-          if (ing.isPasta) {
-            const exactPasta = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.amount > 0);
+
+          const ingGroup = detectItemGroup(ing.name);
+          const isPastaIng = Boolean(ing.isPasta || ingGroup === 'Pasta');
+          const isFondIng = Boolean(ing.isFond || ingGroup === 'Fond');
+
+          if (isPastaIng) {
+            const exactPasta = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.status !== 'empty' && (p.amount === undefined || p.amount > 0));
             if (exactPasta) return;
-            const anyPasta = pantry.find(p => p.group === 'Pasta' && p.amount > 0);
+            const anyPasta = pantry.find(p => (p.group === 'Pasta' || detectItemGroup(p.name) === 'Pasta') && p.status !== 'empty' && (p.amount === undefined || p.amount > 0));
             if (anyPasta) { notes.push(`Joker: ${anyPasta.name} im Haus`); return; }
-            if (ing.essential) missing.push(ing.name);
+            if (ing.essential !== false) missing.push(ing.name);
             return;
           }
-          if (ing.isFond) {
-            const exactFond = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.amount > 0);
+
+          if (isFondIng) {
+            const exactFond = pantry.find(p => p.name.toLowerCase() === ing.name.toLowerCase() && p.status !== 'empty' && (p.amount === undefined || p.amount > 0));
             if (exactFond) return;
-            const anyFond = pantry.find(p => p.group === 'Fond' && p.amount > 0);
+            const anyFond = pantry.find(p => (p.group === 'Fond' || detectItemGroup(p.name) === 'Fond') && p.status !== 'empty' && (p.amount === undefined || p.amount > 0));
             if (anyFond) { notes.push(`Joker: ${anyFond.name} statt ${ing.name}`); return; }
-            if (ing.essential) missing.push(ing.name);
+            if (ing.essential !== false) missing.push(ing.name);
             return;
           }
+
           const found = pantry.find(p =>
             p.name.toLowerCase().includes(ing.name.toLowerCase()) ||
             ing.name.toLowerCase().includes(p.name.toLowerCase())
           );
           if (!found || found.status === 'empty' || (found.amount !== undefined && found.amount <= 0)) {
-            if (ing.essential) missing.push(ing.name);
+            if (ing.essential !== false) missing.push(ing.name);
           } else {
             if (found.category === 'freezer_items' && found.subType === 'meat') {
               fromFreezerMeat.push(`${found.name} (${found.amount} ${found.unitType})`);
@@ -1196,7 +1336,7 @@
         setRecipes(prev => prev.map(r => r.id === cookedModalRecipe.id ? { ...r, lastCookedDaysAgo: 0 } : r));
 
         setPantry(prev => prev.map(p => {
-          if (p.id === 'p12') {
+          if (p.id === 'p12' || p.name.toLowerCase().includes('olivenöl')) {
             const nextUses = (p.usesSinceOpen || 0) + 1;
             if (nextUses >= (p.maxUses || 20)) setOliveOilAlert(true);
             return { ...p, usesSinceOpen: nextUses };
@@ -1308,7 +1448,7 @@
         showToast('Aus dem Kochplan entfernt');
       };
 
-      // OFFIZIELLER BRING!-EXPORT (Direkt-Aufruf ohne Zwischen-Popup)
+      // OFFIZIELLER BRING!-EXPORT
       const triggerOfficialBringImport = async () => {
         if (shoppingList.length === 0) return;
         const cleanUrl = (firebaseUrl || '').trim().replace(/\/$/, '');
@@ -1709,7 +1849,7 @@ Wichtige Regeln:
                 </button>
                 <button
                   onClick={() => {
-                    setPantry(prev => prev.map(p => p.id === 'p12' ? { ...p, usesSinceOpen: 10 } : p));
+                    setPantry(prev => prev.map(p => (p.id === 'p12' || p.name.toLowerCase().includes('olivenöl')) ? { ...p, usesSinceOpen: 10 } : p));
                     setOliveOilAlert(false);
                     showToast('Zähler um 10 Einsätze zurückgesetzt');
                   }}
@@ -2722,7 +2862,7 @@ Wichtige Regeln:
               </div>
             )}
 
-            {/* TAB 4: EINKAUF (SCHLANK, DIREKT-EXPORT AN BRING! + EINKAUFSWAGEN LEEREN BUTTON) */}
+            {/* TAB 4: EINKAUF */}
             {activeTab === 'shopping' && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
@@ -2804,7 +2944,7 @@ Wichtige Regeln:
             )}
           </main>
 
-          {/* SCAN-VORSCHAU MODAL (ZUM KONTROLLIEREN & BESTÄTIGEN NACH JEDEM FOTO-SCAN) */}
+          {/* SCAN-VORSCHAU MODAL */}
           {scanPreviewItems && (
             <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
@@ -3929,8 +4069,11 @@ Wichtige Regeln:
             </div>
           )}
 
-          {/* BOTTOM NAVIGATION: Würfler | Vorräte | Start (Mitte) | Rezepte | Einkauf */}
-          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-stone-200 grid grid-cols-5 py-2 z-30">
+          {/* DUNKLE ANTHRAZIT BOTTOM NAVIGATION (#1c1917): Würfler | Vorräte | Start (Mitte) | Rezepte | Einkauf */}
+          <nav
+            style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#1c1917] border-t border-stone-800 grid grid-cols-5 pt-2.5 z-30 shadow-lg"
+          >
             {[
               { id: 'decide', label: 'Würfler', icon: 'utensils' },
               { id: 'pantry', label: 'Vorräte', icon: 'archive' },
@@ -3946,12 +4089,15 @@ Wichtige Regeln:
                     setActiveTab(item.id);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className={`flex flex-col items-center gap-1 py-1 text-[11px] font-medium transition ${
-                    active ? 'text-stone-900 font-semibold' : 'text-stone-400'
+                  className={`flex flex-col items-center gap-1 py-1 text-[11px] font-medium transition relative ${
+                    active ? 'text-white font-semibold' : 'text-stone-400 hover:text-stone-200'
                   }`}
                 >
                   <Icon name={item.icon} size={18} />
                   <span>{item.label}</span>
+                  {active && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#849b82] mt-0.5" />
+                  )}
                 </button>
               );
             })}
