@@ -177,7 +177,9 @@
         'meersalz': 'salz',
         'speisesalz': 'salz',
         'jodsalz': 'salz',
-        'steinsalz': 'salz'
+        'steinsalz': 'salz',
+        'cannellinibohnen': 'cannellini bohne',
+        'kidneybohnen': 'kidney bohne'
       };
       if (synonymMap[w]) return synonymMap[w];
 
@@ -199,7 +201,7 @@
 
       const cleanNeutralWords = (str) => str
         .replace(/\s*\(.*?\)\s*/g, ' ')
-        .replace(/\b(frisch|frische|frischer|frisches|bio|tk|tiefgekühlt|fein|feiner|feines|grob|grober|grobes|gemahlen|gemahlener|ganz|ganze|extra|vergine|glatte|glatter|krause|getrocknet|getrocknete|getrockneter|gerieben|geriebener|kalt|kalte|warm|warme)\b/gi, ' ')
+        .replace(/\b(frisch|frische|frischer|frisches|bio|tk|tiefgekühlt|fein|feiner|feines|grob|grober|grobes|gemahlen|gemahlener|ganz|ganze|extra|vergine|glatte|glatter|krause|getrocknet|getrocknete|getrockneter|gerieben|geriebener|kalt|kalte|warm|warme|mittelscharf|mittelscharfer|scharf|scharfer|milder|mild|weiße|weißer|rote|roter)\b/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
@@ -251,7 +253,7 @@
         const iw = iWords[0];
         if (pw === iw) return true;
 
-        const allowedGenericBaseWords = ['hackfleisch', 'gulasch', 'filet', 'brustfilet', 'hähnchenbrust', 'reis', 'nudeln', 'nudel', 'pasta', 'käse', 'reibekäse', 'zwiebel', 'kartoffel', 'öl', 'speiseöl', 'essig'];
+        const allowedGenericBaseWords = ['hackfleisch', 'gulasch', 'filet', 'brustfilet', 'hähnchenbrust', 'reis', 'nudeln', 'nudel', 'pasta', 'käse', 'reibekäse', 'zwiebel', 'kartoffel', 'öl', 'speiseöl', 'essig', 'senf', 'bohne'];
         if (allowedGenericBaseWords.includes(iw) && pw.endsWith(iw)) return true;
         if (allowedGenericBaseWords.includes(pw) && iw.endsWith(pw)) return true;
       }
@@ -275,10 +277,10 @@
       return existingGroup;
     };
 
-    // Sicherheits-Weiche für Kategorien: Pesto, Sugo, Fonds, Brühen & Pastasaucen gehören IMMER in den Vorratsschrank!
+    // Sicherheits-Weiche für Kategorien: Pesto, Sugo, Fonds, Brühen & Pastasaucen gehören in den Vorratsschrank (es sei denn, sie sind explizit im Kühlschrank/Tiefkühler)!
     const enforceSmartCategory = (productName, suggestedCategory) => {
       const lower = (productName || '').toLowerCase();
-      if (/sugo|amatriciana|pesto|fond|brühe|bouillon|tomatensauce|tomatensoße|passata|polpa|arrabbiata|bolognese|nudelsoße|pastasauce|kokosmilch|ketchup|senf|mayo|apfelmus|konserve|mais|bohnen|linsen|kichererbsen|nudeln|pasta|penne|spaghetti|rigatoni|tagliatelle|fusilli|farfalle|reis|mehl|zucker/i.test(lower)) {
+      if (suggestedCategory === 'sauces' && /sugo|amatriciana|pesto|fond|brühe|bouillon|tomatensauce|tomatensoße|passata|polpa|arrabbiata|bolognese|nudelsoße|pastasauce|kokosmilch|ketchup|senf|mayo|apfelmus|konserve|mais|bohnen|linsen|kichererbsen|nudeln|pasta|penne|spaghetti|rigatoni|tagliatelle|fusilli|farfalle|reis|mehl|zucker/i.test(lower)) {
         return 'pantry';
       }
       return suggestedCategory || 'pantry';
@@ -895,7 +897,7 @@
       const [freezeLeftovers250, setFreezeLeftovers250] = useState(0);
       const [oliveOilAlert, setOliveOilAlert] = useState(false);
 
-      // NEU: Endlos-Sprachaufnahme States & Refs (kein Abbruch mehr bei Sprechpausen!)
+      // Endlos-Sprachaufnahme States & Refs
       const [voiceOverlay, setVoiceOverlay] = useState(false);
       const [voiceText, setVoiceText] = useState('');
       const [voiceInterimText, setVoiceInterimText] = useState('');
@@ -1261,9 +1263,9 @@
         if (mpToDelete) showToast(`"${mpToDelete.name}" aus TK gelöscht`);
       };
 
-      // Intelligentes Hinzufügen oder Aufstocken
+      // Intelligentes Hinzufügen oder Aufstocken (Jetzt mit Batch-Support für Mehrfach-Scans & sauberer Trennung zwischen Kühlschrank und Vorratsschrank!)
       const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined, packSizeNum = undefined, packUnitStr = undefined) => {
-        const cleanName = name.trim();
+        const cleanName = (name || '').trim();
         if (!cleanName) return;
         const rawCat = category || (pantrySubTab === 'mealprep' ? 'pantry' : pantrySubTab);
         const targetCat = enforceSmartCategory(cleanName, rawCat);
@@ -1285,93 +1287,93 @@
         const pUnit = packUnitStr || (normContainer === 'Flasche' || unit === 'ml' ? 'ml' : 'g');
         const pCount = Math.max(1, Number(amountToAdd) || 1);
 
-        const existingIndex = pantry.findIndex(p => isIngredientMatchingPantry(p.name, cleanName));
+        // WICHTIG: Wir arbeiten direkt auf "prev" innerhalb von setPantry!
+        // Dadurch sieht auch der 2. und 3. Artikel aus einem Foto-Scan sofort, was der 1. Artikel gerade angelegt hat!
+        setPantry(prev => {
+          // Suche nur im SELBEN Lagerort (targetCat), damit z.B. offener Senf im Kühlschrank ('fridge')
+          // getrennt vom geschlossenen Vorrats-Senf im Schrank ('pantry') bleiben kann!
+          const existingIndex = prev.findIndex(p =>
+            p.category === targetCat && isIngredientMatchingPantry(p.name, cleanName)
+          );
 
-        if (existingIndex !== -1) {
-          const matchedItem = pantry[existingIndex];
-          setPantry(prev => prev.map((item, idx) => {
-            if (idx !== existingIndex) return item;
-            if (item.category === 'spices') return { ...item, status: 'in_stock' };
+          if (existingIndex !== -1) {
+            return prev.map((item, idx) => {
+              if (idx !== existingIndex) return item;
+              if (item.category === 'spices') return { ...item, status: 'in_stock' };
 
-            if (hasPackInfo || (Array.isArray(item.packs) && item.packs.length > 0)) {
-              let nextPacks = Array.isArray(item.packs) ? item.packs.map(pk => ({ ...pk })) : [];
-              if (nextPacks.length === 0 && (item.unitType === 'g' || item.unitType === 'ml') && item.amount > 0) {
-                nextPacks.push({ size: item.amount, unit: item.unitType, count: 1 });
+              if (hasPackInfo || (Array.isArray(item.packs) && item.packs.length > 0)) {
+                let nextPacks = Array.isArray(item.packs) ? item.packs.map(pk => ({ ...pk })) : [];
+                if (nextPacks.length === 0 && (item.unitType === 'g' || item.unitType === 'ml') && item.amount > 0) {
+                  nextPacks.push({ size: item.amount, unit: item.unitType, count: 1 });
+                }
+
+                const targetSize = hasPackInfo ? pSize : ((unit === 'g' || unit === 'ml') && Number(amountToAdd) >= 100 ? Number(amountToAdd) : (nextPacks[0]?.size || 500));
+                const targetUnit = hasPackInfo ? pUnit : (nextPacks[0]?.unit || item.unitType || 'g');
+                const addCount = hasPackInfo ? pCount : ((unit === 'g' || unit === 'ml') && Number(amountToAdd) >= 100 ? 1 : pCount);
+
+                const packIdx = nextPacks.findIndex(pk => Number(pk.size) === Number(targetSize) && pk.unit === targetUnit);
+                if (packIdx !== -1) {
+                  nextPacks[packIdx].count = (Number(nextPacks[packIdx].count) || 0) + addCount;
+                } else {
+                  nextPacks.push({ size: targetSize, unit: targetUnit, count: addCount });
+                }
+                nextPacks.sort((a, b) => Number(b.size) - Number(a.size));
+
+                const sum = calcPacksSummary(nextPacks);
+                return {
+                  ...item,
+                  packs: nextPacks,
+                  containerType: isContainerUnit ? normContainer : (item.containerType || 'Packung'),
+                  amount: sum.totalAmount,
+                  unitType: sum.unit,
+                  group: detectItemGroup(item.name, item.group),
+                  status: 'in_stock',
+                  ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
+                };
               }
 
-              const targetSize = hasPackInfo ? pSize : ((unit === 'g' || unit === 'ml') && Number(amountToAdd) >= 100 ? Number(amountToAdd) : (nextPacks[0]?.size || 500));
-              const targetUnit = hasPackInfo ? pUnit : (nextPacks[0]?.unit || item.unitType || 'g');
-              const addCount = hasPackInfo ? pCount : ((unit === 'g' || unit === 'ml') && Number(amountToAdd) >= 100 ? 1 : pCount);
-
-              const packIdx = nextPacks.findIndex(pk => Number(pk.size) === Number(targetSize) && pk.unit === targetUnit);
-              if (packIdx !== -1) {
-                nextPacks[packIdx].count = (Number(nextPacks[packIdx].count) || 0) + addCount;
-              } else {
-                nextPacks.push({ size: targetSize, unit: targetUnit, count: addCount });
-              }
-              nextPacks.sort((a, b) => Number(b.size) - Number(a.size));
-
-              const sum = calcPacksSummary(nextPacks);
+              const currentAmt = item.amount !== undefined ? Number(item.amount) : 0;
               return {
                 ...item,
-                packs: nextPacks,
-                containerType: isContainerUnit ? normContainer : (item.containerType || 'Packung'),
-                amount: sum.totalAmount,
-                unitType: sum.unit,
+                amount: currentAmt + Number(amountToAdd),
+                unitType: isContainerUnit ? normContainer : item.unitType,
                 group: detectItemGroup(item.name, item.group),
                 status: 'in_stock',
                 ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
               };
-            }
-
-            const currentAmt = item.amount !== undefined ? Number(item.amount) : 0;
-            return {
-              ...item,
-              amount: currentAmt + Number(amountToAdd),
-              unitType: isContainerUnit ? normContainer : item.unitType,
-              group: detectItemGroup(item.name, item.group),
-              status: 'in_stock',
-              ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate, expiryDays: undefined } : {})
-            };
-          }));
-
-          if (hasPackInfo) {
-            showToast(`"${matchedItem.name}": +${pCount}× ${pSize}${pUnit} ${formatContainerLabel(normContainer, 1)} hinzugefügt!`);
-          } else if (matchedItem.category === 'spices') {
-            showToast(`"${matchedItem.name}" ist bereits im Gewürzschrank als vorrätig markiert!`);
+            });
           } else {
-            showToast(`"${matchedItem.name}" aufgestockt (+${amountToAdd} ${matchedItem.unitType || normContainer})!`);
-          }
-        } else {
-          const initialPacks = (targetCat !== 'spices' && hasPackInfo)
-            ? [{ size: pSize, unit: pUnit, count: pCount }]
-            : undefined;
-          const finalAmount = targetCat === 'spices'
-            ? undefined
-            : (initialPacks ? pSize * pCount : Number(amountToAdd));
-          const finalUnit = targetCat === 'spices'
-            ? undefined
-            : (initialPacks ? pUnit : normContainer);
-          const detectedGrp = detectItemGroup(cleanName);
+            const initialPacks = (targetCat !== 'spices' && hasPackInfo)
+              ? [{ size: pSize, unit: pUnit, count: pCount }]
+              : undefined;
+            const finalAmount = targetCat === 'spices'
+              ? undefined
+              : (initialPacks ? pSize * pCount : Number(amountToAdd));
+            const finalUnit = targetCat === 'spices'
+              ? undefined
+              : (initialPacks ? pUnit : normContainer);
+            const detectedGrp = detectItemGroup(cleanName);
 
-          const newItem = {
-            id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-            name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
-            category: targetCat,
-            status: 'in_stock',
-            amount: finalAmount,
-            unitType: finalUnit,
-            ...(initialPacks ? { packs: initialPacks, containerType: isContainerUnit ? normContainer : 'Packung' } : {}),
-            lowThreshold: finalUnit === 'g' || finalUnit === 'ml' ? 200 : 1,
-            ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate } : {}),
-            ...(detectedGrp ? { group: detectedGrp } : {})
-          };
-          setPantry(prev => [newItem, ...prev]);
-          showToast(`Neu angelegt: ${newItem.name}`);
-        }
+            const newItem = {
+              id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+              name: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
+              category: targetCat,
+              status: 'in_stock',
+              amount: finalAmount,
+              unitType: finalUnit,
+              ...(initialPacks ? { packs: initialPacks, containerType: isContainerUnit ? normContainer : 'Packung' } : {}),
+              lowThreshold: finalUnit === 'g' || finalUnit === 'ml' ? 200 : 1,
+              ...(resolvedExpiryDate ? { expiryDate: resolvedExpiryDate } : {}),
+              ...(detectedGrp ? { group: detectedGrp } : {})
+            };
+            return [newItem, ...prev];
+          }
+        });
+
+        showToast(`"${cleanName}" gespeichert!`);
       };
 
-      // PRÄZISER ZUTATEN- & MENGEN-CHECK
+      // PRÄZISER ZUTATEN- & MENGEN-CHECK (Rechnet auch Bestände aus Kühlschrank + Vorratsschrank zusammen!)
       const checkRecipeAvailability = (recipe) => {
         const missing = [];
         const missingDetails = [];
@@ -1448,25 +1450,32 @@
             return;
           }
 
-          const found = pantry.find(p => isIngredientMatchingPantry(p.name, cleanIngName));
-          if (!found || !hasEnoughQuantity(found, ing.amount)) {
+          // Alle passenden Einträge über alle Schränke (z.B. Kühlschrank + Vorratsschrank) hinweg finden und Mengen addieren!
+          const matchingItems = pantry.filter(p => isIngredientMatchingPantry(p.name, cleanIngName) && p.status !== 'empty');
+          const primaryFound = matchingItems[0];
+          const combinedAmount = matchingItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+          const virtualCombinedItem = primaryFound ? { ...primaryFound, amount: combinedAmount } : null;
+
+          if (!virtualCombinedItem || !hasEnoughQuantity(virtualCombinedItem, ing.amount)) {
             if (ing.essential !== false) {
               missing.push(cleanIngName);
-              const hasSome = found && found.status !== 'empty' && Number(found.amount) > 0;
+              const hasSome = virtualCombinedItem && combinedAmount > 0;
               const reasonHint = hasSome
-                ? `Für ${recipe.title} (Benötigt: ${ing.amount}, nur ${found.amount} ${found.unitType} da)`
+                ? `Für ${recipe.title} (Benötigt: ${ing.amount}, insgesamt nur ${combinedAmount} ${primaryFound.unitType} da)`
                 : `Für Wochenplan: ${recipe.title}${ing.amount ? ` (${ing.amount})` : ''}`;
               missingDetails.push({ name: cleanIngName, reason: reasonHint });
             }
           } else {
-            if (found.category === 'freezer_items' && found.subType === 'meat') {
-              fromFreezerMeat.push(`${found.name} (${found.amount} ${found.unitType})`);
-            }
-            const dLeft = getDaysUntilExpiry(found);
-            if (dLeft !== undefined && dLeft <= 2) {
-              urgentFridgeItems.push({ name: found.name, daysLeft: dLeft });
-              if (dLeft < minExpiryDays) minExpiryDays = dLeft;
-            }
+            matchingItems.forEach(found => {
+              if (found.category === 'freezer_items' && found.subType === 'meat') {
+                fromFreezerMeat.push(`${found.name} (${found.amount} ${found.unitType})`);
+              }
+              const dLeft = getDaysUntilExpiry(found);
+              if (dLeft !== undefined && dLeft <= 2) {
+                urgentFridgeItems.push({ name: found.name, daysLeft: dLeft });
+                if (dLeft < minExpiryDays) minExpiryDays = dLeft;
+              }
+            });
           }
         });
 
@@ -1780,16 +1789,17 @@
 
           const prompt = scanType === 'recipe'
             ? `Analysiere diese abfotografierte Kochbuchseite und antworte NUR mit reinem JSON: {"title": "Name des Gerichts", "prepTime": 30, "kcalPer100g": 180, "ingredients": [{"name": "Zutat (ohne Markennamen)", "amount": "Menge"}], "steps": ["Schritt 1", "Schritt 2"]}`
-            : `Heute ist ${todayStr}. Erkenne das fotografierte Lebensmittel oder den Kassenbon.
+            : `Heute ist ${todayStr}. Erkenne die fotografierten Lebensmittel oder den Kassenbon.
 WICHTIGE REGELN:
-1. KEINE MARKENNAMEN! Speichere immer nur den reinen Gattungsbegriff (z.B. "Sojasauce" statt "Bamboo Garden Sojasauce", "Penne" statt "Barilla Penne", "Krustentierfond" statt "Lacroix Krustentierfond").
-2. KATEGORIEN STRIKT TRENNEN:
+1. KEINE MARKENNAMEN & EINHEITLICHE BEGRIFFE! Speichere immer nur den reinen Gattungsbegriff (z.B. "Senf" statt "Kühne Senf mittelscharf", "Cannellini-Bohnen" statt "Mutti Cannellini"). Wenn mehrere Gläser/Dosen desselben Produkts (auch in unterschiedlichen Größen) auf dem Bild sind, gib ihnen EXAKT denselben Namen (z.B. "Senf")!
+2. IDENTISCHE GEBINDE BÜNDELN: Wenn z.B. 2 identische Dosen Cannellini-Bohnen nebeneinander stehen, fasse sie zu EINEM Eintrag mit "amount": 2 zusammen!
+3. KATEGORIEN STRIKT TRENNEN:
    - "sauces" (Öle und Soßen): NUR für flüssige Würzsaucen, Speiseöle und Essig (z.B. Sojasauce, Austernsauce, Fischsauce, Worcestersauce, Chilisauce, Tabasco, Olivenöl, Rapsöl, Sesamöl, Balsamico, Weißweinessig).
-   - "pantry" (Vorratsschrank): Alle Kochzutaten im Glas/Dose/Packung! Insbesondere Pesto, Sugo, Tomatensauce, Pastasauce, Passata, Dosentomaten, Bratenfond, Rinderfond, Geflügelfond, Krustentierfond, Gemüsebrühe, Pasta, Reis, Konserven, Ketchup, Senf, Mayo.
-3. BEHÄLTER & PACKUNGSGEWICHT GENAU ERKENNEN:
+   - "pantry" (Vorratsschrank): Alle Kochzutaten im Glas/Dose/Packung! Insbesondere Pesto, Sugo, Tomatensauce, Pastasauce, Passata, Dosentomaten, Bratenfond, Rinderfond, Geflügelfond, Krustentierfond, Gemüsebrühe, Pasta, Reis, Konserven, Bohnen, Ketchup, Senf, Mayo.
+4. BEHÄLTER & PACKUNGSGEWICHT GENAU ERKENNEN:
    - Unterscheide bei "unitType" präzise zwischen "Glas", "Dose", "Flasche", "Packung", "Tube", "Becher" oder "Stück".
-   - Wenn auf einer Packung/Dose/Glas/Flasche ein Gewicht oder Volumen steht (z.B. 1 kg = 1000 g Penne, 400 ml Fond, 180 g Pesto/Sugo), gib "packSize": 400 (als Zahl in g oder ml), "packUnit": "g"|"ml" und "amount": 1 an!
-4. Falls ein Haltbarkeitsdatum (MHD) lesbar ist, gib es als YYYY-MM-DD in "expiryDate" an.
+   - Wenn auf einer Packung/Dose/Glas/Flasche ein Gewicht oder Volumen steht (z.B. 1 kg = 1000 g Penne, 400 g Dose, 200 ml Senf), gib "packSize": 400 (als Zahl in g oder ml), "packUnit": "g"|"ml" an!
+5. Falls ein Haltbarkeitsdatum (MHD) lesbar ist, gib es als YYYY-MM-DD in "expiryDate" an.
 Antworte NUR mit reinem JSON:
 {"items": [{"name": "Reiner Produktname ohne Marke", "amount": 1, "unitType": "Packung|Glas|Dose|Flasche|Tube|Becher|Stück", "packSize": 400, "packUnit": "g", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDate": "YYYY-MM-DD"}]}`;
 
@@ -1887,7 +1897,7 @@ Antworte NUR mit reinem JSON:
         }
       };
 
-      // NEU: ENDLOS-DIKTAT (Hört ohne Zeitlimit so lange zu, bis du auf Stopp oder Ausführen drückst!)
+      // ENDLOS-DIKTAT (Hört ohne Zeitlimit so lange zu, bis du auf Stopp oder Ausführen drückst!)
       const createAndStartRecognitionSession = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -1908,7 +1918,6 @@ Antworte NUR mit reinem JSON:
           const recognition = new SpeechRecognition();
           recognitionRef.current = recognition;
           recognition.lang = 'de-DE';
-          // Auf Android ist continuous=false + sofortiger Auto-Restart in onend am stabilsten gegen doppelte Wörter!
           recognition.continuous = false;
           recognition.interimResults = true;
           recognition.maxAlternatives = 1;
@@ -1938,7 +1947,6 @@ Antworte NUR mit reinem JSON:
           };
 
           recognition.onerror = (event) => {
-            // Bei "not-allowed" (Mikrofon verweigert) Aufnahme sauber beenden
             if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
               shouldKeepListeningRef.current = false;
               setIsListening(false);
@@ -1948,7 +1956,6 @@ Antworte NUR mit reinem JSON:
           };
 
           recognition.onend = () => {
-            // Solange der Nutzer NICHT auf Pause oder Ausführen geklickt hat, sofort nahtlos weiterlauschen!
             if (shouldKeepListeningRef.current) {
               if (restartListeningTimerRef.current) clearTimeout(restartListeningTimerRef.current);
               restartListeningTimerRef.current = setTimeout(() => {
@@ -1991,7 +1998,6 @@ Antworte NUR mit reinem JSON:
           recognitionRef.current.onend = null;
           try { recognitionRef.current.stop(); } catch (e) {}
         }
-        // Falls noch ein unbestätigter Zwischensatz im Puffer hing, vor dem Stoppen sichern
         setVoiceInterimText(currentInterim => {
           if (currentInterim && currentInterim.trim()) {
             setVoiceText(prev => {
@@ -2056,7 +2062,7 @@ Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSO
 }
 Wichtige Regeln:
 - Lass Markennamen immer weg ("Bamboo Garden Sojasauce" -> "Sojasauce").
-- KATEGORIEN: Pesto, Sugo, Tomatensauce, Pastasauce, Passata, Fonds (Bratenfond, Rinderfond, Krustentierfond) und Brühen gehören IMMER in "pantry" (Vorratsschrank). "sauces" ist nur für flüssige Würzsaucen (Sojasauce, Austernsauce), Öle und Essig!
+- KATEGORIEN: Pesto, Sugo, Tomatensauce, Pastasauce, Passata, Fonds (Bratenfond, Rinderfond, Krustentierfond) und Brühen gehören in "pantry" (Vorratsschrank), es sei denn der Nutzer nennt explizit den Kühlschrank ("fridge"). "sauces" ist nur für flüssige Würzsaucen (Sojasauce, Austernsauce), Öle und Essig!
 - Wenn der Nutzer Packungsgrößen nennt (z.B. "zwei 1-Kilo Packungen Penne"), setze type: "add_or_increment", name: "Penne", amount: 2, unitType: "Packung", packSize: 1000, packUnit: "g", category: "pantry".
 - Wenn der Nutzer ein neues Rezept diktiert oder anlegen möchte (z.B. "Rezept für Senfeier..." oder eine Aufzählung von Zutaten & Schritten für ein Gericht), setze type: "create_recipe" und übernimm alle vom Nutzer genannten Mengen, Zutaten und Zubereitungsschritte sauber in das Objekt "recipe" (fehlende Angaben wie kcalPer100g oder prepTime sinnvoll schätzen)!`;
 
@@ -2566,7 +2572,9 @@ Wichtige Regeln:
                         {(activeSuggestion.ingredients || []).map((ing, i) => {
                           const cleanIngName = (ing.name || '').trim();
                           const isMissing = (activeSuggestion.missing || []).includes(cleanIngName);
-                          const matchedPantry = pantry.find(p => isIngredientMatchingPantry(p.name, cleanIngName));
+                          const matchingPantryList = pantry.filter(p => isIngredientMatchingPantry(p.name, cleanIngName) && p.status !== 'empty');
+                          const matchedPantry = matchingPantryList[0];
+                          const combinedStock = matchingPantryList.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
                           const matchedDays = getDaysUntilExpiry(matchedPantry);
                           return (
                             <div key={i} className="px-3 py-2.5 flex items-start justify-between gap-3 text-xs bg-white">
@@ -2582,7 +2590,7 @@ Wichtige Regeln:
                                 <span className="text-[11px] text-stone-500 mt-0.5">Benötigt: {ing.amount}</span>
                                 {matchedPantry && matchedPantry.amount !== undefined && (
                                   <span className={`text-[11px] mt-0.5 ${isMissing ? 'text-red-600 font-medium' : 'text-stone-400'}`}>
-                                    Auf Lager: {matchedPantry.amount} {matchedPantry.unitType} {isMissing ? '(zu wenig!)' : ''}
+                                    Auf Lager: {combinedStock} {matchedPantry.unitType} {isMissing ? '(zu wenig!)' : ''}
                                   </span>
                                 )}
                               </div>
@@ -2674,7 +2682,7 @@ Wichtige Regeln:
                   </span>
                   <input
                     type="text"
-                    placeholder="Vorrat schnell suchen (z.B. Penne, Pesto)..."
+                    placeholder="Vorrat schnell suchen (z.B. Penne, Senf)..."
                     value={pantrySearchQuery}
                     onChange={e => setPantrySearchQuery(e.target.value)}
                     className="w-full bg-white border border-stone-300 rounded-xl pl-9 pr-8 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-stone-600 shadow-sm"
@@ -2831,6 +2839,11 @@ Wichtige Regeln:
                                 <span className="text-sm font-semibold text-stone-900">{item.name}</span>
                                 {item.group && (
                                   <span className="text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-700">{item.group}</span>
+                                )}
+                                {pantrySearchQuery && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded bg-stone-200 text-stone-800 font-medium">
+                                    {item.category === 'fridge' ? 'Kühlschrank' : item.category === 'freezer_items' ? 'TK' : item.category === 'sauces' ? 'Saucen' : item.category === 'spices' ? 'Gewürze' : 'Schrank'}
+                                  </span>
                                 )}
                               </div>
                               {(badge || item.category === 'fridge') && (
@@ -3418,7 +3431,7 @@ Wichtige Regeln:
                 </div>
 
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Bitte kurz prüfen (insbesondere ob Packung, Glas, Dose oder Flasche) und unten bestätigen:
+                  Bitte kurz prüfen (gleiche Artikel im selben Lagerort werden beim Bestätigen automatisch zusammengefügt):
                 </p>
 
                 <div className="space-y-3">
@@ -3515,7 +3528,7 @@ Wichtige Regeln:
                             <div className="grid grid-cols-2 gap-2">
                               <input
                                 type="number"
-                                placeholder="z.B. 180, 500, 1000"
+                                placeholder="z.B. 180, 400, 500"
                                 value={item.packSize}
                                 onChange={e => updateScanPreviewItem(item.tempId, 'packSize', e.target.value)}
                                 className="bg-stone-50 border border-stone-300 rounded-lg px-2.5 py-1 text-xs font-semibold"
@@ -4329,7 +4342,7 @@ Wichtige Regeln:
 
                   <input
                     type="text"
-                    placeholder="Bezeichnung ohne Marke (z.B. Penne, Salz...)"
+                    placeholder="Bezeichnung ohne Marke (z.B. Penne, Senf...)"
                     value={newPantryName}
                     onChange={e => setNewPantryName(e.target.value)}
                     className="w-full border border-stone-300 rounded-lg px-3 py-2 text-xs font-semibold"
@@ -4525,7 +4538,7 @@ Wichtige Regeln:
             </div>
           )}
 
-          {/* MODAL: SPRACHBEFEHL MIT ENDLOS-DIKTAT (KEIN ABBRUCH BEI SPRECHPAUSEN) */}
+          {/* MODAL: SPRACHBEFEHL MIT ENDLOS-DIKTAT */}
           {voiceOverlay && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
