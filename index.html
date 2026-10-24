@@ -4069,10 +4069,13 @@ Wichtige Regeln:
             </div>
           )}
 
-          {/* DUNKLE ANTHRAZIT BOTTOM NAVIGATION (#1c1917): Würfler | Vorräte | Start (Mitte) | Rezepte | Einkauf */}
+{/* DUNKLE ANTHRAZIT BOTTOM NAVIGATION (#1c1917): Kompakt mit salbeigrüner Hervorhebung */}
           <nav
-            style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#1c1917] border-t border-stone-800 grid grid-cols-5 pt-2.5 z-30 shadow-lg"
+            style={{
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+              boxShadow: '0 60px 0 60px #1c1917'
+            }}
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[#1c1917] border-t border-stone-800 grid grid-cols-5 px-1.5 py-1.5 z-30"
           >
             {[
               { id: 'decide', label: 'Würfler', icon: 'utensils' },
@@ -4089,15 +4092,14 @@ Wichtige Regeln:
                     setActiveTab(item.id);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className={`flex flex-col items-center gap-1 py-1 text-[11px] font-medium transition relative ${
-                    active ? 'text-white font-semibold' : 'text-stone-400 hover:text-stone-200'
+                  className={`flex flex-col items-center justify-center gap-0.5 py-1.5 mx-0.5 rounded-xl text-[11px] transition ${
+                    active
+                      ? 'bg-[#849b82]/20 text-[#a8c3a5] font-semibold'
+                      : 'text-stone-400 hover:text-stone-200 font-medium'
                   }`}
                 >
-                  <Icon name={item.icon} size={18} />
+                  <Icon name={item.icon} size={18} className={active ? 'text-[#a8c3a5]' : ''} />
                   <span>{item.label}</span>
-                  {active && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#849b82] mt-0.5" />
-                  )}
                 </button>
               );
             })}
