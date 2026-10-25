@@ -178,6 +178,10 @@
         'speisesalz': 'salz',
         'jodsalz': 'salz',
         'steinsalz': 'salz',
+        'pfefferkörner': 'pfeffer',
+        'pfefferkorn': 'pfeffer',
+        'kapernäpfel': 'kaper',
+        'kapern': 'kaper',
         'cannellinibohnen': 'cannellini bohne',
         'kidneybohnen': 'kidney bohne'
       };
@@ -192,16 +196,19 @@
       return w;
     };
 
-    // PRÄZISER & STRENGER ZUTATEN-ABGLEICH
+    // PRÄZISER & ALLTAGSTAUGLICHER ZUTATEN-ABGLEICH
+    // Ignoriert Farben/Größen/Schnittformen (z.B. "kleine Kapern" == "Kapern", "Pfeffer schwarz" == "Pfeffer"),
+    // trennt aber weiterhin strikt echte Unterschiede (z.B. "Salz" != "Pommesgewürz Salz", "Guanciale" != "Sugo con Guanciale")!
     const isIngredientMatchingPantry = (pantryName, ingName) => {
       const pRaw = (pantryName || '').trim().toLowerCase();
       const iRaw = (ingName || '').trim().toLowerCase();
       if (!pRaw || !iRaw) return false;
       if (pRaw === iRaw) return true;
 
+      // 1. Klammerzusätze sowie Farben, Größen, Schnittformen und Kochbuch-Adjektive herausfiltern
       const cleanNeutralWords = (str) => str
         .replace(/\s*\(.*?\)\s*/g, ' ')
-        .replace(/\b(frisch|frische|frischer|frisches|bio|tk|tiefgekühlt|fein|feiner|feines|grob|grober|grobes|gemahlen|gemahlener|ganz|ganze|extra|vergine|glatte|glatter|krause|getrocknet|getrocknete|getrockneter|gerieben|geriebener|kalt|kalte|warm|warme|mittelscharf|mittelscharfer|scharf|scharfer|milder|mild|weiße|weißer|rote|roter)\b/gi, ' ')
+        .replace(/\b(frisch|frische|frischer|frisches|bio|tk|tiefgekühlt|tiefgekühlte|fein|feiner|feines|grob|grober|grobes|gemahlen|gemahlener|gemahlenes|geschrotet|geschroteter|ganz|ganze|ganzer|ganzes|extra|vergine|nativ|natives|glatte|glatter|krause|getrocknet|getrocknete|getrockneter|gerieben|geriebener|geriebenes|kalt|kalte|kalter|warm|warme|lauwarm|lauwarme|zimmerwarm|zimmerwarme|mittelscharf|mittelscharfer|scharf|scharfer|scharfe|milder|mild|milde|süß|süßer|süße|edelsüß|edelsüßer|rosenscharf|schwarz|schwarzer|schwarze|schwarzes|weiß|weißer|weiße|weißes|rote|roter|rotes|rot|grün|grüner|grüne|grünes|gelb|gelber|gelbe|gelbes|braun|brauner|braune|braunes|bunt|bunter|bunte|hell|heller|helle|dunkel|dunkler|dunkle|klein|kleine|kleiner|kleines|groß|große|großer|großes|mittelgroß|mittelgroße|dicke|dünne|junge|gehackt|gehackte|gehackter|gewürfelt|gewürfelte|geschnitten|geschnittene|geschält|geschälte|ungeschält|ungeschälte|gestückelt|gestückelte|passiert|passierte|abgetropft|abgetropfte|eingelegt|eingelegte|gekocht|gekochte|roh|rohe|roher|reif|reife|weich|weiche|festkochend|festkochende|mehligkochend|mehligkochende|entsteint|entsteinte|ohne stein|ohne kerne|etwas|prise|nach geschmack|nach bedarf|zum braten|zum kochen|zum ablöschen|aus der mühle)\b/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
@@ -210,16 +217,19 @@
       if (!pClean || !iClean) return false;
       if (pClean === iClean) return true;
 
+      // 2. Schutzregel gegen zusammengesetzte Fertigprodukte, Saucen & Gewürzmischungen:
+      // (Verhindert z.B. "Salz" <-> "Pommesgewürz Salz" oder "Guanciale" <-> "Sugo con Guanciale")
       const compoundSauceOrSpiceRegex = /\b(sugo|pesto|sauce|soße|pastasauce|tomatensauce|nudelsoße|suppe|fond|brühe|bouillon|creme|aufstrich|gewürz|pommesgewürz|gewürzmischung|gewürzsalz|kräutersalz|knoblauchsalz|rauchsalz|selleriesalz|zwiebelsalz|curry|paste|mark|tomatenmark|ketchup|senf|mayo|mayonnaise|apfelmus)\b/i;
       if (compoundSauceOrSpiceRegex.test(pClean) !== compoundSauceOrSpiceRegex.test(iClean)) {
         return false;
       }
 
+      // 3. Schutzregel für kritische Küchen-Paare, die auf dasselbe Grundwort enden, aber völlig andere Produkte sind:
       const forbiddenMismatchPairs = [
         /\b(kokosmilch|kondensmilch|hafermilch|mandelmilch|sojamilch|buttermilch)\b/i,
         /\b(kräuterbutter|knoblauchbutter|erdnussbutter|mandelbutter|kakaobutter)\b/i,
         /\b(puderzucker|vanillezucker|gelierzucker|rohrzucker|kokosblütenzucker)\b/i,
-        /\b(cayennepfeffer|zitronenpfeffer|knoblauchpfeffer)\b/i,
+        /\b(cayennepfeffer|zitronenpfeffer|knoblauchpfeffer|pfefferminze|pfefferbeißer)\b/i,
         /\b(dosentomaten|passata|polpa)\b/i,
         /\b(knoblauchöl|trüffelöl|chiliöl|sesamöl|erdnussöl|kokosöl)\b/i,
         /\b(reisessig|apfelessig|himbeeressig)\b/i,
@@ -231,11 +241,13 @@
         }
       }
 
+      // 4. Schneide Nebenzutaten hinter "con ...", "mit ...", "alla ...", "al ...", "in ..." ab:
       const stripModifiers = (str) => str.split(/\s+(?:con|mit|alla|all'|al|ai|in|auf|nach|aus|vom)\s+/i)[0].trim();
       const pHead = stripModifiers(pClean);
       const iHead = stripModifiers(iClean);
       if (pHead === iHead) return true;
 
+      // 5. Unterstütze explizite Kombi-Einträge im Vorratsschrank mit "&" oder "+" (z.B. "Zwiebeln & Knoblauch" oder "Salz & Pfeffer")
       if (pHead.includes('&') || pHead.includes('+') || pHead.includes(' und ')) {
         const subItems = pHead.split(/\s*(?:&|\+|und)\s*/i).map(s => s.trim()).filter(Boolean);
         if (subItems.some(sub => isIngredientMatchingPantry(sub, iHead))) {
@@ -243,19 +255,22 @@
         }
       }
 
+      // 6. Zerlege die Hauptbegriffe in einzelne Wörter, normalisiere Singular/Plural und ignoriere die Wortreihenfolge
       const pWords = pHead.split(/[\s,\-\/]+/).filter(Boolean).map(normalizeGermanFoodWord);
       const iWords = iHead.split(/[\s,\-\/]+/).filter(Boolean).map(normalizeGermanFoodWord);
 
       if (pWords.join(' ') === iWords.join(' ')) return true;
+      if ([...pWords].sort().join(' ') === [...iWords].sort().join(' ')) return true;
 
+      // 7. Wenn beide Einträge auf 1 Kernwort reduziert sind (z.B. "Rinderhackfleisch" vs. "Hackfleisch"):
       if (pWords.length === 1 && iWords.length === 1) {
         const pw = pWords[0];
         const iw = iWords[0];
         if (pw === iw) return true;
 
-        const allowedGenericBaseWords = ['hackfleisch', 'gulasch', 'filet', 'brustfilet', 'hähnchenbrust', 'reis', 'nudeln', 'nudel', 'pasta', 'käse', 'reibekäse', 'zwiebel', 'kartoffel', 'öl', 'speiseöl', 'essig', 'senf', 'bohne'];
-        if (allowedGenericBaseWords.includes(iw) && pw.endsWith(iw)) return true;
-        if (allowedGenericBaseWords.includes(pw) && iw.endsWith(pw)) return true;
+        const allowedGenericBaseWords = ['hackfleisch', 'gulasch', 'filet', 'brustfilet', 'hähnchenbrust', 'reis', 'nudeln', 'nudel', 'pasta', 'käse', 'reibekäse', 'zwiebel', 'kartoffel', 'öl', 'speiseöl', 'essig', 'senf', 'bohne', 'pfeffer', 'salz', 'kaper', 'kapern', 'tomate', 'zitrone', 'sahne', 'butter', 'milch', 'mehl', 'zucker'];
+        if (allowedGenericBaseWords.includes(iw) && (pw.endsWith(iw) || pw.startsWith(iw))) return true;
+        if (allowedGenericBaseWords.includes(pw) && (iw.endsWith(pw) || iw.startsWith(pw))) return true;
       }
 
       return false;
@@ -1263,7 +1278,7 @@
         if (mpToDelete) showToast(`"${mpToDelete.name}" aus TK gelöscht`);
       };
 
-      // Intelligentes Hinzufügen oder Aufstocken (Jetzt mit Batch-Support für Mehrfach-Scans & sauberer Trennung zwischen Kühlschrank und Vorratsschrank!)
+      // Intelligentes Hinzufügen oder Aufstocken (Mit Batch-Support für Mehrfach-Scans & sauberer Trennung zwischen Kühlschrank und Vorratsschrank!)
       const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined, packSizeNum = undefined, packUnitStr = undefined) => {
         const cleanName = (name || '').trim();
         if (!cleanName) return;
@@ -1287,11 +1302,7 @@
         const pUnit = packUnitStr || (normContainer === 'Flasche' || unit === 'ml' ? 'ml' : 'g');
         const pCount = Math.max(1, Number(amountToAdd) || 1);
 
-        // WICHTIG: Wir arbeiten direkt auf "prev" innerhalb von setPantry!
-        // Dadurch sieht auch der 2. und 3. Artikel aus einem Foto-Scan sofort, was der 1. Artikel gerade angelegt hat!
         setPantry(prev => {
-          // Suche nur im SELBEN Lagerort (targetCat), damit z.B. offener Senf im Kühlschrank ('fridge')
-          // getrennt vom geschlossenen Vorrats-Senf im Schrank ('pantry') bleiben kann!
           const existingIndex = prev.findIndex(p =>
             p.category === targetCat && isIngredientMatchingPantry(p.name, cleanName)
           );
