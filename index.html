@@ -197,15 +197,12 @@
     };
 
     // PRÄZISER & ALLTAGSTAUGLICHER ZUTATEN-ABGLEICH
-    // Ignoriert Farben/Größen/Schnittformen (z.B. "kleine Kapern" == "Kapern", "Pfeffer schwarz" == "Pfeffer"),
-    // trennt aber weiterhin strikt echte Unterschiede (z.B. "Salz" != "Pommesgewürz Salz", "Guanciale" != "Sugo con Guanciale")!
     const isIngredientMatchingPantry = (pantryName, ingName) => {
       const pRaw = (pantryName || '').trim().toLowerCase();
       const iRaw = (ingName || '').trim().toLowerCase();
       if (!pRaw || !iRaw) return false;
       if (pRaw === iRaw) return true;
 
-      // 1. Klammerzusätze sowie Farben, Größen, Schnittformen und Kochbuch-Adjektive herausfiltern
       const cleanNeutralWords = (str) => str
         .replace(/\s*\(.*?\)\s*/g, ' ')
         .replace(/\b(frisch|frische|frischer|frisches|bio|tk|tiefgekühlt|tiefgekühlte|fein|feiner|feines|grob|grober|grobes|gemahlen|gemahlener|gemahlenes|geschrotet|geschroteter|ganz|ganze|ganzer|ganzes|extra|vergine|nativ|natives|glatte|glatter|krause|getrocknet|getrocknete|getrockneter|gerieben|geriebener|geriebenes|kalt|kalte|kalter|warm|warme|lauwarm|lauwarme|zimmerwarm|zimmerwarme|mittelscharf|mittelscharfer|scharf|scharfer|scharfe|milder|mild|milde|süß|süßer|süße|edelsüß|edelsüßer|rosenscharf|schwarz|schwarzer|schwarze|schwarzes|weiß|weißer|weiße|weißes|rote|roter|rotes|rot|grün|grüner|grüne|grünes|gelb|gelber|gelbe|gelbes|braun|brauner|braune|braunes|bunt|bunter|bunte|hell|heller|helle|dunkel|dunkler|dunkle|klein|kleine|kleiner|kleines|groß|große|großer|großes|mittelgroß|mittelgroße|dicke|dünne|junge|gehackt|gehackte|gehackter|gewürfelt|gewürfelte|geschnitten|geschnittene|geschält|geschälte|ungeschält|ungeschälte|gestückelt|gestückelte|passiert|passierte|abgetropft|abgetropfte|eingelegt|eingelegte|gekocht|gekochte|roh|rohe|roher|reif|reife|weich|weiche|festkochend|festkochende|mehligkochend|mehligkochende|entsteint|entsteinte|ohne stein|ohne kerne|etwas|prise|nach geschmack|nach bedarf|zum braten|zum kochen|zum ablöschen|aus der mühle)\b/gi, ' ')
@@ -217,14 +214,11 @@
       if (!pClean || !iClean) return false;
       if (pClean === iClean) return true;
 
-      // 2. Schutzregel gegen zusammengesetzte Fertigprodukte, Saucen & Gewürzmischungen:
-      // (Verhindert z.B. "Salz" <-> "Pommesgewürz Salz" oder "Guanciale" <-> "Sugo con Guanciale")
       const compoundSauceOrSpiceRegex = /\b(sugo|pesto|sauce|soße|pastasauce|tomatensauce|nudelsoße|suppe|fond|brühe|bouillon|creme|aufstrich|gewürz|pommesgewürz|gewürzmischung|gewürzsalz|kräutersalz|knoblauchsalz|rauchsalz|selleriesalz|zwiebelsalz|curry|paste|mark|tomatenmark|ketchup|senf|mayo|mayonnaise|apfelmus)\b/i;
       if (compoundSauceOrSpiceRegex.test(pClean) !== compoundSauceOrSpiceRegex.test(iClean)) {
         return false;
       }
 
-      // 3. Schutzregel für kritische Küchen-Paare, die auf dasselbe Grundwort enden, aber völlig andere Produkte sind:
       const forbiddenMismatchPairs = [
         /\b(kokosmilch|kondensmilch|hafermilch|mandelmilch|sojamilch|buttermilch)\b/i,
         /\b(kräuterbutter|knoblauchbutter|erdnussbutter|mandelbutter|kakaobutter)\b/i,
@@ -241,13 +235,11 @@
         }
       }
 
-      // 4. Schneide Nebenzutaten hinter "con ...", "mit ...", "alla ...", "al ...", "in ..." ab:
       const stripModifiers = (str) => str.split(/\s+(?:con|mit|alla|all'|al|ai|in|auf|nach|aus|vom)\s+/i)[0].trim();
       const pHead = stripModifiers(pClean);
       const iHead = stripModifiers(iClean);
       if (pHead === iHead) return true;
 
-      // 5. Unterstütze explizite Kombi-Einträge im Vorratsschrank mit "&" oder "+" (z.B. "Zwiebeln & Knoblauch" oder "Salz & Pfeffer")
       if (pHead.includes('&') || pHead.includes('+') || pHead.includes(' und ')) {
         const subItems = pHead.split(/\s*(?:&|\+|und)\s*/i).map(s => s.trim()).filter(Boolean);
         if (subItems.some(sub => isIngredientMatchingPantry(sub, iHead))) {
@@ -255,14 +247,12 @@
         }
       }
 
-      // 6. Zerlege die Hauptbegriffe in einzelne Wörter, normalisiere Singular/Plural und ignoriere die Wortreihenfolge
       const pWords = pHead.split(/[\s,\-\/]+/).filter(Boolean).map(normalizeGermanFoodWord);
       const iWords = iHead.split(/[\s,\-\/]+/).filter(Boolean).map(normalizeGermanFoodWord);
 
       if (pWords.join(' ') === iWords.join(' ')) return true;
       if ([...pWords].sort().join(' ') === [...iWords].sort().join(' ')) return true;
 
-      // 7. Wenn beide Einträge auf 1 Kernwort reduziert sind (z.B. "Rinderhackfleisch" vs. "Hackfleisch"):
       if (pWords.length === 1 && iWords.length === 1) {
         const pw = pWords[0];
         const iw = iWords[0];
@@ -292,7 +282,7 @@
       return existingGroup;
     };
 
-    // Sicherheits-Weiche für Kategorien: Pesto, Sugo, Fonds, Brühen & Pastasaucen gehören in den Vorratsschrank (es sei denn, sie sind explizit im Kühlschrank/Tiefkühler)!
+    // Sicherheits-Weiche für Kategorien
     const enforceSmartCategory = (productName, suggestedCategory) => {
       const lower = (productName || '').toLowerCase();
       if (suggestedCategory === 'sauces' && /sugo|amatriciana|pesto|fond|brühe|bouillon|tomatensauce|tomatensoße|passata|polpa|arrabbiata|bolognese|nudelsoße|pastasauce|kokosmilch|ketchup|senf|mayo|apfelmus|konserve|mais|bohnen|linsen|kichererbsen|nudeln|pasta|penne|spaghetti|rigatoni|tagliatelle|fusilli|farfalle|reis|mehl|zucker/i.test(lower)) {
@@ -492,10 +482,22 @@
       reader.readAsDataURL(file);
     });
 
-    // DYNAMISCHER GEMINI AUFRUF
+    // Hilfsfunktion: Wandelt einen Audio-Blob in einen Base64-String für Gemini um
+    const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result || '';
+        const base64 = String(dataUrl).split(',')[1] || '';
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    // DYNAMISCHER GEMINI AUFRUF (Unterstützt jetzt sowohl Fotos als auch natives Gemini-Audio!)
     let cachedWorkingModel = null;
 
-    async function callGeminiWithAutoModel(apiKey, promptText, base64Image = null) {
+    async function callGeminiWithAutoModel(apiKey, promptText, base64Media = null, mediaMimeType = 'image/jpeg') {
       const cleanKey = (apiKey || '').trim();
       if (!cleanKey) {
         throw new Error('Kein Gemini API-Key hinterlegt. Bitte Einladungs-Link nutzen oder im Zahnrad-Menü eintragen.');
@@ -540,7 +542,9 @@
       }
 
       const parts = [{ text: promptText }];
-      if (base64Image) parts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Image } });
+      if (base64Media) {
+        parts.push({ inlineData: { mimeType: mediaMimeType, data: base64Media } });
+      }
 
       let lastErrorMsg = 'Kein passendes Gemini-Modell gefunden.';
       for (const modelName of candidateModels) {
@@ -912,17 +916,20 @@
       const [freezeLeftovers250, setFreezeLeftovers250] = useState(0);
       const [oliveOilAlert, setOliveOilAlert] = useState(false);
 
-      // Endlos-Sprachaufnahme States & Refs
+      // NEU: Echtes Gemini Native-Audio (MediaRecorder mit Hardware-Geräuschunterdrückung)
       const [voiceOverlay, setVoiceOverlay] = useState(false);
       const [voiceText, setVoiceText] = useState('');
-      const [voiceInterimText, setVoiceInterimText] = useState('');
-      const [isListening, setIsListening] = useState(false);
+      const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+      const [recordingSeconds, setRecordingSeconds] = useState(0);
+      const [recordedAudioBlob, setRecordedAudioBlob] = useState(null);
       const [isProcessingVoice, setIsProcessingVoice] = useState(false);
       const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
       const [newShopItemName, setNewShopItemName] = useState('');
-      const recognitionRef = useRef(null);
-      const shouldKeepListeningRef = useRef(false);
-      const restartListeningTimerRef = useRef(null);
+
+      const mediaRecorderRef = useRef(null);
+      const mediaStreamRef = useRef(null);
+      const audioChunksRef = useRef([]);
+      const recordingTimerRef = useRef(null);
 
       // Touch-Swipe-Steuerung & Android-Zurück-Button (History API)
       const touchStartRef = useRef({ x: null, y: null });
@@ -984,7 +991,7 @@
 
           if (modalHistoryPushedRef.current) {
             modalHistoryPushedRef.current = false;
-            stopListening();
+            cleanupAudioRecording();
             setShowSettingsModal(false);
             setShowResetConfirm(false);
             setShowAddMealPrepModal(false);
@@ -1278,7 +1285,7 @@
         if (mpToDelete) showToast(`"${mpToDelete.name}" aus TK gelöscht`);
       };
 
-      // Intelligentes Hinzufügen oder Aufstocken (Mit Batch-Support für Mehrfach-Scans & sauberer Trennung zwischen Kühlschrank und Vorratsschrank!)
+      // Intelligentes Hinzufügen oder Aufstocken
       const addOrUpdatePantryItem = (name, amountToAdd, unit, category, expiryInput = undefined, packSizeNum = undefined, packUnitStr = undefined) => {
         const cleanName = (name || '').trim();
         if (!cleanName) return;
@@ -1384,7 +1391,7 @@
         showToast(`"${cleanName}" gespeichert!`);
       };
 
-      // PRÄZISER ZUTATEN- & MENGEN-CHECK (Rechnet auch Bestände aus Kühlschrank + Vorratsschrank zusammen!)
+      // PRÄZISER ZUTATEN- & MENGEN-CHECK
       const checkRecipeAvailability = (recipe) => {
         const missing = [];
         const missingDetails = [];
@@ -1461,7 +1468,6 @@
             return;
           }
 
-          // Alle passenden Einträge über alle Schränke (z.B. Kühlschrank + Vorratsschrank) hinweg finden und Mengen addieren!
           const matchingItems = pantry.filter(p => isIngredientMatchingPantry(p.name, cleanIngName) && p.status !== 'empty');
           const primaryFound = matchingItems[0];
           const combinedAmount = matchingItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -1814,7 +1820,7 @@ WICHTIGE REGELN:
 Antworte NUR mit reinem JSON:
 {"items": [{"name": "Reiner Produktname ohne Marke", "amount": 1, "unitType": "Packung|Glas|Dose|Flasche|Tube|Becher|Stück", "packSize": 400, "packUnit": "g", "category": "pantry|fridge|freezer_items|sauces|spices", "expiryDate": "YYYY-MM-DD"}]}`;
 
-          const { text: rawText, usedModel } = await callGeminiWithAutoModel(activeKey, prompt, base64Data);
+          const { text: rawText, usedModel } = await callGeminiWithAutoModel(activeKey, prompt, base64Data, 'image/jpeg');
           setDetectedModelInfo(usedModel);
 
           const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -1908,145 +1914,169 @@ Antworte NUR mit reinem JSON:
         }
       };
 
-      // ENDLOS-DIKTAT (Hört ohne Zeitlimit so lange zu, bis du auf Stopp oder Ausführen drückst!)
-      const createAndStartRecognitionSession = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-          showToast('Spracherkennung wird von diesem Browser nicht unterstützt.');
-          shouldKeepListeningRef.current = false;
-          setIsListening(false);
+      // NEU: ECHTER GEMINI NATIVE-AUDIO REKORDER (Mit Hardware Noise-Suppression gegen TV-Geräusche im Hintergrund)
+      const cleanupAudioRecording = () => {
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          try { mediaRecorderRef.current.stop(); } catch (e) {}
+        }
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(track => {
+            try { track.stop(); } catch (e) {}
+          });
+          mediaStreamRef.current = null;
+        }
+        setIsRecordingAudio(false);
+      };
+
+      const startNativeAudioRecording = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('Audio-Aufnahme wird von diesem Browser nicht unterstützt.');
+          return;
+        }
+        try {
+          cleanupAudioRecording();
+          setRecordedAudioBlob(null);
+          audioChunksRef.current = [];
+          setRecordingSeconds(0);
+
+          // Aktiviere Hardware-Geräuschunterdrückung (Noise-Suppression & Echo-Cancellation)
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            }
+          });
+          mediaStreamRef.current = stream;
+
+          let options = {};
+          if (window.MediaRecorder && MediaRecorder.isTypeSupported) {
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+              options = { mimeType: 'audio/webm;codecs=opus' };
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+              options = { mimeType: 'audio/webm' };
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+              options = { mimeType: 'audio/mp4' };
+            }
+          }
+
+          const recorder = new MediaRecorder(stream, options);
+          mediaRecorderRef.current = recorder;
+
+          recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
+
+          recorder.onstop = () => {
+            const mime = recorder.mimeType || 'audio/webm';
+            const blob = new Blob(audioChunksRef.current, { type: mime });
+            if (blob.size > 0) {
+              setRecordedAudioBlob(blob);
+            }
+            if (mediaStreamRef.current) {
+              mediaStreamRef.current.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+              mediaStreamRef.current = null;
+            }
+            setIsRecordingAudio(false);
+          };
+
+          recorder.start(250);
+          setIsRecordingAudio(true);
+
+          recordingTimerRef.current = setInterval(() => {
+            setRecordingSeconds(prev => prev + 1);
+          }, 1000);
+        } catch (err) {
+          setIsRecordingAudio(false);
+          showToast('Bitte Mikrofon-Zugriff erlauben.');
+        }
+      };
+
+      const stopNativeAudioRecording = () => new Promise((resolve) => {
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+        const recorder = mediaRecorderRef.current;
+        if (!recorder || recorder.state === 'inactive') {
+          setIsRecordingAudio(false);
+          resolve(recordedAudioBlob);
           return;
         }
 
+        const prevOnStop = recorder.onstop;
+        recorder.onstop = (e) => {
+          if (prevOnStop) prevOnStop(e);
+          const mime = recorder.mimeType || 'audio/webm';
+          const blob = new Blob(audioChunksRef.current, { type: mime });
+          resolve(blob.size > 0 ? blob : null);
+        };
         try {
-          if (recognitionRef.current) {
-            recognitionRef.current.onend = null;
-            recognitionRef.current.onerror = null;
-            recognitionRef.current.onresult = null;
-            try { recognitionRef.current.abort(); } catch (e) {}
-          }
-
-          const recognition = new SpeechRecognition();
-          recognitionRef.current = recognition;
-          recognition.lang = 'de-DE';
-          recognition.continuous = false;
-          recognition.interimResults = true;
-          recognition.maxAlternatives = 1;
-
-          recognition.onresult = (event) => {
-            let finalChunk = '';
-            let interimChunk = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-              const transcriptPiece = event.results[i][0].transcript;
-              if (event.results[i].isFinal) {
-                finalChunk += transcriptPiece + ' ';
-              } else {
-                interimChunk += transcriptPiece;
-              }
-            }
-
-            if (finalChunk.trim()) {
-              const cleanChunk = finalChunk.trim();
-              setVoiceText(prev => {
-                const p = (prev || '').trim();
-                return p ? `${p} ${cleanChunk}` : cleanChunk;
-              });
-              setVoiceInterimText('');
-            } else {
-              setVoiceInterimText(interimChunk);
-            }
-          };
-
-          recognition.onerror = (event) => {
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-              shouldKeepListeningRef.current = false;
-              setIsListening(false);
-              setVoiceInterimText('');
-              showToast('Bitte Mikrofon-Zugriff erlauben.');
-            }
-          };
-
-          recognition.onend = () => {
-            if (shouldKeepListeningRef.current) {
-              if (restartListeningTimerRef.current) clearTimeout(restartListeningTimerRef.current);
-              restartListeningTimerRef.current = setTimeout(() => {
-                if (shouldKeepListeningRef.current) {
-                  createAndStartRecognitionSession();
-                }
-              }, 120);
-            } else {
-              setIsListening(false);
-              setVoiceInterimText('');
-            }
-          };
-
-          recognition.start();
-          setIsListening(true);
-        } catch (e) {
-          if (shouldKeepListeningRef.current) {
-            restartListeningTimerRef.current = setTimeout(() => {
-              if (shouldKeepListeningRef.current) createAndStartRecognitionSession();
-            }, 300);
-          } else {
-            setIsListening(false);
-          }
+          recorder.stop();
+        } catch (err) {
+          setIsRecordingAudio(false);
+          resolve(null);
         }
-      };
-
-      const startListening = () => {
-        shouldKeepListeningRef.current = true;
-        setIsListening(true);
-        createAndStartRecognitionSession();
-      };
-
-      const stopListening = () => {
-        shouldKeepListeningRef.current = false;
-        if (restartListeningTimerRef.current) {
-          clearTimeout(restartListeningTimerRef.current);
-          restartListeningTimerRef.current = null;
-        }
-        if (recognitionRef.current) {
-          recognitionRef.current.onend = null;
-          try { recognitionRef.current.stop(); } catch (e) {}
-        }
-        setVoiceInterimText(currentInterim => {
-          if (currentInterim && currentInterim.trim()) {
-            setVoiceText(prev => {
-              const p = (prev || '').trim();
-              return p ? `${p} ${currentInterim.trim()}` : currentInterim.trim();
-            });
-          }
-          return '';
-        });
-        setIsListening(false);
-      };
+      });
 
       const openVoiceAssistantAndStart = () => {
         setVoiceText('');
-        setVoiceInterimText('');
+        setRecordedAudioBlob(null);
+        setRecordingSeconds(0);
         setVoiceOverlay(true);
-        startListening();
+        startNativeAudioRecording();
       };
 
-      // GEMINI KI SPRACH-INTERPRETER
-      const executeVoiceCommand = async (rawCmdText) => {
-        const combinedText = `${rawCmdText || ''} ${voiceInterimText || ''}`.trim();
-        if (!combinedText) return;
-        stopListening();
+      const formatTimer = (secs) => {
+        const m = String(Math.floor(secs / 60)).padStart(2, '0');
+        const s = String(secs % 60).padStart(2, '0');
+        return `${m}:${s}`;
+      };
 
+      // GEMINI KI SPRACH-INTERPRETER (Verarbeitet jetzt direkt die echte Tonaufnahme ODER getippten Text!)
+      const executeVoiceCommand = async () => {
         const activeKey = (geminiKey || '').trim();
         const todayStr = new Date().toISOString().split('T')[0];
         const existingNames = pantry.map(p => `${p.name} (${p.amount !== undefined ? p.amount + ' ' + p.unitType : 'Gewürz'}, ${p.category})`).join(', ');
 
         try {
           setIsProcessingVoice(true);
+
+          // Falls die Aufnahme noch läuft, jetzt sauber abschließen und den Audio-Blob holen
+          let finalBlob = recordedAudioBlob;
+          if (isRecordingAudio) {
+            finalBlob = await stopNativeAudioRecording();
+          }
+
+          const typedText = (voiceText || '').trim();
+          if (!finalBlob && !typedText) {
+            setIsProcessingVoice(false);
+            showToast('Keine Sprachaufnahme oder Text vorhanden.');
+            return;
+          }
+
+          let base64Audio = null;
+          let audioMime = 'audio/webm';
+          if (finalBlob && finalBlob.size > 0) {
+            base64Audio = await blobToBase64(finalBlob);
+            audioMime = (finalBlob.type || 'audio/webm').split(';')[0];
+          }
+
           const voicePrompt = `Du bist der smarte Küchen-Assistent einer Vorrats- und Rezept-App.
 Heute ist ${todayStr}.
 Aktuell im Bestand vorhandene Artikel: [${existingNames}].
-Der Nutzer hat folgenden Sprachbefehl (ggf. mehrere Sätze oder ein ganzes Rezept mit Zutaten und Zubereitung) eingesprochen: "${combinedText}"
+${base64Audio ? 'Höre dir die beigefügte Sprachaufnahme des Nutzers genau an. WICHTIG: Ignoriere jegliche Hintergrundgeräusche oder Fernsehstimmen im Hintergrund komplett und beachte NUR die Hauptstimme, die nah am Mikrofon über Lebensmittel, Vorräte oder Rezepte spricht!' : ''}
+${typedText ? `Zusätzlich eingegebener Text des Nutzers: "${typedText}"` : ''}
 
 Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSON in genau diesem Format:
 {
+  "transcript": "Kurze Zusammenfassung, was du verstanden hast",
   "actions": [
     {
       "type": "add_or_increment" | "set_exact" | "delete" | "mealprep_add" | "create_recipe" | "query",
@@ -2077,7 +2107,9 @@ Wichtige Regeln:
 - Wenn der Nutzer Packungsgrößen nennt (z.B. "zwei 1-Kilo Packungen Penne"), setze type: "add_or_increment", name: "Penne", amount: 2, unitType: "Packung", packSize: 1000, packUnit: "g", category: "pantry".
 - Wenn der Nutzer ein neues Rezept diktiert oder anlegen möchte (z.B. "Rezept für Senfeier..." oder eine Aufzählung von Zutaten & Schritten für ein Gericht), setze type: "create_recipe" und übernimm alle vom Nutzer genannten Mengen, Zutaten und Zubereitungsschritte sauber in das Objekt "recipe" (fehlende Angaben wie kcalPer100g oder prepTime sinnvoll schätzen)!`;
 
-          const { text: aiResponse } = await callGeminiWithAutoModel(activeKey, voicePrompt);
+          const { text: aiResponse, usedModel } = await callGeminiWithAutoModel(activeKey, voicePrompt, base64Audio, audioMime);
+          setDetectedModelInfo(usedModel);
+
           const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
           if (!jsonMatch) throw new Error('Konnte Sprachbefehl nicht zuordnen');
           const parsed = JSON.parse(jsonMatch[0]);
@@ -2125,10 +2157,10 @@ Wichtige Regeln:
                   kcalPer100g: 170, needsFresh: [], prepTime: 20, season: 'all'
                 }, ...prev]);
                 showToast(`Im TK angelegt: ${act.name}`);
-              } else {
+              } else if (act.name) {
                 const hasPack = Number(act.packSize) > 0;
                 addOrUpdatePantryItem(
-                  act.name || combinedText,
+                  act.name,
                   Number(act.amount) || 1,
                   act.unitType || 'Stück',
                   act.category || 'pantry',
@@ -2139,8 +2171,10 @@ Wichtige Regeln:
               }
             });
           }
+
           setVoiceText('');
-          setVoiceInterimText('');
+          setRecordedAudioBlob(null);
+          setRecordingSeconds(0);
           setVoiceOverlay(false);
         } catch (err) {
           showToast(`Sprach-Fehler: ${err.message}`);
@@ -2661,7 +2695,6 @@ Wichtige Regeln:
             {/* TAB: VORRÄTE & TK */}
             {activeTab === 'pantry' && (
               <div className="space-y-3.5">
-                {/* 1. GRÖSSERE, GUT LESBARE REITER IM 3x2 RASTER OBEN */}
                 <div className="grid grid-cols-3 gap-1.5 bg-stone-200/70 p-1.5 rounded-xl">
                   {[
                     { id: 'mealprep', label: 'TK Meal', icon: 'snowflake' },
@@ -2686,7 +2719,6 @@ Wichtige Regeln:
                   ))}
                 </div>
 
-                {/* 2. SUCHLEISTE DIREKT UNTER DEN REITERN */}
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
                     <Icon name="search" size={15} />
@@ -2925,7 +2957,6 @@ Wichtige Regeln:
                             </div>
                           </div>
 
-                          {/* PACKUNGS-BAUKASTEN ANZEIGE */}
                           {hasPacks ? (
                             <div className="bg-stone-50 border border-stone-200 rounded-xl p-2.5 space-y-2">
                               <div className="flex items-center justify-between border-b border-stone-200/80 pb-1.5">
@@ -3142,7 +3173,7 @@ Wichtige Regeln:
                       </div>
                     )}
 
-                    {/* ZUTATEN (DIREKT IN DIE FELDER TIPPEN) */}
+                    {/* ZUTATEN */}
                     <div className="space-y-2">
                       <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">
                         Zutaten {isEditingRecipe && '(Direkt in die Felder tippen zum Ändern)'}
@@ -3290,7 +3321,6 @@ Wichtige Regeln:
                       </div>
                     </div>
 
-                    {/* SUCHFELD DIREKT ÜBER DER REZEPTLISTE */}
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
                         <Icon name="search" size={15} />
@@ -3639,7 +3669,6 @@ Wichtige Regeln:
 
                   {editPantryCategory !== 'spices' && (
                     <>
-                      {/* PACKUNGS-BAUKASTEN MIT FREIER AUSWAHL OB PACKUNG, GLAS, DOSE ODER FLASCHE */}
                       <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-semibold text-stone-800">Gebinde & Gewicht-Baukasten</span>
@@ -4549,78 +4578,87 @@ Wichtige Regeln:
             </div>
           )}
 
-          {/* MODAL: SPRACHBEFEHL MIT ENDLOS-DIKTAT */}
+          {/* MODAL: ECHTES GEMINI NATIVE-AUDIO (MIT TV-GERÄUSCHFILTER) */}
           {voiceOverlay && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-semibold text-stone-900">Gemini Sprach-Assistent</h3>
+                    <h3 className="text-base font-semibold text-stone-900">Gemini Direkt-Audio</h3>
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                      isListening ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      isRecordingAudio ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     }`}>
-                      {isListening ? '● Mikrofon offen' : 'Bereit'}
+                      {isRecordingAudio ? `● Aufnahme (${formatTimer(recordingSeconds)})` : recordedAudioBlob ? 'Aufnahme bereit' : 'Bereit'}
                     </span>
                   </div>
-                  <button onClick={() => { stopListening(); setVoiceOverlay(false); }} className="text-stone-400">
+                  <button
+                    onClick={() => {
+                      cleanupAudioRecording();
+                      setVoiceOverlay(false);
+                    }}
+                    className="text-stone-400"
+                  >
                     <Icon name="x" size={18} />
                   </button>
                 </div>
 
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Sprich ganz entspannt (auch mit Pausen beim Kochen). Das Mikrofon bleibt so lange an, bis du unten auf <strong>„Mit Gemini ausführen“</strong> oder auf Pause tippst!
+                  Deine Stimme wird mit <strong>Nebengeräusch-Filter</strong> aufgenommen und direkt als echte Tonspur an Gemini geschickt. Sprich so lange du möchtest!
                 </p>
 
                 <div className="flex gap-2">
                   <button
-                    onClick={isListening ? stopListening : startListening}
-                    className={`flex-1 py-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
-                      isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-stone-100 hover:bg-stone-200 text-stone-900'
+                    onClick={() => {
+                      if (isRecordingAudio) {
+                        stopNativeAudioRecording();
+                      } else {
+                        startNativeAudioRecording();
+                      }
+                    }}
+                    className={`flex-1 py-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition ${
+                      isRecordingAudio
+                        ? 'bg-red-600 text-white animate-pulse shadow-sm'
+                        : 'bg-stone-100 hover:bg-stone-200 text-stone-900'
                     }`}
                   >
                     <Icon name="mic" size={16} />
-                    <span>{isListening ? 'Aufnahme pausieren' : 'Weiter sprechen'}</span>
+                    <span>
+                      {isRecordingAudio
+                        ? `Ich höre zu... (${formatTimer(recordingSeconds)}) – Tippen für Pause`
+                        : recordedAudioBlob
+                        ? 'Aufnahme neu starten'
+                        : 'Aufnahme starten'}
+                    </span>
                   </button>
-                  {(voiceText || voiceInterimText) && (
-                    <button
-                      onClick={() => { setVoiceText(''); setVoiceInterimText(''); }}
-                      className="px-3 py-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-medium"
-                      title="Textfeld leeren"
-                    >
-                      Leeren
-                    </button>
-                  )}
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 pt-1 border-t border-stone-100">
+                  <label className="text-[11px] font-medium text-stone-500 block">
+                    Optional: Alternativ hier eintippen (oder Pixel-Tastaturmikrofon nutzen):
+                  </label>
                   <textarea
-                    rows={4}
-                    placeholder="Dein gesprochener Text wird hier laufend aneinandergehängt..."
+                    rows={2}
+                    placeholder="Optionaler Text..."
                     value={voiceText}
                     onChange={e => setVoiceText(e.target.value)}
                     className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs leading-relaxed text-stone-900 focus:outline-none focus:border-stone-600"
                   />
-                  {voiceInterimText && (
-                    <p className="text-[11px] text-stone-500 italic px-1 animate-pulse">
-                      Höre gerade: „{voiceInterimText}...“
-                    </p>
-                  )}
                 </div>
 
                 <button
-                  disabled={isProcessingVoice || (!voiceText.trim() && !voiceInterimText.trim())}
-                  onClick={() => executeVoiceCommand(voiceText)}
+                  disabled={isProcessingVoice || (!isRecordingAudio && !recordedAudioBlob && !voiceText.trim())}
+                  onClick={executeVoiceCommand}
                   className="w-full py-3 bg-[#849b82] hover:bg-[#738871] disabled:bg-stone-300 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition"
                 >
                   {isProcessingVoice ? (
                     <>
                       <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Gemini verarbeitet...</span>
+                      <span>Gemini wertet deine Stimme aus...</span>
                     </>
                   ) : (
                     <>
                       <Icon name="check" size={16} />
-                      <span>Fertig – Mit Gemini ausführen</span>
+                      <span>Fertig – Direkt mit Gemini ausführen</span>
                     </>
                   )}
                 </button>
