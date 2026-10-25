@@ -182,6 +182,14 @@
         'pfefferkorn': 'pfeffer',
         'kapernäpfel': 'kaper',
         'kapern': 'kaper',
+        'cherrytomaten': 'kirschtomate',
+        'cherrytomate': 'kirschtomate',
+        'kirschtomaten': 'kirschtomate',
+        'datteltomaten': 'kirschtomate',
+        'datteltomate': 'kirschtomate',
+        'strauchtomaten': 'tomate',
+        'rispentomaten': 'tomate',
+        'fleischtomaten': 'tomate',
         'cannellinibohnen': 'cannellini bohne',
         'kidneybohnen': 'kidney bohne'
       };
@@ -197,15 +205,30 @@
     };
 
     // PRÄZISER & ALLTAGSTAUGLICHER ZUTATEN-ABGLEICH
-    const isIngredientMatchingPantry = (pantryName, ingName) => {
+    // Trennt jetzt strikt zwischen frischen Tomaten/Kirschtomaten, getrockneten Tomaten, passierten Tomaten und Dosentomaten!
+    const isIngredientMatchingPantry = (pantryName, ingName, pantryItemObj = null) => {
       const pRaw = (pantryName || '').trim().toLowerCase();
       const iRaw = (ingName || '').trim().toLowerCase();
       if (!pRaw || !iRaw) return false;
       if (pRaw === iRaw) return true;
 
+      // 0. Wenn das Rezept explizit nach "frischen" oder "reifen" Tomaten/Kirschtomaten verlangt,
+      // darf niemals ein Konserven-Artikel (Dose/Glas/Tube) oder ein Vorratsschrank-Eintrag mit "Dose" matchen!
+      const ingExplicitlyFresh = /\b(frisch|frische|frischer|frisches|reif|reife|reifer|rispen|strauch)\b/i.test(iRaw);
+      if (ingExplicitlyFresh && /tomat/i.test(iRaw)) {
+        if (/\b(dose|dosen|glas|gläser|tube|konserve|getrocknet|passiert|polpa|passata|geschält|gestückelt|stückig)\b/i.test(pRaw)) {
+          return false;
+        }
+        if (pantryItemObj && (pantryItemObj.containerType === 'Dose' || pantryItemObj.unitType === 'Dose' || pantryItemObj.unitType === 'Dosen')) {
+          return false;
+        }
+      }
+
+      // 1. WICHTIG: Nur harmlose Größen-, Farb- und Frischheits-Adjektive entfernen!
+      // Wörter wie "getrocknet", "passiert", "eingelegt", "geschält", "gestückelt" oder "Dose" DÜRFEN NICHT entfernt werden!
       const cleanNeutralWords = (str) => str
-        .replace(/\s*\(.*?\)\s*/g, ' ')
-        .replace(/\b(frisch|frische|frischer|frisches|bio|tk|tiefgekühlt|tiefgekühlte|fein|feiner|feines|grob|grober|grobes|gemahlen|gemahlener|gemahlenes|geschrotet|geschroteter|ganz|ganze|ganzer|ganzes|extra|vergine|nativ|natives|glatte|glatter|krause|getrocknet|getrocknete|getrockneter|gerieben|geriebener|geriebenes|kalt|kalte|kalter|warm|warme|lauwarm|lauwarme|zimmerwarm|zimmerwarme|mittelscharf|mittelscharfer|scharf|scharfer|scharfe|milder|mild|milde|süß|süßer|süße|edelsüß|edelsüßer|rosenscharf|schwarz|schwarzer|schwarze|schwarzes|weiß|weißer|weiße|weißes|rote|roter|rotes|rot|grün|grüner|grüne|grünes|gelb|gelber|gelbe|gelbes|braun|brauner|braune|braunes|bunt|bunter|bunte|hell|heller|helle|dunkel|dunkler|dunkle|klein|kleine|kleiner|kleines|groß|große|großer|großes|mittelgroß|mittelgroße|dicke|dünne|junge|gehackt|gehackte|gehackter|gewürfelt|gewürfelte|geschnitten|geschnittene|geschält|geschälte|ungeschält|ungeschälte|gestückelt|gestückelte|passiert|passierte|abgetropft|abgetropfte|eingelegt|eingelegte|gekocht|gekochte|roh|rohe|roher|reif|reife|weich|weiche|festkochend|festkochende|mehligkochend|mehligkochende|entsteint|entsteinte|ohne stein|ohne kerne|etwas|prise|nach geschmack|nach bedarf|zum braten|zum kochen|zum ablöschen|aus der mühle)\b/gi, ' ')
+        .replace(/\b(frisch|frische|frischer|frisches|bio|tk|tiefgekühlt|tiefgekühlte|fein|feiner|feines|grob|grober|grobes|gemahlen|gemahlener|gemahlenes|geschrotet|geschroteter|ganz|ganze|ganzer|ganzes|extra|vergine|nativ|natives|glatte|glatter|krause|gerieben|geriebener|geriebenes|kalt|kalte|kalter|warm|warme|lauwarm|lauwarme|zimmerwarm|zimmerwarme|mittelscharf|mittelscharfer|scharf|scharfer|scharfe|milder|mild|milde|süß|süßer|süße|edelsüß|edelsüßer|rosenscharf|schwarz|schwarzer|schwarze|schwarzes|weiß|weißer|weiße|weißes|rote|roter|rotes|rot|grün|grüner|grüne|grünes|gelb|gelber|gelbe|gelbes|braun|brauner|braune|braunes|bunt|bunter|bunte|hell|heller|helle|dunkel|dunkler|dunkle|klein|kleine|kleiner|kleines|groß|große|großer|großes|mittelgroß|mittelgroße|dicke|dünne|junge|gehackt|gehackte|gehackter|gewürfelt|gewürfelte|geschnitten|geschnittene|ungeschält|ungeschälte|abgetropft|abgetropfte|gekocht|gekochte|roh|rohe|roher|reif|reife|weich|weiche|festkochend|festkochende|mehligkochend|mehligkochende|entsteint|entsteinte|ohne stein|ohne kerne|etwas|prise|nach geschmack|nach bedarf|zum braten|zum kochen|zum ablöschen|aus der mühle)\b/gi, ' ')
+        .replace(/[()]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 
@@ -214,17 +237,24 @@
       if (!pClean || !iClean) return false;
       if (pClean === iClean) return true;
 
+      // 2. Schutzregel gegen zusammengesetzte Fertigprodukte, Saucen & Gewürzmischungen:
       const compoundSauceOrSpiceRegex = /\b(sugo|pesto|sauce|soße|pastasauce|tomatensauce|nudelsoße|suppe|fond|brühe|bouillon|creme|aufstrich|gewürz|pommesgewürz|gewürzmischung|gewürzsalz|kräutersalz|knoblauchsalz|rauchsalz|selleriesalz|zwiebelsalz|curry|paste|mark|tomatenmark|ketchup|senf|mayo|mayonnaise|apfelmus)\b/i;
       if (compoundSauceOrSpiceRegex.test(pClean) !== compoundSauceOrSpiceRegex.test(iClean)) {
         return false;
       }
 
+      // 3. Schutzregel für kritische Küchen-Paare (insbesondere alle Tomaten-Verarbeitungsarten!):
       const forbiddenMismatchPairs = [
+        // Getrocknete oder eingelegte Produkte vs. Frischware:
+        /\b(getrocknet|getrocknete|getrockneter|getrocknetes|sonnengetrocknet|sonnengetrocknete|eingelegt|eingelegte|eingelegter|in öl)\b/i,
+        // Passierte Tomaten / Passata vs. normale Tomaten:
+        /\b(passiert|passierte|passierter|passata)\b/i,
+        // Dosentomaten / Polpa / Geschälte / Stückige Tomaten vs. frische Tomaten:
+        /\b(dosentomaten|dosentomate|polpa|geschält|geschälte|gestückelt|gestückelte|stückig|stückige|dose|dosen)\b/i,
         /\b(kokosmilch|kondensmilch|hafermilch|mandelmilch|sojamilch|buttermilch)\b/i,
         /\b(kräuterbutter|knoblauchbutter|erdnussbutter|mandelbutter|kakaobutter)\b/i,
         /\b(puderzucker|vanillezucker|gelierzucker|rohrzucker|kokosblütenzucker)\b/i,
         /\b(cayennepfeffer|zitronenpfeffer|knoblauchpfeffer|pfefferminze|pfefferbeißer)\b/i,
-        /\b(dosentomaten|passata|polpa)\b/i,
         /\b(knoblauchöl|trüffelöl|chiliöl|sesamöl|erdnussöl|kokosöl)\b/i,
         /\b(reisessig|apfelessig|himbeeressig)\b/i,
         /\b(schinkenwürfel|speckwürfel)\b/i
@@ -235,30 +265,34 @@
         }
       }
 
+      // 4. Schneide Nebenzutaten hinter "con ...", "mit ...", "alla ...", "al ...", "in ..." ab:
       const stripModifiers = (str) => str.split(/\s+(?:con|mit|alla|all'|al|ai|in|auf|nach|aus|vom)\s+/i)[0].trim();
       const pHead = stripModifiers(pClean);
       const iHead = stripModifiers(iClean);
       if (pHead === iHead) return true;
 
+      // 5. Unterstütze explizite Kombi-Einträge im Vorratsschrank mit "&" oder "+" (z.B. "Zwiebeln & Knoblauch")
       if (pHead.includes('&') || pHead.includes('+') || pHead.includes(' und ')) {
         const subItems = pHead.split(/\s*(?:&|\+|und)\s*/i).map(s => s.trim()).filter(Boolean);
-        if (subItems.some(sub => isIngredientMatchingPantry(sub, iHead))) {
+        if (subItems.some(sub => isIngredientMatchingPantry(sub, iHead, pantryItemObj))) {
           return true;
         }
       }
 
+      // 6. Zerlege die Hauptbegriffe in einzelne Wörter, normalisiere Singular/Plural und ignoriere die Wortreihenfolge
       const pWords = pHead.split(/[\s,\-\/]+/).filter(Boolean).map(normalizeGermanFoodWord);
       const iWords = iHead.split(/[\s,\-\/]+/).filter(Boolean).map(normalizeGermanFoodWord);
 
       if (pWords.join(' ') === iWords.join(' ')) return true;
       if ([...pWords].sort().join(' ') === [...iWords].sort().join(' ')) return true;
 
+      // 7. Wenn beide Einträge auf 1 Kernwort reduziert sind (OHNE "tomate", damit Kirschtomate != normale Tomate/Dosentomate bleibt!):
       if (pWords.length === 1 && iWords.length === 1) {
         const pw = pWords[0];
         const iw = iWords[0];
         if (pw === iw) return true;
 
-        const allowedGenericBaseWords = ['hackfleisch', 'gulasch', 'filet', 'brustfilet', 'hähnchenbrust', 'reis', 'nudeln', 'nudel', 'pasta', 'käse', 'reibekäse', 'zwiebel', 'kartoffel', 'öl', 'speiseöl', 'essig', 'senf', 'bohne', 'pfeffer', 'salz', 'kaper', 'kapern', 'tomate', 'zitrone', 'sahne', 'butter', 'milch', 'mehl', 'zucker'];
+        const allowedGenericBaseWords = ['hackfleisch', 'gulasch', 'filet', 'brustfilet', 'hähnchenbrust', 'reis', 'nudeln', 'nudel', 'pasta', 'käse', 'reibekäse', 'zwiebel', 'kartoffel', 'öl', 'speiseöl', 'essig', 'senf', 'bohne', 'pfeffer', 'salz', 'kaper', 'kapern', 'zitrone', 'sahne', 'butter', 'milch', 'mehl', 'zucker'];
         if (allowedGenericBaseWords.includes(iw) && (pw.endsWith(iw) || pw.startsWith(iw))) return true;
         if (allowedGenericBaseWords.includes(pw) && (iw.endsWith(pw) || iw.startsWith(pw))) return true;
       }
