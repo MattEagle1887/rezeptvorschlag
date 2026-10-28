@@ -121,6 +121,44 @@
       return { totalAmount, totalPacks, unit };
     };
 
+    // Packungs-Baukasten sauber herunterrechnen (z.B. 2x 500g - 400g -> 1x 500g + 1x 100g)
+    const deductFromPacks = (packs, deductionAmount, defaultUnit = 'g') => {
+      if (!Array.isArray(packs) || packs.length === 0) return [];
+      const unit = packs[0]?.unit || defaultUnit;
+      let flat = [];
+      packs.forEach(p => {
+        const c = Math.max(0, Number(p.count) || 0);
+        const s = Math.max(0, Number(p.size) || 0);
+        if (s > 0 && c > 0) {
+          for (let i = 0; i < c; i++) flat.push(s);
+        }
+      });
+      // Kleinste / bereits angebrochene Packungen zuerst verbrauchen
+      flat.sort((a, b) => a - b);
+      let rem = Math.max(0, Number(deductionAmount) || 0);
+      for (let i = 0; i < flat.length && rem > 0; i++) {
+        if (flat[i] <= rem) {
+          rem -= flat[i];
+          flat[i] = 0;
+        } else {
+          flat[i] -= rem;
+          rem = 0;
+        }
+      }
+      const remaining = flat.filter(s => s > 0);
+      if (remaining.length === 0) return [];
+      const groupedMap = new Map();
+      remaining.forEach(s => {
+        groupedMap.set(s, (groupedMap.get(s) || 0) + 1);
+      });
+      const result = [];
+      groupedMap.forEach((count, size) => {
+        result.push({ size, unit, count });
+      });
+      result.sort((a, b) => b.size - a.size);
+      return result;
+    };
+
     const parseRequiredAmount = (amountStr) => {
       if (!amountStr) return null;
       const str = String(amountStr).toLowerCase().replace(',', '.');
@@ -132,6 +170,26 @@
       if (matchL) return { val: Math.round(parseFloat(matchL[1]) * 1000), unit: 'ml' };
       const matchMl = str.match(/(\d+(?:\.\d+)?)\s*ml\b/);
       if (matchMl) return { val: Math.round(parseFloat(matchMl[1])), unit: 'ml' };
+      return null;
+    };
+
+    // Erkennt sowohl g/ml als auch Stück/Flaschen/Gläser/Dosen für die Abbuchungs-Vorschau beim Kochen
+    const parseCookDeductionInfo = (amountStr) => {
+      if (!amountStr) return null;
+      const req = parseRequiredAmount(amountStr);
+      if (req) return req;
+      const str = String(amountStr).trim().replace(',', '.');
+      if (/\b(el|tl|esslöffel|teelöffel|prise|prisen|etwas|nach\s+wunsch|nach\s+bedarf|nach\s+geschmack|schuss|spritzer|zweig|zweige|blatt|blätter|zehe|zehen|messerspitze)\b/i.test(str)) {
+        return null;
+      }
+      const matchContainer = str.match(/^(\d+(?:\.\d+)?)\s*(stück|stk\.?|packung|packungen|pkg\.?|flasche|flaschen|glas|gläser|dose|dosen|tube|tuben|becher|topf|töpfe)?\b/i);
+      if (matchContainer) {
+        return {
+          val: parseFloat(matchContainer[1]),
+          unit: matchContainer[2] ? matchContainer[2] : 'Stück',
+          isCount: true
+        };
+      }
       return null;
     };
 
@@ -613,13 +671,99 @@
       const [recipeSearchQuery, setRecipeSearchQuery] = useState('');
       const [scanPreviewItems, setScanPreviewItems] = useState(null);
 
+      // Wake Lock (Display beim Kochen wach halten)
+      const [isWakeLockActive, setIsWakeLockActive] = useState(false);
+      const wakeLockSentinelRef = useRef(null);
+      const wakeLockWantedRef = useRef(false);
+
+      // Sprachausgabe (Text-to-Speech)
+      const [isSpeaking, setIsSpeaking] = useState(false);
+
       const [toastMsg, setToastMsg] = useState(null);
       const toastTimerRef = useRef(null);
-      const showToast = (msg) => {
+      const showToast = (msg, durationMs = 4500) => {
         if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
         setToastMsg(msg);
-        toastTimerRef.current = setTimeout(() => setToastMsg(null), 4500);
+        toastTimerRef.current = setTimeout(() => setToastMsg(null), durationMs);
       };
+
+      const stopSpeaking = () => {
+        if ('speechSynthesis' in window) {
+          try { window.speechSynthesis.cancel(); } catch (e) {}
+        }
+        setIsSpeaking(false);
+      };
+
+      const speakAnswerText = (text) => {
+        if (!text || !('speechSynthesis' in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          const cleanSpeech = String(text)
+            .replace(/[*#_`~]/g, '')
+            .replace(/\bkcal\/100g\b/gi, 'Kilokalorien pro 100 Gramm')
+            .replace(/\b(\d+)\s*g\b/g, '$1 Gramm')
+            .replace(/\b(\d+)\s*ml\b/g, '$1 Milliliter')
+            .replace(/\bEL\b/g, 'Esslöffel')
+            .replace(/\bTL\b/g, 'Teelöffel')
+            .replace(/\bMHD\b/g, 'Haltbarkeitsdatum')
+            .replace(/\bTK\b/g, 'Tiefkühler');
+          const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+          utterance.lang = 'de-DE';
+          utterance.rate = 1.0;
+          utterance.onstart = () => setIsSpeaking(true);
+          utterance.onend = () => setIsSpeaking(false);
+          utterance.onerror = () => setIsSpeaking(false);
+          setIsSpeaking(true);
+          window.speechSynthesis.speak(utterance);
+        } catch (e) {
+          setIsSpeaking(false);
+        }
+      };
+
+      const requestScreenWakeLock = async (silent = false) => {
+        if (!('wakeLock' in navigator)) {
+          if (!silent) showToast('Dein Browser unterstützt den Display-Wachhalter leider nicht.');
+          return;
+        }
+        try {
+          const sentinel = await navigator.wakeLock.request('screen');
+          wakeLockSentinelRef.current = sentinel;
+          wakeLockWantedRef.current = true;
+          setIsWakeLockActive(true);
+          sentinel.addEventListener('release', () => {
+            if (!wakeLockWantedRef.current) setIsWakeLockActive(false);
+          });
+          if (!silent) showToast('☀️ Koch-Modus aktiv: Display bleibt jetzt an!');
+        } catch (err) {
+          setIsWakeLockActive(false);
+          if (!silent) showToast('Display-Wachhalter konnte nicht aktiviert werden.');
+        }
+      };
+
+      const releaseScreenWakeLock = async (silent = false) => {
+        wakeLockWantedRef.current = false;
+        if (wakeLockSentinelRef.current) {
+          try { await wakeLockSentinelRef.current.release(); } catch (e) {}
+          wakeLockSentinelRef.current = null;
+        }
+        setIsWakeLockActive(false);
+        if (!silent) showToast('Display-Wachhalter ausgeschaltet.');
+      };
+
+      const toggleWakeLock = () => {
+        if (isWakeLockActive) releaseScreenWakeLock(false);
+        else requestScreenWakeLock(false);
+      };
+
+      useEffect(() => {
+        const handleVis = () => {
+          if (document.visibilityState === 'visible' && wakeLockWantedRef.current) {
+            requestScreenWakeLock(true);
+          }
+        };
+        document.addEventListener('visibilitychange', handleVis);
+        return () => document.removeEventListener('visibilitychange', handleVis);
+      }, []);
 
       useEffect(() => {
         if (window.location.search.includes('db=') || window.location.search.includes('gemini=')) {
@@ -902,6 +1046,7 @@
       const [editingAmountValue, setEditingAmountValue] = useState('');
 
       const [cookedModalRecipe, setCookedModalRecipe] = useState(null);
+      const [cookDeductions, setCookDeductions] = useState([]);
       const [freezeLeftovers500, setFreezeLeftovers500] = useState(0);
       const [freezeLeftovers250, setFreezeLeftovers250] = useState(0);
       const [oliveOilAlert, setOliveOilAlert] = useState(false);
@@ -1163,6 +1308,7 @@
         showToast(`"${cleanName}" gespeichert!`);
       };
 
+      // Punkt 4: Kein automatisches Befüllen der Einkaufsliste mehr bei 0 / Leer
       const updatePackCount = (itemId, packIndex, delta) => {
         setPantry(prev => prev.map(item => {
           if (item.id !== itemId || !Array.isArray(item.packs)) return item;
@@ -1180,11 +1326,7 @@
           else if (cleanAmount <= threshold) nextStatus = 'low';
 
           if (nextStatus === 'empty' && item.status !== 'empty') {
-            setShoppingList(sl => {
-              if (sl.some(s => isIngredientMatchingPantry(s.name, item.name))) return sl;
-              return [...sl, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }];
-            });
-            showToast(`${item.name} ist leer → Einkaufsliste`);
+            showToast(`${item.name} ist jetzt aufgebraucht (Leer).`);
           }
 
           return {
@@ -1234,6 +1376,7 @@
           .sort((a, b) => a.title.localeCompare(b.title, 'de', { sensitivity: 'base' }));
       }, [recipes, recipeSearchQuery]);
 
+      // Punkt 4: Kein automatisches Befüllen der Einkaufsliste mehr bei 0 / Leer
       const updatePantryAmount = (itemId, newAmountVal) => {
         const cleanAmount = Math.max(0, Number(newAmountVal));
         setPantry(prev => prev.map(item => {
@@ -1244,11 +1387,7 @@
           else if (cleanAmount <= threshold) nextStatus = 'low';
 
           if (nextStatus === 'empty' && item.status !== 'empty') {
-            setShoppingList(sl => {
-              if (sl.some(s => isIngredientMatchingPantry(s.name, item.name))) return sl;
-              return [...sl, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }];
-            });
-            showToast(`${item.name} ist leer → Einkaufsliste`);
+            showToast(`${item.name} ist jetzt aufgebraucht (Leer).`);
           }
           return { ...item, amount: cleanAmount, status: nextStatus };
         }));
@@ -1290,8 +1429,6 @@
         const pCount = Math.max(1, Number(amountToAdd) || 1);
 
         setPantry(prev => {
-          // Prüfe auf verschiedenen Reifegrad (z.B. "Parmesan 12 Monate" vs "Parmesan 24 Monate"), damit diese getrennt bleiben,
-          // während identische Artikel (z.B. 2 Gläser "Senf") im selben Lagerort sauber zusammengeführt werden!
           const extractNumbers = (str) => (str.match(/\d+/g) || []).join('_');
           const existingIndex = prev.findIndex(p =>
             p.category === targetCat &&
@@ -1521,8 +1658,8 @@
           };
         }));
       };
-
-      const handleCreateNewMealPrep = () => {
+```!]
+const handleCreateNewMealPrep = () => {
         if (!newMpName.trim()) return;
         const newId = 'mp_' + Date.now();
         const needsArray = newMpNeeds.split(',').map(s => s.trim()).filter(Boolean);
@@ -1573,17 +1710,169 @@
         setShowNewPantryItemModal(false);
       };
 
+      // Punkt 3: Smarte Abbuchungs-Vorschau beim Öffnen des "Heute gekocht!"-Fensters vorbereiten
+      const openCookedModal = (recipeObj) => {
+        if (!recipeObj) return;
+        const latestRec = recipes.find(r => r.id === recipeObj.id) || recipeObj;
+        const rows = [];
+
+        (latestRec.ingredients || []).forEach((ing, idx) => {
+          const cleanIngName = (ing.name || '').trim();
+          if (!cleanIngName) return;
+
+          // Meal-Prep-Block im TK erkennen
+          if (ing.isFromMealPrep) {
+            const mp = mealPrep.find(m => m.id === ing.isFromMealPrep);
+            if (mp) {
+              const req = parseRequiredAmount(ing.amount);
+              const val = req && req.unit === 'g' ? req.val : 500;
+              const availGrams = (mp.blocks500 || 0) * 500 + (mp.blocks250 || 0) * 250;
+              rows.push({
+                id: 'ded_mp_' + idx,
+                ingName: cleanIngName,
+                ingAmountStr: ing.amount,
+                checked: availGrams > 0,
+                isMealPrep: true,
+                mealPrepId: mp.id,
+                mealPrepName: mp.name,
+                availGrams,
+                deductVal: val,
+                unit: 'g'
+              });
+            }
+            return;
+          }
+
+          const parsedAmt = parseCookDeductionInfo(ing.amount);
+          if (!parsedAmt || parsedAmt.val <= 0) return;
+
+          const ingGroup = detectItemGroup(cleanIngName);
+          const isPastaIng = Boolean(ing.isPasta || ingGroup === 'Pasta');
+          const isFondIng = Boolean(ing.isFond || ingGroup === 'Fond');
+
+          // Passende Vorratsartikel ermitteln (inkl. Sorten wie 12/24/30 Monate Parmesan oder Pasta-Joker)
+          let candidates = pantry.filter(p =>
+            p.category !== 'spices' &&
+            p.status !== 'empty' &&
+            (p.amount === undefined || Number(p.amount) > 0) &&
+            isIngredientMatchingPantry(p.name, cleanIngName, p)
+          );
+
+          if (isPastaIng) {
+            const jokerPasta = pantry.filter(p =>
+              p.category !== 'spices' &&
+              p.status !== 'empty' &&
+              Number(p.amount) > 0 &&
+              (p.group === 'Pasta' || detectItemGroup(p.name) === 'Pasta') &&
+              !candidates.some(c => c.id === p.id)
+            );
+            candidates = [...candidates, ...jokerPasta];
+          } else if (isFondIng) {
+            const jokerFond = pantry.filter(p =>
+              p.category !== 'spices' &&
+              p.status !== 'empty' &&
+              Number(p.amount) > 0 &&
+              (p.group === 'Fond' || detectItemGroup(p.name) === 'Fond') &&
+              !candidates.some(c => c.id === p.id)
+            );
+            candidates = [...candidates, ...jokerFond];
+          }
+
+          if (candidates.length === 0) return;
+
+          const selectedTarget = candidates[0];
+          let initialDeduct = parsedAmt.val;
+          if (parsedAmt.isCount && (selectedTarget.unitType === 'g' || selectedTarget.unitType === 'ml') && Array.isArray(selectedTarget.packs) && selectedTarget.packs.length > 0) {
+            initialDeduct = parsedAmt.val * (Number(selectedTarget.packs[0].size) || 1);
+          }
+
+          rows.push({
+            id: 'ded_' + idx,
+            ingName: cleanIngName,
+            ingAmountStr: ing.amount,
+            checked: true,
+            isMealPrep: false,
+            candidates,
+            selectedPantryId: selectedTarget.id,
+            deductVal: initialDeduct,
+            parsedAmt
+          });
+        });
+
+        setCookDeductions(rows);
+        setFreezeLeftovers500(0);
+        setFreezeLeftovers250(0);
+        setCookedModalRecipe(latestRec);
+      };
+
       const handleConfirmCooked = () => {
         if (!cookedModalRecipe) return;
         setRecipes(prev => prev.map(r => r.id === cookedModalRecipe.id ? { ...r, lastCookedDaysAgo: 0 } : r));
 
+        // Ausgewählte Zutaten-Abzüge (inkl. Packungs-Baukasten) verbuchen – OHNE Auto-Einkaufsliste!
+        const activeDeductions = (cookDeductions || []).filter(d => d.checked && Number(d.deductVal) > 0);
+
+        const mpDeductions = activeDeductions.filter(d => d.isMealPrep && d.mealPrepId);
+        if (mpDeductions.length > 0) {
+          setMealPrep(prev => prev.map(mp => {
+            const foundDed = mpDeductions.find(d => d.mealPrepId === mp.id);
+            if (!foundDed) return mp;
+            const currentTotal = (mp.blocks500 || 0) * 500 + (mp.blocks250 || 0) * 250;
+            const remainingGrams = Math.max(0, currentTotal - (Number(foundDed.deductVal) || 0));
+            const next500 = Math.floor(remainingGrams / 500);
+            const next250 = Math.round((remainingGrams % 500) / 250);
+            return { ...mp, blocks500: next500, blocks250: next250 };
+          }));
+        }
+
+        const pantryDedMap = new Map();
+        activeDeductions.filter(d => !d.isMealPrep && d.selectedPantryId).forEach(d => {
+          const prevVal = pantryDedMap.get(d.selectedPantryId) || 0;
+          pantryDedMap.set(d.selectedPantryId, prevVal + (Number(d.deductVal) || 0));
+        });
+
         setPantry(prev => prev.map(p => {
-          if (p.id === 'p12' || p.name.toLowerCase().includes('olivenöl')) {
-            const nextUses = (p.usesSinceOpen || 0) + 1;
-            if (nextUses >= (p.maxUses || 20)) setOliveOilAlert(true);
-            return { ...p, usesSinceOpen: nextUses };
+          let updated = { ...p };
+
+          if (updated.id === 'p12' || updated.name.toLowerCase().includes('olivenöl')) {
+            const nextUses = (updated.usesSinceOpen || 0) + 1;
+            if (nextUses >= (updated.maxUses || 20)) setOliveOilAlert(true);
+            updated.usesSinceOpen = nextUses;
           }
-          return p;
+
+          if (pantryDedMap.has(updated.id)) {
+            const deductAmount = pantryDedMap.get(updated.id);
+            if (Array.isArray(updated.packs) && updated.packs.length > 0) {
+              const nextPacks = deductFromPacks(updated.packs, deductAmount, updated.unitType || 'g');
+              const sum = calcPacksSummary(nextPacks);
+              const nextTotal = sum ? sum.totalAmount : 0;
+              const threshold = updated.lowThreshold || (updated.unitType === 'g' || updated.unitType === 'ml' ? 200 : 1);
+              let nextStatus = 'in_stock';
+              if (nextTotal === 0) nextStatus = 'empty';
+              else if (nextTotal <= threshold) nextStatus = 'low';
+
+              updated = {
+                ...updated,
+                packs: nextPacks,
+                amount: nextTotal,
+                status: nextStatus
+              };
+            } else if (updated.amount !== undefined) {
+              const nextAmt = Math.max(0, Number((Number(updated.amount) - deductAmount).toFixed(2)));
+              const threshold = updated.lowThreshold || (updated.unitType === 'g' || updated.unitType === 'ml' ? 150 : 1);
+              let nextStatus = 'in_stock';
+              if (nextAmt === 0) nextStatus = 'empty';
+              else if (nextAmt <= threshold) nextStatus = 'low';
+
+              updated = {
+                ...updated,
+                amount: nextAmt,
+                status: nextStatus
+              };
+            }
+          }
+
+          return updated;
         }));
 
         if (freezeLeftovers500 > 0 || freezeLeftovers250 > 0) {
@@ -1601,11 +1890,18 @@
               kcalPer100g: cookedModalRecipe.kcalPer100g || 170, needsFresh: [], prepTime: 20, season: 'all'
             }, ...prev]);
           }
-          showToast(`Reste (${freezeLeftovers500 * 500 + freezeLeftovers250 * 250}g) im TK gespeichert!`);
+          showToast(`Zutaten abgebucht & Reste (${freezeLeftovers500 * 500 + freezeLeftovers250 * 250}g) im TK gespeichert!`);
         } else {
-          showToast(`"${cookedModalRecipe.title}" als gekocht markiert!`);
+          showToast(
+            activeDeductions.length > 0
+              ? `"${cookedModalRecipe.title}" gekocht & ${activeDeductions.length} Zutat(en) vom Bestand abgezogen!`
+              : `"${cookedModalRecipe.title}" als gekocht markiert!`
+          );
         }
-        setFreezeLeftovers500(0); setFreezeLeftovers250(0); setCookedModalRecipe(null);
+        setFreezeLeftovers500(0);
+        setFreezeLeftovers250(0);
+        setCookDeductions([]);
+        setCookedModalRecipe(null);
       };
 
       const selectedRecipe = recipes.find(r => r.id === selectedRecipeId);
@@ -1919,6 +2215,7 @@ Antworte NUR mit reinem JSON:
           return;
         }
         try {
+          stopSpeaking();
           cleanupAudioRecording();
           setRecordedAudioBlob(null);
           audioChunksRef.current = [];
@@ -2019,10 +2316,29 @@ Antworte NUR mit reinem JSON:
         return `${m}:${s}`;
       };
 
+      // Punkt 2: Echte Sprachausgabe + voller Zugriff auf Vorräte, Meal-Preps & alle Rezepte (Zutaten & Schritte)
       const executeVoiceCommand = async () => {
         const activeKey = (geminiKey || '').trim();
         const todayStr = new Date().toISOString().split('T')[0];
-        const existingNames = pantry.map(p => `${p.name} (${p.amount !== undefined ? p.amount + ' ' + p.unitType : 'Gewürz'}, ${p.category})`).join(', ');
+        const existingNames = pantry.map(p => {
+          const dLeft = getDaysUntilExpiry(p);
+          const mhdInfo = dLeft !== undefined ? `, MHD: ${dLeft}T` : '';
+          return `${p.name} (${p.amount !== undefined ? p.amount + ' ' + p.unitType : 'Gewürz'}, Status: ${p.status}, ${p.category}${mhdInfo})`;
+        }).join(', ');
+
+        const mealPrepContext = mealPrep.map(m =>
+          `${m.name} (${m.blocks500 || 0}x 500g + ${m.blocks250 || 0}x 250g = ${(m.blocks500 || 0) * 500 + (m.blocks250 || 0) * 250}g im TK)`
+        ).join('; ');
+
+        const recipesContext = recipes.map(r => {
+          const ings = (r.ingredients || []).map(i => `${i.amount ? i.amount + ' ' : ''}${i.name}`).join(', ');
+          const stps = (r.steps || []).map((s, idx) => `Schritt ${idx + 1}: ${s}`).join(' | ');
+          return `Rezept "${r.title}" (${r.prepTime || 25} Min, ~${r.kcalPer100g || 170} kcal/100g) -> Zutaten: [${ings}] -> Zubereitung: [${stps}]`;
+        }).join('\n');
+
+        const currentlyOpenRecipeInfo = selectedRecipe
+          ? `Aktuell auf dem Bildschirm geöffnetes Rezept: "${selectedRecipe.title}".`
+          : '';
 
         try {
           setIsProcessingVoice(true);
@@ -2048,7 +2364,12 @@ Antworte NUR mit reinem JSON:
 
           const voicePrompt = `Du bist der smarte Küchen-Assistent einer Vorrats- und Rezept-App.
 Heute ist ${todayStr}.
-Aktuell im Bestand vorhandene Artikel: [${existingNames}].
+${currentlyOpenRecipeInfo}
+Aktuell im Vorrat vorhandene Artikel: [${existingNames}].
+Aktuell im Tiefkühler vorgekochte Meal-Preps: [${mealPrepContext}].
+Alle gespeicherten Rezepte mit Zutatenmengen und Zubereitungsschritten:
+${recipesContext}
+
 ${base64Audio ? 'Höre dir die beigefügte Sprachaufnahme des Nutzers genau an. WICHTIG: Ignoriere jegliche Hintergrundgeräusche oder Fernsehstimmen im Hintergrund komplett und beachte NUR die Hauptstimme, die nah am Mikrofon über Lebensmittel, Vorräte oder Rezepte spricht!' : ''}
 ${typedText ? `Zusätzlich eingegebener Text des Nutzers: "${typedText}"` : ''}
 
@@ -2057,7 +2378,7 @@ Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSO
   "transcript": "Kurze Zusammenfassung, was du verstanden hast",
   "actions": [
     {
-      "type": "add_or_increment" | "set_exact" | "delete" | "mealprep_add" | "create_recipe" | "query",
+      "type": "add_or_increment" | "set_exact" | "delete" | "mealprep_add" | "create_recipe" | "shopping_add" | "query",
       "name": "Sauberer Produktname OHNE Markennamen (WICHTIG: Wirf niemals unterschiedliche Produkte wie 'Salz' und 'Pommesgewürz Salz' zusammen!)",
       "amount": 1,
       "unitType": "Packung|Glas|Dose|Flasche|Tube|Becher|Stück|g|ml",
@@ -2075,7 +2396,7 @@ Analysiere, was der Nutzer möchte, und antworte AUSSCHLIESSLICH mit validem JSO
         "ingredients": [{"name": "Zutat", "amount": "Menge"}],
         "steps": ["Schritt 1", "Schritt 2"]
       },
-      "answerText": "Antwort-Text falls der Nutzer eine Frage gestellt hat"
+      "answerText": "Antwort-Text in natürlichem, gut vorlesbarem Deutsch, falls der Nutzer eine Frage zu Vorräten, knappen/leeren Artikeln, Zutatenmengen oder Zubereitungsschritten eines Rezepts gestellt hat"
     }
   ]
 }
@@ -2083,7 +2404,9 @@ Wichtige Regeln:
 - Lass Markennamen immer weg ("Bamboo Garden Sojasauce" -> "Sojasauce").
 - KATEGORIEN: Pesto, Sugo, Tomatensauce, Pastasauce, Passata, Fonds (Bratenfond, Rinderfond, Krustentierfond) und Brühen gehören in "pantry" (Vorratsschrank), es sei denn der Nutzer nennt explizit den Kühlschrank ("fridge"). "sauces" ist nur für flüssige Würzsaucen (Sojasauce, Austernsauce), Öle und Essig!
 - Wenn der Nutzer Packungsgrößen nennt (z.B. "zwei 1-Kilo Packungen Penne"), setze type: "add_or_increment", name: "Penne", amount: 2, unitType: "Packung", packSize: 1000, packUnit: "g", category: "pantry".
-- Wenn der Nutzer ein neues Rezept diktiert oder anlegen möchte (z.B. "Rezept für Senfeier..." oder eine Aufzählung von Zutaten & Schritten für ein Gericht), setze type: "create_recipe" und übernimm alle vom Nutzer genannten Mengen, Zutaten und Zubereitungsschritte sauber in das Objekt "recipe" (fehlende Angaben wie kcalPer100g oder prepTime sinnvoll schätzen)!`;
+- Wenn der Nutzer ein neues Rezept diktiert oder anlegen möchte, setze type: "create_recipe" und übernimm alle genannten Mengen, Zutaten und Zubereitungsschritte in "recipe".
+- Wenn der Nutzer explizit etwas auf die Einkaufsliste setzen möchte, nutze type: "shopping_add" und "name".
+- Wenn der Nutzer eine Frage stellt (z.B. "Wie viel Gramm Parmesan kommen in die Pasta al Limone?", "Lies mir die Zubereitung vom Ragù vor", "Was ist bei mir leer oder knapp und sollte nachgekauft werden?"), setze type: "query" und formuliere in "answerText" eine klare, direkte und natürlich klingende deutsche Antwort, da dieser Text laut über den Handy-Lautsprecher vorgelesen wird!`;
 
           const { text: aiResponse, usedModel } = await callGeminiWithAutoModel(activeKey, voicePrompt, base64Audio, audioMime);
           setDetectedModelInfo(usedModel);
@@ -2095,7 +2418,14 @@ Wichtige Regeln:
           if (parsed.actions && Array.isArray(parsed.actions)) {
             parsed.actions.forEach(act => {
               if (act.type === 'query' && act.answerText) {
-                showToast(act.answerText);
+                showToast(act.answerText, 14000);
+                speakAnswerText(act.answerText);
+              } else if (act.type === 'shopping_add' && act.name) {
+                setShoppingList(prev => {
+                  if (prev.some(s => isIngredientMatchingPantry(s.name, act.name))) return prev;
+                  return [...prev, { id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5), name: act.name.trim(), reason: 'Per Sprache hinzugefügt', done: false }];
+                });
+                showToast(`"${act.name}" auf die Einkaufsliste gesetzt!`);
               } else if (act.type === 'create_recipe' && act.recipe) {
                 const r = act.recipe;
                 const newRec = {
@@ -2203,6 +2533,17 @@ Wichtige Regeln:
 
             <div className="flex items-center gap-1.5">
               <button
+                onClick={toggleWakeLock}
+                className={`flex items-center justify-center w-9 h-9 rounded-lg transition shadow-sm border ${
+                  isWakeLockActive
+                    ? 'bg-amber-500 text-white border-amber-600'
+                    : 'bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200'
+                }`}
+                title={isWakeLockActive ? 'Display-Wachhalter ist AN (Tippen zum Ausschalten)' : 'Display beim Kochen wach halten'}
+              >
+                <Icon name="sun" size={16} />
+              </button>
+              <button
                 onClick={() => document.getElementById('globalCameraInput').click()}
                 className="flex items-center justify-center bg-stone-900 text-white w-9 h-9 rounded-lg hover:bg-stone-800 transition shadow-sm"
                 title="Vorrat per Foto scannen"
@@ -2226,10 +2567,23 @@ Wichtige Regeln:
             </div>
           </header>
 
-          {toastMsg && (
-            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-start gap-2 w-[90vw] max-w-sm break-words">
-              <Icon name="check" size={15} className="text-emerald-400 mt-0.5" />
-              <span className="leading-snug">{toastMsg}</span>
+          {(toastMsg || isSpeaking) && (
+            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-start justify-between gap-3 w-[92vw] max-w-sm break-words">
+              <div className="flex items-start gap-2">
+                <Icon name={isSpeaking ? "volume-2" : "check"} size={15} className="text-emerald-400 mt-0.5 shrink-0" />
+                <span className="leading-snug">{toastMsg || 'Sprachausgabe läuft...'}</span>
+              </div>
+              {isSpeaking && (
+                <button
+                  onClick={() => {
+                    stopSpeaking();
+                    setToastMsg(null);
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 shadow-sm"
+                >
+                  <span>🔇 Stopp</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -2350,7 +2704,7 @@ Wichtige Regeln:
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => {
-                                  setCookedModalRecipe(latestMeal);
+                                  openCookedModal(latestMeal);
                                   removeFromMealPlan(latestMeal.id);
                                 }}
                                 className="text-emerald-700 hover:bg-emerald-50 p-1.5 rounded"
@@ -2639,7 +2993,7 @@ Wichtige Regeln:
                           <span>Rezept ansehen</span>
                         </button>
                         <button
-                          onClick={() => setCookedModalRecipe(activeSuggestion)}
+                          onClick={() => openCookedModal(activeSuggestion)}
                           className="py-2.5 px-3 rounded-lg bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 flex items-center justify-center gap-1.5"
                         >
                           <Icon name="check" size={15} />
@@ -2891,11 +3245,7 @@ Wichtige Regeln:
                                       ...(st === 'empty' && Array.isArray(p.packs) ? { packs: p.packs.map(pk => ({ ...pk, count: 0 })) } : {})
                                     } : p));
                                     if (st === 'empty') {
-                                      setShoppingList(prev => {
-                                        if (prev.some(s => isIngredientMatchingPantry(s.name, item.name))) return prev;
-                                        return [...prev, { id: 's_' + Date.now(), name: item.name, reason: 'Aufgebraucht', done: false }];
-                                      });
-                                      showToast(`${item.name} auf Einkaufsliste gesetzt`);
+                                      showToast(`${item.name} als Leer markiert.`);
                                     }
                                   }}
                                   className={`px-2 py-1 rounded text-[10px] font-medium border ${
@@ -3025,6 +3375,18 @@ Wichtige Regeln:
                       </button>
                       <div className="flex items-center gap-1.5">
                         <button
+                          onClick={toggleWakeLock}
+                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                            isWakeLockActive
+                              ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                              : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                          }`}
+                          title="Verhindert, dass sich das Handy-Display beim Kochen sperrt"
+                        >
+                          <Icon name="sun" size={13} />
+                          <span>{isWakeLockActive ? 'Display bleibt an' : 'Display anlassen'}</span>
+                        </button>
+                        <button
                           onClick={() => {
                             setRecipes(prev => prev.filter(r => r.id !== selectedRecipe.id));
                             setMealPlan(prev => prev.filter(m => m.id !== selectedRecipe.id));
@@ -3050,7 +3412,7 @@ Wichtige Regeln:
                           }`}
                         >
                           <Icon name="edit-3" size={13} />
-                          <span>{isEditingRecipe ? 'Bearbeitung fertig' : 'Rezept bearbeiten'}</span>
+                          <span>{isEditingRecipe ? 'Fertig' : 'Bearbeiten'}</span>
                         </button>
                       </div>
                     </div>
@@ -3087,17 +3449,26 @@ Wichtige Regeln:
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => addToMealPlan(selectedRecipe)}
-                      className="w-full py-2.5 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
-                    >
-                      <Icon name="calendar-plus" size={15} />
-                      <span>
-                        {mealPlan.some(m => m.id === selectedRecipe.id)
-                          ? 'Im Wochenplan (Tippen um Einkaufsliste neu abzugleichen)'
-                          : 'Für den Wochenplan vormerken & Einkauf prüfen'}
-                      </span>
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => addToMealPlan(selectedRecipe)}
+                        className="py-2.5 px-3 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
+                      >
+                        <Icon name="calendar-plus" size={15} />
+                        <span>
+                          {mealPlan.some(m => m.id === selectedRecipe.id)
+                            ? 'Wochenplan aktualisieren'
+                            : 'In den Wochenplan'}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => openCookedModal(selectedRecipe)}
+                        className="py-2.5 px-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
+                      >
+                        <Icon name="check" size={15} />
+                        <span>Heute gekocht!</span>
+                      </button>
+                    </div>
 
                     {isEditingRecipe && (
                       <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-3">
@@ -3214,7 +3585,20 @@ Wichtige Regeln:
                     </div>
 
                     <div className="space-y-2">
-                      <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zubereitung</h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-400">Zubereitung</h3>
+                        <button
+                          onClick={() => {
+                            const fullText = `${selectedRecipe.title}. Zutaten: ${(selectedRecipe.ingredients || []).map(i => `${i.amount} ${i.name}`).join(', ')}. Zubereitung: ${(selectedRecipe.steps || []).map((s, idx) => `Schritt ${idx + 1}: ${s}`).join(' ')}`;
+                            showToast(`Lese "${selectedRecipe.title}" vor...`, 12000);
+                            speakAnswerText(fullText);
+                          }}
+                          className="text-[11px] font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 px-2.5 py-1 rounded-lg flex items-center gap-1"
+                        >
+                          <Icon name="volume-2" size={12} />
+                          <span>Rezept vorlesen</span>
+                        </button>
+                      </div>
                       <ol className="space-y-2">
                         {(selectedRecipe.steps || []).map((step, idx) => (
                           <li key={idx} className="bg-stone-50 border border-stone-200 rounded-lg p-3 text-xs text-stone-800 flex items-start justify-between gap-2">
@@ -4489,13 +4873,116 @@ Wichtige Regeln:
 
           {cookedModalRecipe && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-xl">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
                   <h3 className="text-base font-semibold text-stone-900">Heute gekocht: {cookedModalRecipe.title}</h3>
                   <button onClick={() => setCookedModalRecipe(null)} className="text-stone-400">
                     <Icon name="x" size={18} />
                   </button>
                 </div>
+
+                {cookDeductions.length > 0 ? (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-stone-800">Zutaten vom Bestand abziehen:</span>
+                      <span className="text-[10px] text-stone-500">Menge & Sorte anpassbar</span>
+                    </div>
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
+                      {cookDeductions.map((ded, idx) => {
+                        const selectedPantryObj = !ded.isMealPrep
+                          ? (ded.candidates || []).find(c => c.id === ded.selectedPantryId) || ded.candidates?.[0]
+                          : null;
+                        const displayUnit = ded.isMealPrep
+                          ? 'g'
+                          : (selectedPantryObj?.unitType || ded.parsedAmt?.unit || 'g');
+
+                        return (
+                          <div
+                            key={ded.id}
+                            className={`border rounded-xl p-2.5 space-y-2 transition ${
+                              ded.checked ? 'bg-stone-50 border-stone-300' : 'bg-stone-50/40 border-stone-200 opacity-60'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="flex items-center gap-2 text-xs font-semibold text-stone-900 cursor-pointer flex-1">
+                                <input
+                                  type="checkbox"
+                                  checked={ded.checked}
+                                  onChange={e => {
+                                    const val = e.target.checked;
+                                    setCookDeductions(prev => prev.map((item, i) => i === idx ? { ...item, checked: val } : item));
+                                  }}
+                                  className="w-4 h-4 accent-stone-900 rounded"
+                                />
+                                <span>{ded.ingName}</span>
+                                <span className="text-[10px] font-normal text-stone-500">({ded.ingAmountStr})</span>
+                              </label>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className="text-xs text-stone-500 font-bold">-</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  value={ded.deductVal}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    setCookDeductions(prev => prev.map((item, i) => i === idx ? { ...item, deductVal: val } : item));
+                                  }}
+                                  className="w-16 bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-bold text-right text-stone-900"
+                                />
+                                <span className="text-[11px] font-semibold text-stone-700 min-w-[28px]">
+                                  {formatContainerLabel(displayUnit, ded.deductVal)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {ded.isMealPrep ? (
+                              <div className="text-[11px] text-stone-600 pl-6">
+                                TK Meal-Prep: <strong>{ded.mealPrepName}</strong> ({ded.availGrams} g vorrätig)
+                              </div>
+                            ) : (
+                              ded.candidates && ded.candidates.length > 1 ? (
+                                <div className="pl-6">
+                                  <select
+                                    value={ded.selectedPantryId}
+                                    onChange={e => {
+                                      const newId = e.target.value;
+                                      const targetObj = ded.candidates.find(c => c.id === newId);
+                                      setCookDeductions(prev => prev.map((item, i) => {
+                                        if (i !== idx) return item;
+                                        let nextDed = item.parsedAmt?.val || item.deductVal;
+                                        if (item.parsedAmt?.isCount && targetObj && (targetObj.unitType === 'g' || targetObj.unitType === 'ml') && Array.isArray(targetObj.packs) && targetObj.packs.length > 0) {
+                                          nextDed = item.parsedAmt.val * (Number(targetObj.packs[0].size) || 1);
+                                        }
+                                        return { ...item, selectedPantryId: newId, deductVal: nextDed };
+                                      }));
+                                    }}
+                                    className="w-full bg-white border border-stone-300 rounded-lg px-2 py-1 text-[11px] font-medium text-stone-800"
+                                  >
+                                    {ded.candidates.map(cand => (
+                                      <option key={cand.id} value={cand.id}>
+                                        Abbuchen von: {cand.name} (Bestand: {cand.amount} {cand.unitType})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ) : selectedPantryObj ? (
+                                <div className="text-[11px] text-stone-500 pl-6">
+                                  Bestand: <strong>{selectedPantryObj.name}</strong> ({selectedPantryObj.amount} {selectedPantryObj.unitType} da)
+                                </div>
+                              ) : null
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-stone-500 bg-stone-50 border border-stone-200 rounded-xl p-3">
+                    Keine messbaren Vorrats-Abzüge für dieses Rezept gefunden.
+                  </p>
+                )}
 
                 <div className="bg-stone-50 border border-stone-200 rounded-xl p-3.5 space-y-2.5">
                   <p className="text-xs font-semibold text-stone-800">
@@ -4523,9 +5010,10 @@ Wichtige Regeln:
 
                 <button
                   onClick={handleConfirmCooked}
-                  className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-xs font-semibold"
+                  className="w-full py-3 bg-[#849b82] hover:bg-[#738871] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition"
                 >
-                  Bestätigen & Historie aktualisieren
+                  <Icon name="check" size={16} />
+                  <span>Bestätigen & ausgewählte Zutaten abbuchen</span>
                 </button>
               </div>
             </div>
@@ -4555,7 +5043,7 @@ Wichtige Regeln:
                 </div>
 
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Deine Stimme wird mit <strong>Nebengeräusch-Filter</strong> aufgenommen und direkt als echte Tonspur an Gemini geschickt. Sprich so lange du möchtest!
+                  Frag nach Vorräten, Rezepten („Wie viel Parmesan kommt in die Limone?“, „Lies mir die Schritte vor“) oder buche Artikel ein. Antworten werden <strong>laut vorgelesen</strong>!
                 </p>
 
                 <div className="flex gap-2">
@@ -4661,3 +5149,5 @@ Wichtige Regeln:
   </script>
 </body>
 </html>
+
+*(Schreib einfach kurz **„Teil 2“**, dann folgt sofort der Rest ab `handleCreateNewMealPrep` bis `</html>`!)*
